@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR 新员工入职测试</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; overflow-x: hidden; min-height: 100vh; }
+
+/* === Utilities === */
+.hidden { display: none !important; }
+
+/* === Page Container === */
+.page {
+  width: 100%; min-height: 100vh; position: relative; display: none;
+}
+.page.active { display: flex; flex-direction: column; }
+
+/* ========== P1 - Welcome ========== */
+#p1 {
+  background: linear-gradient(135deg, #EDE9FE 0%, #F0F4FF 50%, #E0F7FA 100%);
+}
+.navbar {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px; padding: 0 48px; background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.logo-area { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, #7C3AED, #FF6B6B);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 14px; font-weight: 700;
+}
+.company-name { color: #7C3AED; font-size: 18px; font-weight: 700; }
+.nav-right { display: flex; align-items: center; gap: 8px; }
+.nav-hint { color: #6B7280; font-size: 14px; }
+.nav-btn {
+  padding: 8px 20px; border-radius: 20px; background: #7C3AED;
+  color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+}
+.hero-section {
+  flex: 1; display: flex; align-items: center; gap: 40px; padding: 60px 80px;
+}
+.hero-left { width: 580px; display: flex; flex-direction: column; gap: 32px; }
+.tag-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: #EDE9FE; border-radius: 20px; padding: 8px 16px; width: fit-content;
+}
+.tag-dot { width: 8px; height: 8px; border-radius: 4px; background: #7C3AED; }
+.tag-txt { color: #7C3AED; font-size: 13px; font-weight: 600; }
+.hero-title {
+  font-size: 52px; font-weight: 800; color: #1E1B4B; line-height: 1.15;
+}
+.hero-sub { font-size: 20px; color: #4B5563; }
+.highlights-row { display: flex; gap: 16px; }
+.highlight-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 16px 20px; background: #fff; border-radius: 16px;
+}
+.highlight-card:nth-child(1) { box-shadow: 0 4px 12px rgba(124,58,237,0.13); }
+.highlight-card:nth-child(2) { box-shadow: 0 4px 12px rgba(255,107,107,0.13); }
+.highlight-card:nth-child(3) { box-shadow: 0 4px 12px rgba(78,205,196,0.13); }
+.highlight-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.highlight-card:nth-child(1) .highlight-icon { background: #EDE9FE; color: #7C3AED; }
+.highlight-card:nth-child(2) .highlight-icon { background: #FFF0F0; color: #FF6B6B; }
+.highlight-card:nth-child(3) .highlight-icon { background: #E6FAF8; color: #4ECDC4; }
+.highlight-num { font-size: 16px; font-weight: 700; color: #1E1B4B; }
+.highlight-sub { font-size: 12px; color: #9CA3AF; }
+.cta-row { display: flex; align-items: center; gap: 16px; }
+.cta-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 18px 40px; border-radius: 50px; border: none; cursor: pointer;
+  background: linear-gradient(90deg, #7C3AED, #A855F7);
+  box-shadow: 0 8px 24px rgba(124,58,237,0.27);
+  color: #fff; font-size: 20px; font-weight: 700; transition: transform 0.2s;
+}
+.cta-btn:hover { transform: translateY(-2px); }
+.cta-note { font-size: 14px; color: #9CA3AF; }
+.hero-right {
+  flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
+  min-height: 460px;
+}
+.hero-illustration {
+  width: 420px; height: 380px; border-radius: 32px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #EDE9FE, #E0F7FA);
+  font-size: 120px;
+}
+/* Decorative dots */
+.deco-dot {
+  position: absolute; border-radius: 50%; opacity: 0.6;
+}
+
+/* ========== P2 - Employee Info ========== */
+#p2 {
+  background: linear-gradient(135deg, #FFF8F5, #EEEAFF);
+  align-items: center; justify-content: center; position: relative;
+}
+.deco-circle {
+  position: absolute; border-radius: 50;
+}
+.info-card {
+  width: 520px; background: #fff; border-radius: 24px; padding: 32px 36px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.09); display: flex; flex-direction: column;
+  align-items: center; gap: 14px; z-index: 1;
+}
+.card-icon-area {
+  width: 80px; height: 80px; border-radius: 40px;
+  background: radial-gradient(circle, #EDE9FE, #DDD6FE);
+  display: flex; align-items: center; justify-content: center; font-size: 32px;
+  color: #7C3AED;
+}
+.card-title { font-size: 26px; font-weight: 700; color: #1F2937; }
+.card-sub { font-size: 13px; color: #9CA3AF; text-align: center; }
+.form-section { width: 100%; display: flex; flex-direction: column; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 14px; font-weight: 600; color: #374151; }
+.form-label .req { color: #FF6B6B; }
+.form-input, .form-select {
+  width: 100%; height: 48px; border-radius: 12px; border: 2px solid #E5E7EB;
+  padding: 0 16px; font-size: 14px; font-family: 'Inter', sans-serif;
+  outline: none; transition: border-color 0.2s; background: #fff;
+}
+.form-input:focus, .form-select:focus { border-color: #7C3AED; }
+.form-input.error, .form-select.error { border-color: #FF6B6B; }
+.val-hint {
+  display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+  background: #F5F3FF; border-radius: 10px; font-size: 12px; color: #7C3AED;
+}
+.submit-btn {
+  width: 100%; height: 52px; border-radius: 14px; border: none; cursor: pointer;
+  background: linear-gradient(90deg, #7C3AED, #A855F7);
+  box-shadow: 0 4px 16px rgba(124,58,237,0.25);
+  color: #fff; font-size: 16px; font-weight: 700; display: flex;
+  align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s;
+}
+.submit-btn:hover { transform: translateY(-2px); }
+.progress-dots {
+  display: flex; align-items: center; gap: 6px; margin-top: 4px;
+}
+.progress-dots span {
+  width: 8px; height: 8px; border-radius: 50%; background: #D1D5DB;
+}
+.progress-dots span.active { background: #7C3AED; width: 24px; border-radius: 4px; }
+
+/* ========== P3 - Instructions ========== */
+#p3 {
+  background: #F5F0FF; align-items: center; justify-content: center; position: relative;
+}
+.instructions-content {
+  width: 960px; display: flex; flex-direction: column; align-items: center; gap: 24px;
+  z-index: 1;
+}
+.inst-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.inst-icon {
+  width: 64px; height: 64px; border-radius: 20px; background: #EDE9FE;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: #7C3AED;
+}
+.inst-title { font-size: 32px; font-weight: 800; color: #1E1B4B; }
+.inst-sub { font-size: 14px; color: #6B7280; }
+/* Steps */
+.inst-steps { display: flex; align-items: center; gap: 0; margin: 8px 0; }
+.inst-step-dot {
+  width: 32px; height: 32px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+}
+.inst-step-dot.done { background: #4ECDC4; color: #fff; }
+.inst-step-dot.current { background: #7C3AED; color: #fff; }
+.inst-step-dot.future { background: #E5E7EB; color: #9CA3AF; }
+.inst-step-line { width: 40px; height: 3px; background: #D1D5DB; }
+.inst-step-line.done { background: #4ECDC4; }
+/* Cards grid */
+.inst-cards {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%;
+}
+.inst-card {
+  padding: 28px 24px; border-radius: 20px; display: flex; align-items: flex-start; gap: 16px;
+}
+.inst-card:nth-child(1) { background: #FFFBEB; }
+.inst-card:nth-child(2) { background: #FFF0F0; }
+.inst-card:nth-child(3) { background: #E6FAF8; }
+.inst-card:nth-child(4) { background: #FEF3C7; }
+.inst-card-icon {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.inst-card:nth-child(1) .inst-card-icon { background: #FDE68A; color: #92400E; }
+.inst-card:nth-child(2) .inst-card-icon { background: #FECACA; color: #DC2626; }
+.inst-card:nth-child(3) .inst-card-icon { background: #A7F3D0; color: #059669; }
+.inst-card:nth-child(4) .inst-card-icon { background: #FDE68A; color: #D97706; }
+.inst-card-body { display: flex; flex-direction: column; gap: 4px; }
+.inst-card-title { font-size: 16px; font-weight: 700; color: #1F2937; }
+.inst-card-desc { font-size: 13px; color: #6B7280; }
+.start-test-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 16px 48px; border-radius: 50px; border: none; cursor: pointer;
+  background: linear-gradient(90deg, #7C3AED, #A855F7);
+  box-shadow: 0 4px 16px rgba(124,58,237,0.25);
+  color: #fff; font-size: 16px; font-weight: 700; transition: transform 0.2s;
+}
+.start-test-btn:hover { transform: translateY(-2px); }
+.start-note { font-size: 13px; color: #9CA3AF; }
+
+/* ========== P4 - Question ========== */
+#p4 {
+  background: #FFF8F0;
+}
+.top-bar {
+  display: flex; align-items: center; height: 75px; padding: 0 40px;
+  background: #7C3AED; color: #fff;
+}
+.top-bar .logo-area { gap: 12px; flex-shrink: 0; }
+.top-bar .logo-icon-txt { font-size: 18px; font-weight: 700; color: #fff; }
+.progress-section {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 8px;
+}
+.progress-label { font-size: 15px; font-weight: 600; }
+.progress-bar-outer {
+  width: 300px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.19);
+  overflow: hidden;
+}
+.progress-bar-inner {
+  height: 100%; border-radius: 4px; background: #FFD93D; transition: width 0.3s;
+}
+.timer-area { display: flex; align-items: center; gap: 10px; width: 220px; justify-content: flex-end; }
+.timer-text { font-size: 14px; font-weight: 600; }
+.main-content {
+  flex: 1; position: relative; display: flex; padding: 0;
+}
+.question-card {
+  width: 880px; background: #fff; border-radius: 24px;
+  box-shadow: 0 8px 40px rgba(124,58,237,0.1);
+  display: flex; flex-direction: column; overflow: hidden;
+  position: absolute; left: 150px; top: 80px;
+  max-height: calc(100vh - 245px); overflow-y: auto;
+}
+.card-top-band {
+  height: 6px; width: 100%;
+  background: linear-gradient(90deg, #7C3AED, #FF6B6B 35%, #FFD93D 65%, #4ECDC4);
+}
+.card-top { display: flex; gap: 20px; padding: 32px 44px 24px; align-items: flex-start; }
+.q-badge {
+  padding: 8px 16px; border-radius: 12px; background: #7C3AED;
+  color: #fff; font-size: 15px; font-weight: 700; white-space: nowrap;
+}
+.q-text { font-size: 22px; font-weight: 700; color: #111827; line-height: 1.4; flex: 1; }
+.divider { height: 1px; background: #F3F4F6; }
+.options-area {
+  display: flex; flex-direction: column; gap: 14px; padding: 24px 44px 40px;
+}
+.option-btn {
+  display: flex; align-items: center; gap: 18px; height: 68px;
+  padding: 0 28px; border-radius: 34px; background: #F9FAFB;
+  border: 2px solid #E5E7EB; cursor: pointer; transition: all 0.2s; width: 100%;
+  text-align: left; font-family: 'Inter', sans-serif;
+}
+.option-btn:hover { border-color: #7C3AED; background: #F5F3FF; }
+.option-btn.selected { background: #7C3AED; border-color: #7C3AED; }
+.option-btn.selected .opt-text { color: #fff; font-weight: 600; }
+.option-btn.selected .opt-badge { background: rgba(255,255,255,0.19); }
+.option-btn.selected .opt-badge span { color: #fff; }
+.option-btn.correct { background: #4ECDC4; border-color: #4ECDC4; }
+.option-btn.correct .opt-text { color: #fff; }
+.option-btn.wrong { background: #FF6B6B; border-color: #FF6B6B; }
+.option-btn.wrong .opt-text { color: #fff; }
+.opt-badge {
+  width: 36px; height: 36px; border-radius: 18px; background: #EDE9FE;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.opt-badge span { font-size: 14px; font-weight: 700; color: #7C3AED; }
+.opt-text { font-size: 17px; font-weight: 500; color: #374151; flex: 1; }
+/* TF options */
+.tf-options { display: flex; gap: 20px; padding: 24px 44px 40px; }
+.tf-btn {
+  flex: 1; height: 68px; border-radius: 34px; background: #F9FAFB;
+  border: 2px solid #E5E7EB; cursor: pointer; font-size: 18px; font-weight: 600;
+  color: #374151; transition: all 0.2s; font-family: 'Inter', sans-serif;
+}
+.tf-btn:hover { border-color: #7C3AED; background: #F5F3FF; }
+.tf-btn.selected { background: #7C3AED; border-color: #7C3AED; color: #fff; }
+/* SA */
+.sa-area { padding: 24px 44px 40px; }
+.sa-textarea {
+  width: 100%; min-height: 160px; border: 2px solid #E5E7EB; border-radius: 16px;
+  padding: 16px; font-size: 15px; font-family: 'Inter', sans-serif;
+  resize: vertical; outline: none; transition: border-color 0.2s;
+}
+.sa-textarea:focus { border-color: #7C3AED; }
+/* Mascot */
+.mascot-wrapper {
+  position: absolute; right: 40px; top: 60px; width: 310px;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+.speech-bubble {
+  padding: 18px 22px; background: #fff; border-radius: 18px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.bubble-title { font-size: 15px; font-weight: 700; color: #374151; }
+.bubble-text { font-size: 13px; color: #6B7280; line-height: 1.6; }
+.mascot-circle {
+  width: 150px; height: 150px; border-radius: 50%;
+  background: radial-gradient(circle, #FFE566, #FFD93D 60%, #FFA500);
+  box-shadow: 0 8px 24px rgba(255,217,61,0.25);
+  display: flex; align-items: center; justify-content: center; font-size: 72px;
+}
+.mascot-label { font-size: 13px; font-weight: 600; color: #7C3AED; }
+.mascot-stars { font-size: 16px; color: #FFD93D; }
+/* Bottom nav */
+.bottom-nav {
+  display: flex; align-items: center; justify-content: center; gap: 32px;
+  height: 90px; background: #fff; box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+}
+.prev-btn {
+  display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px;
+  border-radius: 22px; background: #F3F4F6; border: none; cursor: pointer;
+  color: #9CA3AF; font-size: 15px; font-weight: 500; font-family: 'Inter', sans-serif;
+}
+.prev-btn:hover { background: #E5E7EB; }
+.dots-row { display: flex; align-items: center; gap: 8px; }
+.dot-item {
+  width: 8px; height: 8px; border-radius: 4px; background: #D1D5DB; transition: all 0.2s;
+}
+.dot-item.answered { background: #4ECDC4; }
+.dot-item.current { background: #FF6B6B; width: 12px; height: 12px; border-radius: 6px; }
+.dots-ellipsis { color: #9CA3AF; font-size: 14px; }
+.next-btn {
+  display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 32px;
+  border-radius: 26px; background: #7C3AED; border: none; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(124,58,237,0.31);
+  color: #fff; font-size: 16px; font-weight: 700; font-family: 'Inter', sans-serif;
+  transition: transform 0.2s;
+}
+.next-btn:hover { transform: translateY(-2px); }
+
+/* ========== P5 - Results ========== */
+#p5 {
+  background: #F5F0FF; align-items: center; justify-content: center; position: relative;
+}
+.result-card {
+  width: 1000px; background: #fff; border-radius: 20px;
+  box-shadow: 0 12px 60px rgba(124,58,237,0.13);
+  overflow: hidden; position: relative; z-index: 1;
+}
+.result-header {
+  height: 175px; background: linear-gradient(180deg, #5B21B6, #9333EA);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.result-dept { font-size: 13px; color: rgba(255,255,255,0.7); }
+.result-name { font-size: 28px; font-weight: 800; color: #fff; }
+.result-badge-wrap { position: relative; margin-top: -18px; z-index: 2; text-align: center; }
+.result-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 24px; border-radius: 18px; font-size: 14px; font-weight: 700; color: #fff;
+}
+.result-badge.pass { background: #10B981; }
+.result-badge.fail { background: #FF6B6B; }
+.result-body { padding: 20px 40px 40px; text-align: center; }
+.result-congrats { font-size: 32px; font-weight: 800; color: #7C3AED; margin: 16px 0; }
+.score-ring-container {
+  position: relative; width: 200px; height: 200px; margin: 10px auto;
+}
+.score-ring-container canvas { width: 200px; height: 200px; }
+.score-ring-text {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  text-align: center;
+}
+.score-number { font-size: 46px; font-weight: 900; color: #7C3AED; }
+.score-unit { font-size: 18px; font-weight: 600; color: #9333EA; display: block; }
+.stats-row {
+  display: flex; align-items: center; justify-content: center; gap: 60px;
+  padding: 20px 40px; background: #F8F7FF; border-radius: 14px; margin: 20px 40px;
+}
+.stat-item { text-align: center; }
+.stat-value { font-size: 24px; font-weight: 800; color: #1E1B4B; }
+.stat-label { font-size: 12px; color: #9CA3AF; margin-top: 4px; }
+.category-section { padding: 0 40px; text-align: left; }
+.category-title { font-size: 18px; font-weight: 700; color: #374151; margin-bottom: 12px; }
+.category-row {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.cat-name { font-size: 15px; font-weight: 500; color: #4B5563; width: 80px; flex-shrink: 0; }
+.cat-bar-bg {
+  flex: 1; height: 16px; border-radius: 8px; overflow: hidden;
+}
+.cat-bar-fill { height: 100%; border-radius: 8px; transition: width 0.8s ease; }
+.cat-pct { font-size: 14px; font-weight: 700; width: 50px; text-align: right; }
+.result-btns {
+  display: flex; justify-content: center; gap: 20px; padding: 30px 40px;
+}
+.result-btn {
+  height: 50px; padding: 0 32px; border-radius: 25px; border: none; cursor: pointer;
+  font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; gap: 8px; transition: transform 0.2s;
+}
+.result-btn:hover { transform: translateY(-2px); }
+.result-btn.primary {
+  background: linear-gradient(90deg, #7C3AED, #A855F7);
+  box-shadow: 0 4px 16px rgba(124,58,237,0.25); color: #fff;
+}
+.result-btn.secondary {
+  background: #F3F4F6; color: #374151;
+}
+/* Confetti decorations */
+.confetti { position: absolute; border-radius: 2px; opacity: 0.6; }
+
+/* ========== P6 - Certificate ========== */
+#p6 {
+  background: linear-gradient(135deg, #667EEA, #764BA2 50%, #F093FB);
+  align-items: center; justify-content: center; position: relative;
+}
+.cert-card {
+  width: 860px; background: #fff; border-radius: 32px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+  overflow: hidden; z-index: 1; position: relative;
+}
+.cert-header {
+  background: linear-gradient(180deg, #5B21B6, #9333EA);
+  padding: 30px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.cert-company { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.85);
+  display: flex; align-items: center; gap: 8px; }
+.cert-icon-circle {
+  width: 72px; height: 72px; border-radius: 50%; background: #FBBF24;
+  display: flex; align-items: center; justify-content: center; font-size: 32px;
+  margin: 16px auto 0;
+}
+.cert-title-main { font-size: 36px; font-weight: 900; color: #7C3AED; text-align: center; margin-top: 8px; }
+.cert-title-sub { font-size: 14px; color: #9CA3AF; text-align: center; }
+.cert-body { padding: 20px 60px 40px; text-align: center; }
+.cert-to { font-size: 13px; color: #9CA3AF; margin-bottom: 4px; }
+.cert-name { font-size: 32px; font-weight: 800; color: #7C3AED; margin-bottom: 8px; }
+.cert-info { font-size: 14px; color: #6B7280; margin-bottom: 8px; }
+.cert-desc { font-size: 14px; color: #6B7280; line-height: 1.6; margin-bottom: 24px; }
+.cert-stats {
+  display: flex; justify-content: center; gap: 60px; margin-bottom: 24px;
+}
+.cert-stat { text-align: center; }
+.cert-stat-value { font-size: 36px; font-weight: 900; }
+.cert-stat-value.purple { color: #7C3AED; }
+.cert-stat-value.teal { color: #4ECDC4; }
+.cert-stat-value.orange { color: #F59E0B; }
+.cert-stat-label { font-size: 12px; color: #9CA3AF; }
+.cert-date { font-size: 12px; color: #9CA3AF; margin-top: 16px; }
+.cert-stamp {
+  position: absolute; right: 60px; bottom: 80px; width: 72px; height: 72px;
+  border-radius: 50%; border: 3px solid #7C3AED; display: flex;
+  align-items: center; justify-content: center; font-size: 13px;
+  font-weight: 700; color: #7C3AED; transform: rotate(-15deg); opacity: 0.6;
+}
+.cert-btns {
+  display: flex; justify-content: center; gap: 16px; padding: 20px;
+  position: relative; z-index: 2;
+}
+.cert-btn {
+  height: 46px; padding: 0 28px; border-radius: 23px; border: 2px solid rgba(255,255,255,0.5);
+  cursor: pointer; font-size: 14px; font-weight: 700; font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; gap: 8px; color: #fff;
+  background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);
+  transition: all 0.2s;
+}
+.cert-btn:hover { background: rgba(255,255,255,0.3); }
+
+/* ========== Responsive ========== */
+@media (max-width: 1200px) {
+  .hero-section { flex-direction: column; padding: 40px; }
+  .hero-left { width: 100%; }
+  .hero-right { display: none; }
+  .question-card { left: 40px; width: calc(100% - 80px); }
+  .mascot-wrapper { display: none; }
+  .result-card, .cert-card { width: 90%; }
+  .instructions-content { width: 90%; }
+}
+@media (max-width: 768px) {
+  .hero-title { font-size: 32px; }
+  .highlights-row { flex-wrap: wrap; }
+  .navbar { padding: 0 20px; }
+  .top-bar { padding: 0 16px; }
+  .question-card { left: 16px; width: calc(100% - 32px); }
+  .inst-cards { grid-template-columns: 1fr; }
+  .stats-row { flex-direction: column; gap: 16px; }
+  .cert-stats { flex-direction: column; gap: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== P1: Welcome ===== -->
+<div id="p1" class="page active">
+  <div class="navbar">
+    <div class="logo-area">
+      <div class="logo-icon">HR</div>
+      <span class="company-name">新员工入职中心</span>
+    </div>
+    <div class="nav-right">
+      <span class="nav-hint">已有账号？</span>
+      <button class="nav-btn">登录</button>
+    </div>
+  </div>
+  <div class="hero-section">
+    <div class="hero-left">
+      <div class="tag-badge">
+        <div class="tag-dot"></div>
+        <span class="tag-txt">2024 新员工入职测试</span>
+      </div>
+      <h1 class="hero-title">欢迎参加<br>新员工入职测试</h1>
+      <p class="hero-sub">完成测试，开启你的职场新旅程！</p>
+      <div class="highlights-row">
+        <div class="highlight-card">
+          <div class="highlight-icon"><i data-lucide="file-text"></i></div>
+          <div class="highlight-num" id="totalQCount">共 30 题</div>
+          <div class="highlight-sub">题目数量</div>
+        </div>
+        <div class="highlight-card">
+          <div class="highlight-icon"><i data-lucide="clock"></i></div>
+          <div class="highlight-num">约 20 分钟</div>
+          <div class="highlight-sub">完成时长</div>
+        </div>
+        <div class="highlight-card">
+          <div class="highlight-icon"><i data-lucide="zap"></i></div>
+          <div class="highlight-num">即时出分</div>
+          <div class="highlight-sub">实时反馈</div>
+        </div>
+      </div>
+      <div class="cta-row">
+        <button class="cta-btn" onclick="goToPage('p2')">开始测试 <i data-lucide="arrow-right"></i></button>
+        <span class="cta-note">无需注册，即刻开始</span>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-illustration">🎓</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== P2: Employee Info ===== -->
+<div id="p2" class="page">
+  <div class="info-card">
+    <div class="card-icon-area"><i data-lucide="clipboard-list"></i></div>
+    <h2 class="card-title">填写你的信息</h2>
+    <p class="card-sub">请认真填写以下信息，带 * 的为必填项</p>
+    <div class="form-section">
+      <div class="form-group">
+        <label class="form-label">姓名 <span class="req">*</span></label>
+        <input class="form-input" id="empName" placeholder="请输入你的姓名">
+      </div>
+      <div class="form-group">
+        <label class="form-label">工号 <span class="req">*</span></label>
+        <input class="form-input" id="empId" placeholder="如：EMP-001234">
+      </div>
+      <div class="form-group">
+        <label class="form-label">部门 <span class="req">*</span></label>
+        <select class="form-select" id="empDept">
+          <option value="">请选择部门</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">入职日期</label>
+        <input class="form-input" id="empDate" type="date">
+      </div>
+    </div>
+    <div class="val-hint">
+      <i data-lucide="info" style="width:14px;height:14px;color:#7C3AED;"></i>
+      <span>带 * 为必填项目信息，确保信息填写正确</span>
+    </div>
+    <button class="submit-btn" onclick="submitInfo()">下一步 <i data-lucide="arrow-right"></i></button>
+    <div class="progress-dots">
+      <span class="active"></span>
+      <span class="active"></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== P3: Instructions ===== -->
+<div id="p3" class="page">
+  <div class="instructions-content">
+    <div class="inst-header">
+      <div class="inst-icon"><i data-lucide="book-open"></i></div>
+      <h2 class="inst-title">测试须知</h2>
+      <p class="inst-sub">请仔细阅读以下说明，预祝考试顺利！</p>
+    </div>
+    <div class="inst-steps">
+      <div class="inst-step-dot done"><i data-lucide="check" style="width:14px;height:14px;"></i></div>
+      <div class="inst-step-line done"></div>
+      <div class="inst-step-dot done"><i data-lucide="check" style="width:14px;height:14px;"></i></div>
+      <div class="inst-step-line"></div>
+      <div class="inst-step-dot current">2</div>
+      <div class="inst-step-line"></div>
+      <div class="inst-step-dot future">3</div>
+    </div>
+    <div class="inst-cards">
+      <div class="inst-card">
+        <div class="inst-card-icon"><i data-lucide="layers"></i></div>
+        <div class="inst-card-body">
+          <div class="inst-card-title">题目类型</div>
+          <div class="inst-card-desc" id="instTypes">单选题 + 判断题</div>
+        </div>
+      </div>
+      <div class="inst-card">
+        <div class="inst-card-icon"><i data-lucide="timer"></i></div>
+        <div class="inst-card-body">
+          <div class="inst-card-title">答题时间</div>
+          <div class="inst-card-desc">20分钟内完成</div>
+        </div>
+      </div>
+      <div class="inst-card">
+        <div class="inst-card-icon"><i data-lucide="target"></i></div>
+        <div class="inst-card-body">
+          <div class="inst-card-title">及格分数</div>
+          <div class="inst-card-desc">60分及格</div>
+        </div>
+      </div>
+      <div class="inst-card">
+        <div class="inst-card-icon"><i data-lucide="alert-circle"></i></div>
+        <div class="inst-card-body">
+          <div class="inst-card-title">注意事项</div>
+          <div class="inst-card-desc">不可返回上一题</div>
+        </div>
+      </div>
+    </div>
+    <button class="start-test-btn" onclick="startTest()">我已了解，开始答题 <i data-lucide="external-link"></i></button>
+    <p class="start-note">温馨提醒：请在安静的环境中作答</p>
+  </div>
+</div>
+
+<!-- ===== P4: Question ===== -->
+<div id="p4" class="page">
+  <div class="top-bar">
+    <div class="logo-area">
+      <span style="font-size:26px;">🎓</span>
+      <span class="logo-icon-txt">HR 入职测试</span>
+    </div>
+    <div class="progress-section">
+      <span class="progress-label" id="progressLabel">第 1 题 / 共 30 题</span>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progressBar" style="width:3%"></div>
+      </div>
+    </div>
+    <div class="timer-area">
+      <span style="font-size:20px;color:#4ECDC4;">⏱</span>
+      <span class="timer-text" id="timerText">剩余时间 20:00</span>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="question-card" id="questionCard">
+      <!-- Dynamically rendered -->
+    </div>
+    <div class="mascot-wrapper">
+      <div class="speech-bubble">
+        <div class="bubble-title" id="mascotTitle">💪 加油！你做得很棒！</div>
+        <div class="bubble-text" id="mascotText">仔细阅读题目，相信你的判断！</div>
+      </div>
+      <div class="mascot-circle">🦉</div>
+      <div class="mascot-label">✨ 小智 · 陪你作答</div>
+      <div class="mascot-stars">⭐ ⭐ ⭐</div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="prev-btn" id="prevBtn" onclick="prevQuestion()"><i data-lucide="chevron-left"></i> 上一题</button>
+    <div class="dots-row" id="dotsRow"></div>
+    <span class="dots-ellipsis" id="dotsEllipsis">· · ·</span>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">下一题 <i class="lucide-chevron-right"></i></button>
+  </div>
+</div>
+
+<!-- ===== P5: Results ===== -->
+<div id="p5" class="page">
+  <div class="result-card">
+    <div class="result-header">
+      <div class="result-dept" id="resDept"></div>
+      <div class="result-name" id="resName"></div>
+    </div>
+    <div class="result-badge-wrap">
+      <div class="result-badge" id="resBadge"></div>
+    </div>
+    <div class="result-body">
+      <div class="result-congrats" id="resCongrats"></div>
+      <div class="score-ring-container">
+        <canvas id="scoreRing" width="400" height="400"></canvas>
+        <div class="score-ring-text">
+          <div class="score-number" id="scoreNumber">0</div>
+          <span class="score-unit">分</span>
+        </div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-value" id="statCorrect">0/0</div>
+        <div class="stat-label">正确题数</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statTime">0分0秒</div>
+        <div class="stat-label">用时</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statScore">0分</div>
+        <div class="stat-label">总分</div>
+      </div>
+    </div>
+    <div class="category-section">
+      <div class="category-title">分类成绩</div>
+      <div id="categoryBars"></div>
+    </div>
+    <div class="result-btns">
+      <button class="result-btn primary" onclick="goToPage('p6')">查看证书与详情</button>
+      <button class="result-btn secondary" onclick="location.reload()">重新测试</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== P6: Certificate ===== -->
+<div id="p6" class="page">
+  <div class="cert-card" id="certCard">
+    <div class="cert-header">
+      <div class="cert-company">🏢 强茂科技有限公司</div>
+    </div>
+    <div class="cert-icon-circle">🏆</div>
+    <div class="cert-title-main">结业证书</div>
+    <div class="cert-title-sub">Certificate of Completion</div>
+    <div class="cert-body">
+      <div class="cert-to">颁发给</div>
+      <div class="cert-name" id="certName"></div>
+      <div class="cert-info" id="certInfo"></div>
+      <div class="cert-desc">已顺利完成新入职员工入职确认测试</div>
+      <div class="cert-stats">
+        <div class="cert-stat">
+          <div class="cert-stat-value purple" id="certScore">0</div>
+          <div class="cert-stat-label">考试总分</div>
+        </div>
+        <div class="cert-stat">
+          <div class="cert-stat-value teal" id="certCorrect">0/0</div>
+          <div class="cert-stat-label">答对题数</div>
+        </div>
+        <div class="cert-stat">
+          <div class="cert-stat-value orange" id="certGrade">--</div>
+          <div class="cert-stat-label">评定等级</div>
+        </div>
+      </div>
+      <div class="cert-date" id="certDate"></div>
+    </div>
+    <div class="cert-stamp">合格</div>
+  </div>
+  <div class="cert-btns">
+    <button class="cert-btn" onclick="downloadCert()">📥 下载证书</button>
+    <button class="cert-btn" onclick="location.reload()">🔄 重新测试</button>
+  </div>
+</div>
+
+<script>
+// ===== Configuration =====
+const CONFIG = {
+  totalQuestions: 30,      // total questions per test
+  tfCount: 15,             // true/false questions
+  mcCount: 15,             // multiple choice questions
+  timeLimit: 20 * 60,      // seconds
+  passScore: 60,
+  pointsPerQuestion: 100 / 30  // ~3.33 points each
+};
+
+// ===== State =====
+let allData = { tf: [], mc: [], sa: [] };
+let testQuestions = [];
+let userAnswers = [];
+let currentQ = 0;
+let timerInterval = null;
+let timeRemaining = CONFIG.timeLimit;
+let startTime = null;
+let employeeInfo = {};
+
+// ===== Load Questions =====
+async function loadQuestions() {
+  try {
+    const resp = await fetch('questions.json');
+    allData = await resp.json();
+  } catch (e) {
+    console.warn('Failed to load questions.json, using embedded sample data');
+    // Fallback sample
+    allData = {
+      tf: [
+        {type:'tf', q:'来料异常，但特采由各部门签字审核确认可以使用后，也可以正常发料。()', answer:'是', level:'一级题库', dept:'资材部', role:'仓管员'},
+        {type:'tf', q:'目前所使用的冰柜除霜厚度是6mm。( )', answer:'否', level:'一级题库', dept:'资材部', role:'仓管员'},
+      ],
+      mc: [
+        {type:'mc', q:'芯片PR可以选择几种方式来作识别？', level:'一级题库', dept:'资材部', role:'仓管员',
+         options:{A:'1',B:'2',C:'3',D:'4'}, multi:false, answer:'C'},
+      ],
+      sa: []
+    };
+  }
+  populateDepartments();
+}
+
+function populateDepartments() {
+  const depts = new Set();
+  [...allData.tf, ...allData.mc, ...allData.sa].forEach(q => depts.add(q.dept));
+  const sel = document.getElementById('empDept');
+  depts.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = d;
+    sel.appendChild(opt);
+  });
+}
+
+// ===== Navigation =====
+function goToPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  setTimeout(() => lucide.createIcons(), 50);
+}
+
+// ===== P2: Submit Info =====
+function submitInfo() {
+  const name = document.getElementById('empName').value.trim();
+  const id = document.getElementById('empId').value.trim();
+  const dept = document.getElementById('empDept').value;
+  let valid = true;
+  [['empName', name], ['empId', id], ['empDept', dept]].forEach(([elId, val]) => {
+    const el = document.getElementById(elId);
+    if (!val) { el.classList.add('error'); valid = false; }
+    else { el.classList.remove('error'); }
+  });
+  if (!valid) return;
+  employeeInfo = {
+    name, id, dept,
+    date: document.getElementById('empDate').value || new Date().toISOString().slice(0, 10)
+  };
+  goToPage('p3');
+  prepareTest();
+}
+
+// ===== Prepare Test =====
+function prepareTest() {
+  const dept = employeeInfo.dept;
+  // Filter questions by department or 全公司
+  let tfPool = allData.tf.filter(q => q.dept === dept || q.dept === '全公司');
+  let mcPool = allData.mc.filter(q => q.dept === dept || q.dept === '全公司');
+
+  // If not enough questions in dept, use all
+  if (tfPool.length < CONFIG.tfCount) tfPool = [...allData.tf];
+  if (mcPool.length < CONFIG.mcCount) mcPool = [...allData.mc];
+
+  // Shuffle and pick
+  shuffle(tfPool);
+  shuffle(mcPool);
+  const selectedTf = tfPool.slice(0, CONFIG.tfCount).map(q => ({...q, type: 'tf'}));
+  const selectedMc = mcPool.slice(0, CONFIG.mcCount).map(q => ({...q, type: 'mc'}));
+
+  testQuestions = [...selectedMc, ...selectedTf];
+  shuffle(testQuestions);
+  userAnswers = new Array(testQuestions.length).fill(null);
+
+  // Update counts
+  const total = testQuestions.length;
+  CONFIG.totalQuestions = total;
+  CONFIG.pointsPerQuestion = 100 / total;
+  document.getElementById('totalQCount').textContent = `共 ${total} 题`;
+  document.getElementById('instTypes').textContent = `单选题 ${selectedMc.length} 题 + 判断题 ${selectedTf.length} 题`;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+// ===== Start Test =====
+function startTest() {
+  currentQ = 0;
+  timeRemaining = CONFIG.timeLimit;
+  startTime = Date.now();
+  goToPage('p4');
+  renderQuestion();
+  renderDots();
+  startTimer();
+}
+
+// ===== Timer =====
+function startTimer() {
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeRemaining--;
+    if (timeRemaining <= 0) {
+      clearInterval(timerInterval);
+      finishTest();
+      return;
+    }
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timeRemaining / 60);
+  const s = timeRemaining % 60;
+  document.getElementById('timerText').textContent =
+    `剩余时间 ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ===== Render Question =====
+function renderQuestion() {
+  const q = testQuestions[currentQ];
+  const card = document.getElementById('questionCard');
+  const num = currentQ + 1;
+  const total = CONFIG.totalQuestions;
+
+  // Progress
+  document.getElementById('progressLabel').textContent = `第 ${num} 题 / 共 ${total} 题`;
+  document.getElementById('progressBar').style.width = `${(num / total) * 100}%`;
+
+  // Prev button
+  document.getElementById('prevBtn').style.visibility = currentQ === 0 ? 'hidden' : 'visible';
+  // Next button text
+  const nextBtn = document.getElementById('nextBtn');
+  if (currentQ === total - 1) {
+    nextBtn.innerHTML = '提交答卷 <i class="lucide-check"></i>';
+  } else {
+    nextBtn.innerHTML = '下一题 <i class="lucide-chevron-right"></i>';
+  }
+
+  let html = '<div class="card-top-band"></div>';
+  html += `<div class="card-top">
+    <span class="q-badge">Q ${num}</span>
+    <span class="q-text">${escHtml(q.q)}</span>
+  </div>
+  <div class="divider"></div>`;
+
+  if (q.type === 'mc') {
+    html += '<div class="options-area">';
+    ['A','B','C','D'].forEach(key => {
+      if (!q.options[key] && q.options[key] !== 0) return;
+      const selected = userAnswers[currentQ] === key;
+      html += `<button class="option-btn ${selected ? 'selected' : ''}" onclick="selectOption('${key}')">
+        <div class="opt-badge"><span>${key}</span></div>
+        <span class="opt-text">${escHtml(String(q.options[key]))}</span>
+        ${selected ? '<i class="lucide-circle-check-big" style="color:#fff;font-size:22px;"></i>' : ''}
+      </button>`;
+    });
+    html += '</div>';
+  } else if (q.type === 'tf') {
+    const ans = userAnswers[currentQ];
+    html += `<div class="tf-options">
+      <button class="tf-btn ${ans === '是' ? 'selected' : ''}" onclick="selectOption('是')">✅ 是（正确）</button>
+      <button class="tf-btn ${ans === '否' ? 'selected' : ''}" onclick="selectOption('否')">❌ 否（错误）</button>
+    </div>`;
+  }
+
+  card.innerHTML = html;
+  renderDots();
+  updateMascot();
+}
+
+function selectOption(val) {
+  userAnswers[currentQ] = val;
+  renderQuestion();
+}
+
+function prevQuestion() {
+  if (currentQ > 0) { currentQ--; renderQuestion(); }
+}
+
+function nextQuestion() {
+  if (currentQ < CONFIG.totalQuestions - 1) {
+    currentQ++;
+    renderQuestion();
+  } else {
+    finishTest();
+  }
+}
+
+// ===== Dots =====
+function renderDots() {
+  const row = document.getElementById('dotsRow');
+  const total = CONFIG.totalQuestions;
+  const maxDots = 10;
+  let html = '';
+  const start = Math.max(0, Math.min(currentQ - 4, total - maxDots));
+  const end = Math.min(total, start + maxDots);
+  for (let i = start; i < end; i++) {
+    let cls = 'dot-item';
+    if (i === currentQ) cls += ' current';
+    else if (userAnswers[i] !== null) cls += ' answered';
+    html += `<div class="${cls}"></div>`;
+  }
+  row.innerHTML = html;
+  document.getElementById('dotsEllipsis').style.display = end < total ? '' : 'none';
+}
+
+// ===== Mascot =====
+const mascotMessages = [
+  { title: '💪 加油！你做得很棒！', text: '仔细阅读题目，相信你的判断！' },
+  { title: '🧐 认真思考哦！', text: '注意题目中的关键词，别被迷惑了！' },
+  { title: '🌟 继续保持！', text: '你已经完成一部分了，加油！' },
+  { title: '🎯 注意审题！', text: '有些选项看起来很像，但仔细看会有区别！' },
+  { title: '🚀 冲刺阶段！', text: '马上就要完成了，稳住！' },
+];
+function updateMascot() {
+  const pct = currentQ / CONFIG.totalQuestions;
+  let idx = Math.min(Math.floor(pct * mascotMessages.length), mascotMessages.length - 1);
+  document.getElementById('mascotTitle').textContent = mascotMessages[idx].title;
+  document.getElementById('mascotText').textContent = mascotMessages[idx].text;
+}
+
+// ===== Finish Test =====
+function finishTest() {
+  clearInterval(timerInterval);
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+
+  // Calculate score
+  let correct = 0;
+  const catStats = {}; // type -> {correct, total}
+  testQuestions.forEach((q, i) => {
+    const typeName = q.type === 'tf' ? '判断题' : '选择题';
+    if (!catStats[typeName]) catStats[typeName] = { correct: 0, total: 0 };
+    catStats[typeName].total++;
+    const userAns = userAnswers[i];
+    if (q.type === 'tf' && userAns === q.answer) { correct++; catStats[typeName].correct++; }
+    if (q.type === 'mc' && userAns === q.answer) { correct++; catStats[typeName].correct++; }
+  });
+
+  const total = CONFIG.totalQuestions;
+  const score = Math.round((correct / total) * 100);
+  const passed = score >= CONFIG.passScore;
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+
+  // Store results
+  window.testResult = { score, correct, total, elapsed, passed, catStats, minutes, seconds };
+
+  // Render P5
+  document.getElementById('resDept').textContent = employeeInfo.dept;
+  document.getElementById('resName').textContent = employeeInfo.name;
+  const badge = document.getElementById('resBadge');
+  badge.textContent = passed ? '✅ 测试通过' : '❌ 未通过';
+  badge.className = 'result-badge ' + (passed ? 'pass' : 'fail');
+  document.getElementById('resCongrats').textContent = passed ? '恭喜你，测试通过！' : '很遗憾，未能通过';
+  document.getElementById('scoreNumber').textContent = score;
+  document.getElementById('statCorrect').textContent = `${correct}/${total}`;
+  document.getElementById('statTime').textContent = `${minutes}分${seconds}秒`;
+  document.getElementById('statScore').textContent = `${score}分`;
+
+  // Category bars
+  const colors = {
+    '判断题': { bg: '#EDE9FE', fill: 'linear-gradient(90deg,#7C3AED,#A855F7)', text: '#7C3AED' },
+    '选择题': { bg: '#FEE2E2', fill: 'linear-gradient(90deg,#FF6B6B,#FF8E8E)', text: '#FF6B6B' },
+  };
+  let catHtml = '';
+  Object.entries(catStats).forEach(([name, stat]) => {
+    const pct = Math.round((stat.correct / stat.total) * 100);
+    const c = colors[name] || colors['判断题'];
+    catHtml += `<div class="category-row">
+      <span class="cat-name">${name}</span>
+      <div class="cat-bar-bg" style="background:${c.bg}">
+        <div class="cat-bar-fill" style="background:${c.fill};width:${pct}%"></div>
+      </div>
+      <span class="cat-pct" style="color:${c.text}">${pct}%</span>
+    </div>`;
+  });
+  document.getElementById('categoryBars').innerHTML = catHtml;
+
+  // Draw score ring
+  drawScoreRing(score);
+
+  // Cert
+  document.getElementById('certName').textContent = employeeInfo.name;
+  document.getElementById('certInfo').textContent = `${employeeInfo.dept} · 入职日期 ${employeeInfo.date}`;
+  document.getElementById('certScore').textContent = score;
+  document.getElementById('certCorrect').textContent = `${correct}/${total}`;
+  const grade = score >= 90 ? '优秀' : score >= 80 ? '良好' : score >= 60 ? '合格' : '不合格';
+  document.getElementById('certGrade').textContent = grade;
+  document.getElementById('certDate').textContent = `颁发日期: ${new Date().toLocaleDateString('zh-CN')}`;
+
+  goToPage('p5');
+}
+
+// ===== Score Ring =====
+function drawScoreRing(score) {
+  const canvas = document.getElementById('scoreRing');
+  const ctx = canvas.getContext('2d');
+  const size = 400;
+  const cx = size / 2, cy = size / 2, r = 160, lineWidth = 50;
+
+  ctx.clearRect(0, 0, size, size);
+
+  // Background ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = '#EDE9FE';
+  ctx.lineWidth = lineWidth;
+  ctx.stroke();
+
+  // Score arc
+  const angle = (score / 100) * Math.PI * 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + angle);
+  ctx.strokeStyle = '#7C3AED';
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Inner white circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - lineWidth / 2 - 10, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+}
+
+// ===== Download Cert =====
+function downloadCert() {
+  const r = window.testResult;
+  const text = `
+==============================
+        结 业 证 书
+   Certificate of Completion
+==============================
+
+颁发给: ${employeeInfo.name}
+部  门: ${employeeInfo.dept}
+工  号: ${employeeInfo.id}
+入职日期: ${employeeInfo.date}
+
+------------------------------
+考试成绩
+------------------------------
+总  分: ${r.score} 分
+正确数: ${r.correct} / ${r.total}
+用  时: ${r.minutes}分${r.seconds}秒
+等  级: ${r.score >= 90 ? '优秀' : r.score >= 80 ? '良好' : r.score >= 60 ? '合格' : '不合格'}
+状  态: ${r.passed ? '通过' : '未通过'}
+
+------------------------------
+颁发日期: ${new Date().toLocaleDateString('zh-CN')}
+强茂科技有限公司
+==============================
+  `;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `入职测试证书_${employeeInfo.name}.txt`;
+  a.click();
+}
+
+// ===== Utils =====
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ===== Init =====
+loadQuestions();
+document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+</script>
+</body>
+</html>
