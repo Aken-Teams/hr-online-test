@@ -470,6 +470,32 @@ body { font-family: 'Inter', sans-serif; overflow-x: hidden; min-height: 100vh; 
 }
 .cert-btn:hover { background: rgba(255,255,255,0.3); }
 
+/* === Short Answer === */
+.sa-area { padding: 16px 24px 24px; }
+.sa-label { font-size: 14px; color: #0891B2; font-weight: 600; margin-bottom: 12px; }
+.sa-textarea {
+  width: 100%; border: 2px solid #E5E7EB; border-radius: 12px; padding: 16px;
+  font-size: 15px; line-height: 1.8; resize: vertical; font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s; min-height: 180px;
+}
+.sa-textarea:focus { outline: none; border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+.sa-counter { text-align: right; margin-top: 6px; font-size: 13px; color: #9CA3AF; }
+
+/* === SA Review in Results === */
+.sa-review-section { margin-top: 16px; }
+.sa-review-item {
+  background: #F0FDFA; border: 1px solid #CCFBF1; border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 10px;
+}
+.sa-review-q { font-size: 13px; color: #374151; margin-bottom: 8px; line-height: 1.5; }
+.sa-review-a {
+  font-size: 14px; color: #0F172A; line-height: 1.7; white-space: pre-wrap;
+  background: #fff; border-radius: 8px; padding: 10px 14px; border: 1px solid #E5E7EB;
+}
+
+/* === Pending Badge === */
+.result-badge.pending { background: linear-gradient(135deg, #0891B2, #22D3EE); }
+
 /* ========== Responsive ========== */
 @media (max-width: 1200px) {
   .hero-section { flex-direction: column; padding: 40px; }
@@ -604,14 +630,14 @@ body { font-family: 'Inter', sans-serif; overflow-x: hidden; min-height: 100vh; 
         <div class="inst-card-icon"><i data-lucide="layers"></i></div>
         <div class="inst-card-body">
           <div class="inst-card-title">题目类型</div>
-          <div class="inst-card-desc" id="instTypes">单选题 + 判断题</div>
+          <div class="inst-card-desc" id="instTypes">选择题 + 判断题 + 简答题</div>
         </div>
       </div>
       <div class="inst-card">
         <div class="inst-card-icon"><i data-lucide="timer"></i></div>
         <div class="inst-card-body">
           <div class="inst-card-title">答题时间</div>
-          <div class="inst-card-desc">20分钟内完成</div>
+          <div class="inst-card-desc">40分钟内完成</div>
         </div>
       </div>
       <div class="inst-card">
@@ -625,7 +651,7 @@ body { font-family: 'Inter', sans-serif; overflow-x: hidden; min-height: 100vh; 
         <div class="inst-card-icon"><i data-lucide="alert-circle"></i></div>
         <div class="inst-card-body">
           <div class="inst-card-title">注意事项</div>
-          <div class="inst-card-desc">不可返回上一题</div>
+          <div class="inst-card-desc">满分100分，60分及格（简答题需人工阅卷）</div>
         </div>
       </div>
     </div>
@@ -760,12 +786,16 @@ body { font-family: 'Inter', sans-serif; overflow-x: hidden; min-height: 100vh; 
 <script>
 // ===== Configuration =====
 const CONFIG = {
-  totalQuestions: 30,      // total questions per test
-  tfCount: 15,             // true/false questions
-  mcCount: 15,             // multiple choice questions
-  timeLimit: 20 * 60,      // seconds
+  totalQuestions: 32,       // 20 mc + 10 tf + 2 sa
+  mcCount: 20,              // multiple choice questions (2pts each = 40pts)
+  tfCount: 10,              // true/false questions (2pts each = 20pts)
+  saCount: 2,               // short answer questions (20pts each = 40pts)
+  mcPoints: 2,              // points per mc question
+  tfPoints: 2,              // points per tf question
+  saPoints: 20,             // points per sa question
+  commonRatio: 0.1,         // 通用题(全公司)占比 10%
+  timeLimit: 40 * 60,       // seconds (increased for short answer)
   passScore: 60,
-  pointsPerQuestion: 100 / 30  // ~3.33 points each
 };
 
 // ===== State =====
@@ -842,31 +872,69 @@ function submitInfo() {
 // ===== Prepare Test =====
 function prepareTest() {
   const dept = employeeInfo.dept;
-  // Filter questions by department or 全公司
-  let tfPool = allData.tf.filter(q => q.dept === dept || q.dept === '全公司');
-  let mcPool = allData.mc.filter(q => q.dept === dept || q.dept === '全公司');
 
-  // If not enough questions in dept, use all
-  if (tfPool.length < CONFIG.tfCount) tfPool = [...allData.tf];
-  if (mcPool.length < CONFIG.mcCount) mcPool = [...allData.mc];
+  // Split pools: department-specific vs common (全公司)
+  const mcDept = allData.mc.filter(q => q.dept === dept);
+  const mcCommon = allData.mc.filter(q => q.dept === '全公司');
+  const tfDept = allData.tf.filter(q => q.dept === dept);
+  const tfCommon = allData.tf.filter(q => q.dept === '全公司');
+  const saDept = allData.sa.filter(q => q.dept === dept);
+  const saCommon = allData.sa.filter(q => q.dept === '全公司');
 
-  // Shuffle and pick
-  shuffle(tfPool);
-  shuffle(mcPool);
-  const selectedTf = tfPool.slice(0, CONFIG.tfCount).map(q => ({...q, type: 'tf'}));
-  const selectedMc = mcPool.slice(0, CONFIG.mcCount).map(q => ({...q, type: 'mc'}));
+  // 通用题 10%: mc 2题, tf 1题 from 全公司 pool
+  const mcCommonCount = Math.min(2, mcCommon.length);
+  const tfCommonCount = Math.min(1, tfCommon.length);
+  const mcDeptCount = CONFIG.mcCount - mcCommonCount;
+  const tfDeptCount = CONFIG.tfCount - tfCommonCount;
 
-  testQuestions = [...selectedMc, ...selectedTf];
-  shuffle(testQuestions);
+  shuffle(mcCommon); shuffle(mcDept);
+  shuffle(tfCommon); shuffle(tfDept);
+  shuffle(saCommon); shuffle(saDept);
+
+  // Pick common questions first, then fill with dept questions
+  let selectedMc = [
+    ...mcCommon.slice(0, mcCommonCount),
+    ...mcDept.slice(0, mcDeptCount)
+  ];
+  let selectedTf = [
+    ...tfCommon.slice(0, tfCommonCount),
+    ...tfDept.slice(0, tfDeptCount)
+  ];
+  // SA: pick from dept first, then common if needed
+  let saPool = [...saDept, ...saCommon];
+  let selectedSa = saPool.slice(0, CONFIG.saCount);
+
+  // Fallback: if not enough dept questions, use all
+  if (selectedMc.length < CONFIG.mcCount) {
+    shuffle(allData.mc);
+    selectedMc = allData.mc.slice(0, CONFIG.mcCount);
+  }
+  if (selectedTf.length < CONFIG.tfCount) {
+    shuffle(allData.tf);
+    selectedTf = allData.tf.slice(0, CONFIG.tfCount);
+  }
+  if (selectedSa.length < CONFIG.saCount) {
+    shuffle(allData.sa);
+    selectedSa = allData.sa.slice(0, CONFIG.saCount);
+  }
+
+  selectedMc = selectedMc.map(q => ({...q, type: 'mc'}));
+  selectedTf = selectedTf.map(q => ({...q, type: 'tf'}));
+  selectedSa = selectedSa.map(q => ({...q, type: 'sa'}));
+
+  // Order: mc first, then tf, then sa at the end
+  testQuestions = [...shuffle2([...selectedMc]), ...shuffle2([...selectedTf]), ...selectedSa];
   userAnswers = new Array(testQuestions.length).fill(null);
 
-  // Update counts
   const total = testQuestions.length;
   CONFIG.totalQuestions = total;
-  CONFIG.pointsPerQuestion = 100 / total;
   document.getElementById('totalQCount').textContent = `共 ${total} 题`;
-  document.getElementById('instTypes').textContent = `单选题 ${selectedMc.length} 题 + 判断题 ${selectedTf.length} 题`;
+  document.getElementById('instTypes').textContent =
+    `选择题 ${selectedMc.length} 题(${CONFIG.mcPoints}分/题) + 判断题 ${selectedTf.length} 题(${CONFIG.tfPoints}分/题) + 简答题 ${selectedSa.length} 题(${CONFIG.saPoints}分/题)`;
 }
+
+// Shuffle and return (non-mutating)
+function shuffle2(arr) { shuffle(arr); return arr; }
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -953,9 +1021,27 @@ function renderQuestion() {
       <button class="tf-btn ${ans === '是' ? 'selected' : ''}" onclick="selectOption('是')">✅ 是（正确）</button>
       <button class="tf-btn ${ans === '否' ? 'selected' : ''}" onclick="selectOption('否')">❌ 否（错误）</button>
     </div>`;
+  } else if (q.type === 'sa') {
+    const ans = userAnswers[currentQ] || '';
+    html += `<div class="sa-area">
+      <div class="sa-label">📝 请在下方作答（本题 ${CONFIG.saPoints} 分，由人工阅卷评分）</div>
+      <textarea class="sa-textarea" id="saInput" rows="8" placeholder="请输入你的答案..."
+        oninput="userAnswers[currentQ] = this.value">${escHtml(ans)}</textarea>
+      <div class="sa-counter"><span id="saCharCount">${ans.length}</span> 字</div>
+    </div>`;
   }
 
-  card.innerHTML = html;
+  card.innerHTML = html; // Content is escaped via escHtml() - safe from XSS
+  // SA: set up char counter and restore cursor
+  if (q.type === 'sa') {
+    const ta = document.getElementById('saInput');
+    if (ta) {
+      ta.addEventListener('input', () => {
+        document.getElementById('saCharCount').textContent = ta.value.length;
+      });
+      ta.focus();
+    }
+  }
   renderDots();
   updateMascot();
 }
@@ -1016,68 +1102,110 @@ function finishTest() {
   clearInterval(timerInterval);
   const elapsed = Math.floor((Date.now() - startTime) / 1000);
 
-  // Calculate score
-  let correct = 0;
-  const catStats = {}; // type -> {correct, total}
+  // Calculate score - fixed points per question type
+  let autoScore = 0;      // auto-graded score (mc + tf)
+  let autoCorrect = 0;    // auto-graded correct count
+  let autoTotal = 0;      // auto-graded question count
+  const saAnswers = [];    // short answer responses for manual grading
+  const catStats = {};     // type -> {correct, total, points, earnedPoints}
+
   testQuestions.forEach((q, i) => {
-    const typeName = q.type === 'tf' ? '判断题' : '选择题';
-    if (!catStats[typeName]) catStats[typeName] = { correct: 0, total: 0 };
+    const typeMap = { tf: '判断题', mc: '选择题', sa: '简答题' };
+    const typeName = typeMap[q.type];
+    const pts = q.type === 'mc' ? CONFIG.mcPoints : q.type === 'tf' ? CONFIG.tfPoints : CONFIG.saPoints;
+    if (!catStats[typeName]) catStats[typeName] = { correct: 0, total: 0, points: pts, earnedPoints: 0 };
     catStats[typeName].total++;
+
     const userAns = userAnswers[i];
-    if (q.type === 'tf' && userAns === q.answer) { correct++; catStats[typeName].correct++; }
-    if (q.type === 'mc' && userAns === q.answer) { correct++; catStats[typeName].correct++; }
+    if (q.type === 'tf' || q.type === 'mc') {
+      autoTotal++;
+      if (userAns === q.answer) {
+        autoCorrect++;
+        autoScore += pts;
+        catStats[typeName].correct++;
+        catStats[typeName].earnedPoints += pts;
+      }
+    } else if (q.type === 'sa') {
+      saAnswers.push({ question: q.q, answer: userAns || '（未作答）' });
+    }
   });
 
   const total = CONFIG.totalQuestions;
-  const score = Math.round((correct / total) * 100);
-  const passed = score >= CONFIG.passScore;
+  const maxAutoScore = (CONFIG.mcCount * CONFIG.mcPoints) + (CONFIG.tfCount * CONFIG.tfPoints);
+  const saMaxScore = CONFIG.saCount * CONFIG.saPoints;
+  // Display auto-graded score; SA requires manual grading
+  const score = autoScore;
+  const passed = null; // Cannot determine pass/fail without SA grading
   const minutes = Math.floor(elapsed / 60);
   const seconds = elapsed % 60;
 
   // Store results
-  window.testResult = { score, correct, total, elapsed, passed, catStats, minutes, seconds };
+  window.testResult = { score, autoScore, maxAutoScore, saMaxScore, autoCorrect, autoTotal, total, elapsed, passed, catStats, minutes, seconds, saAnswers };
 
   // Render P5
   document.getElementById('resDept').textContent = employeeInfo.dept;
   document.getElementById('resName').textContent = employeeInfo.name;
   const badge = document.getElementById('resBadge');
-  badge.textContent = passed ? '✅ 测试通过' : '❌ 未通过';
-  badge.className = 'result-badge ' + (passed ? 'pass' : 'fail');
-  document.getElementById('resCongrats').textContent = passed ? '恭喜你，测试通过！' : '很遗憾，未能通过';
-  document.getElementById('scoreNumber').textContent = score;
-  document.getElementById('statCorrect').textContent = `${correct}/${total}`;
+  badge.textContent = '📋 待阅卷';
+  badge.className = 'result-badge pending';
+  document.getElementById('resCongrats').textContent = `客观题得分 ${autoScore}/${maxAutoScore}，简答题（${saMaxScore}分）待人工评分`;
+  document.getElementById('scoreNumber').textContent = autoScore;
+  document.getElementById('statCorrect').textContent = `${autoCorrect}/${autoTotal}`;
   document.getElementById('statTime').textContent = `${minutes}分${seconds}秒`;
-  document.getElementById('statScore').textContent = `${score}分`;
+  document.getElementById('statScore').textContent = `${autoScore}/${maxAutoScore}分`;
 
   // Category bars
   const colors = {
     '判断题': { bg: '#EDE9FE', fill: 'linear-gradient(90deg,#7C3AED,#A855F7)', text: '#7C3AED' },
     '选择题': { bg: '#FEE2E2', fill: 'linear-gradient(90deg,#FF6B6B,#FF8E8E)', text: '#FF6B6B' },
+    '简答题': { bg: '#E0F7FA', fill: 'linear-gradient(90deg,#0891B2,#22D3EE)', text: '#0891B2' },
   };
   let catHtml = '';
   Object.entries(catStats).forEach(([name, stat]) => {
-    const pct = Math.round((stat.correct / stat.total) * 100);
     const c = colors[name] || colors['判断题'];
-    catHtml += `<div class="category-row">
-      <span class="cat-name">${name}</span>
-      <div class="cat-bar-bg" style="background:${c.bg}">
-        <div class="cat-bar-fill" style="background:${c.fill};width:${pct}%"></div>
-      </div>
-      <span class="cat-pct" style="color:${c.text}">${pct}%</span>
-    </div>`;
+    if (name === '简答题') {
+      // SA: show as "待评分"
+      const answered = saAnswers.filter(a => a.answer !== '（未作答）').length;
+      catHtml += `<div class="category-row">
+        <span class="cat-name">${name}（${stat.points}分/题）</span>
+        <div class="cat-bar-bg" style="background:${c.bg}">
+          <div class="cat-bar-fill" style="background:${c.fill};width:${answered > 0 ? 100 : 0}%"></div>
+        </div>
+        <span class="cat-pct" style="color:${c.text}">已答${answered}/${stat.total}题 · 待评分</span>
+      </div>`;
+    } else {
+      const pct = Math.round((stat.correct / stat.total) * 100);
+      catHtml += `<div class="category-row">
+        <span class="cat-name">${name}（${stat.points}分/题）</span>
+        <div class="cat-bar-bg" style="background:${c.bg}">
+          <div class="cat-bar-fill" style="background:${c.fill};width:${pct}%"></div>
+        </div>
+        <span class="cat-pct" style="color:${c.text}">${stat.earnedPoints}/${stat.total * stat.points}分 (${pct}%)</span>
+      </div>`;
+    }
   });
-  document.getElementById('categoryBars').innerHTML = catHtml;
+  // SA answers section for manual review
+  if (saAnswers.length > 0) {
+    catHtml += '<div class="sa-review-section"><h4 style="margin:16px 0 8px;color:#0891B2;">📝 简答题作答内容（供阅卷参考）</h4>';
+    saAnswers.forEach((sa, i) => {
+      catHtml += `<div class="sa-review-item">
+        <div class="sa-review-q"><strong>第${i+1}题：</strong>${escHtml(sa.question)}</div>
+        <div class="sa-review-a">${escHtml(sa.answer)}</div>
+      </div>`;
+    });
+    catHtml += '</div>';
+  }
+  document.getElementById('categoryBars').innerHTML = catHtml; // All content escaped via escHtml()
 
-  // Draw score ring
-  drawScoreRing(score);
+  // Draw score ring (show auto-graded percentage)
+  drawScoreRing(maxAutoScore > 0 ? Math.round((autoScore / maxAutoScore) * 100) : 0);
 
   // Cert
   document.getElementById('certName').textContent = employeeInfo.name;
   document.getElementById('certInfo').textContent = `${employeeInfo.dept} · 入职日期 ${employeeInfo.date}`;
-  document.getElementById('certScore').textContent = score;
-  document.getElementById('certCorrect').textContent = `${correct}/${total}`;
-  const grade = score >= 90 ? '优秀' : score >= 80 ? '良好' : score >= 60 ? '合格' : '不合格';
-  document.getElementById('certGrade').textContent = grade;
+  document.getElementById('certScore').textContent = `${autoScore}/${maxAutoScore}`;
+  document.getElementById('certCorrect').textContent = `${autoCorrect}/${autoTotal}`;
+  document.getElementById('certGrade').textContent = '待阅卷评定';
   document.getElementById('certDate').textContent = `颁发日期: ${new Date().toLocaleDateString('zh-CN')}`;
 
   goToPage('p5');
@@ -1118,26 +1246,33 @@ function drawScoreRing(score) {
 // ===== Download Cert =====
 function downloadCert() {
   const r = window.testResult;
+  let saSection = '';
+  if (r.saAnswers && r.saAnswers.length > 0) {
+    saSection = '\n------------------------------\n简答题作答内容（待人工评分）\n------------------------------\n';
+    r.saAnswers.forEach((sa, i) => {
+      saSection += `\n第${i+1}题：${sa.question}\n答：${sa.answer}\n`;
+    });
+  }
   const text = `
 ==============================
-        结 业 证 书
-   Certificate of Completion
+        入 职 测 试 答 卷
+   Employee Onboarding Test
 ==============================
 
-颁发给: ${employeeInfo.name}
+姓  名: ${employeeInfo.name}
 部  门: ${employeeInfo.dept}
 工  号: ${employeeInfo.id}
 入职日期: ${employeeInfo.date}
 
 ------------------------------
-考试成绩
+客观题成绩（系统自动评分）
 ------------------------------
-总  分: ${r.score} 分
-正确数: ${r.correct} / ${r.total}
+选择题: ${r.catStats['选择题'] ? r.catStats['选择题'].earnedPoints + '/' + (r.catStats['选择题'].total * r.catStats['选择题'].points) + '分' : 'N/A'}
+判断题: ${r.catStats['判断题'] ? r.catStats['判断题'].earnedPoints + '/' + (r.catStats['判断题'].total * r.catStats['判断题'].points) + '分' : 'N/A'}
+客观题小计: ${r.autoScore} / ${r.maxAutoScore} 分
+简答题: ${r.saMaxScore}分（待人工评分）
 用  时: ${r.minutes}分${r.seconds}秒
-等  级: ${r.score >= 90 ? '优秀' : r.score >= 80 ? '良好' : r.score >= 60 ? '合格' : '不合格'}
-状  态: ${r.passed ? '通过' : '未通过'}
-
+${saSection}
 ------------------------------
 颁发日期: ${new Date().toLocaleDateString('zh-CN')}
 强茂科技有限公司
@@ -1146,7 +1281,7 @@ function downloadCert() {
   const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `入职测试证书_${employeeInfo.name}.txt`;
+  a.download = `入职测试答卷_${employeeInfo.name}.txt`;
   a.click();
 }
 
