@@ -81,11 +81,48 @@ export async function POST(
       ])
     );
 
+    // Create Answer records for any unanswered questions (blank submission)
+    const answeredQuestionIds = new Set(session.answers.map((a) => a.questionId));
+    const allAnswers = [...session.answers];
+
+    for (const [questionId] of questionMap) {
+      if (!answeredQuestionIds.has(questionId)) {
+        allAnswers.push({
+          id: '', // placeholder, will be set after create
+          questionId,
+          answerContent: null,
+          isCorrect: null,
+          earnedPoints: null,
+          isFlagged: false,
+          answeredAt: null,
+          sessionId: session.id,
+          gradedBy: null,
+          gradedAt: null,
+          graderComment: null,
+        });
+      }
+    }
+
     // Auto-grade MC/TF questions
     let hasPendingGrading = false;
 
     await prisma.$transaction(async (tx) => {
-      for (const answer of session.answers) {
+      // First, create missing answer records for unanswered questions
+      for (const answer of allAnswers) {
+        if (answer.id === '') {
+          const created = await tx.answer.create({
+            data: {
+              sessionId: session.id,
+              questionId: answer.questionId,
+              answerContent: null,
+              isFlagged: false,
+            },
+          });
+          answer.id = created.id;
+        }
+      }
+
+      for (const answer of allAnswers) {
         const question = questionMap.get(answer.questionId);
         if (!question) continue;
 
@@ -104,8 +141,21 @@ export async function POST(
             answer.earnedPoints = result.earnedPoints;
           }
         } else {
-          // SA questions are pending grading
-          hasPendingGrading = true;
+          // Manual question: if blank, mark as 0 points (nothing to grade)
+          if (!answer.answerContent || answer.answerContent.trim() === '') {
+            await tx.answer.update({
+              where: { id: answer.id },
+              data: {
+                isCorrect: false,
+                earnedPoints: 0,
+              },
+            });
+            answer.isCorrect = false;
+            answer.earnedPoints = 0;
+          } else {
+            // Has content — needs manual grading
+            hasPendingGrading = true;
+          }
         }
       }
 
@@ -118,7 +168,7 @@ export async function POST(
           startedAt: session.startedAt,
           submittedAt: now,
         },
-        session.answers,
+        allAnswers,
         questions,
         {
           passScore: session.exam.passScore,

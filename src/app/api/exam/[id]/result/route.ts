@@ -96,26 +96,113 @@ export async function GET(
       },
     });
 
-    // Build wrong answer analysis (include correct answers if exam config allows)
-    const wrongAnswers = answers
-      .filter((a) => a.isCorrect === false)
-      .map((a) => ({
-        questionId: a.questionId,
-        questionType: a.question.type,
-        questionContent: a.question.content,
-        yourAnswer: a.answerContent,
+    // Load ALL exam questions to fill gaps for old data that has missing Answer records
+    const examQuestions = await prisma.examQuestion.findMany({
+      where: { examId: session.examId },
+      include: {
+        question: {
+          include: {
+            options: { orderBy: { sortOrder: 'asc' } },
+          },
+        },
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    const answeredQuestionIds = new Set(answers.map((a) => a.questionId));
+    const actualTotalQuestions = examQuestions.length;
+
+    // Questions that have no Answer record at all (legacy blank submissions)
+    const missingQuestions = examQuestions.filter(
+      (eq) => !answeredQuestionIds.has(eq.questionId)
+    );
+
+    // Count unanswered questions (answered blank + no answer record at all)
+    const unansweredCount =
+      answers.filter((a) => a.answerContent == null || a.answerContent.trim() === '').length
+      + missingQuestions.length;
+
+    // Count questions pending manual grading
+    const pendingGradingCount = answers.filter(
+      (a) => a.earnedPoints == null && ['SHORT_ANSWER', 'FILL_BLANK', 'CASE_ANALYSIS', 'PRACTICAL'].includes(a.question.type)
+    ).length;
+
+    // Build wrong answer analysis — include wrong answers + unanswered
+    const wrongAnswers = [
+      ...answers
+        .filter((a) => a.isCorrect === false || (a.isCorrect == null && a.earnedPoints == null))
+        .map((a) => ({
+          questionId: a.questionId,
+          questionType: a.question.type,
+          questionContent: a.question.content,
+          yourAnswer: a.answerContent,
+          correctAnswer: session.exam.showCorrectAnswers
+            ? a.question.correctAnswer
+            : null,
+          earnedPoints: a.earnedPoints ?? 0,
+          maxPoints: a.question.points,
+          options: session.exam.showCorrectAnswers
+            ? a.question.options.map((o) => ({
+                label: o.label,
+                content: o.content,
+              }))
+            : undefined,
+        })),
+      // Also add questions with NO answer record (legacy data)
+      ...missingQuestions.map((eq) => ({
+        questionId: eq.questionId,
+        questionType: eq.question.type,
+        questionContent: eq.question.content,
+        yourAnswer: null as string | null,
         correctAnswer: session.exam.showCorrectAnswers
-          ? a.question.correctAnswer
+          ? eq.question.correctAnswer
           : null,
-        earnedPoints: a.earnedPoints ?? 0,
-        maxPoints: a.question.points,
+        earnedPoints: 0,
+        maxPoints: eq.points,
         options: session.exam.showCorrectAnswers
-          ? a.question.options.map((o) => ({
+          ? eq.question.options.map((o) => ({
               label: o.label,
               content: o.content,
             }))
           : undefined,
-      }));
+      })),
+    ];
+
+    // --- Ranking & exam-wide stats ---
+    const allResults = await prisma.examResult.findMany({
+      where: {
+        session: { examId: session.examId },
+      },
+      select: {
+        totalScore: true,
+        autoScore: true,
+        timeTakenSeconds: true,
+      },
+      orderBy: [
+        { totalScore: 'desc' },
+        { autoScore: 'desc' },
+        { timeTakenSeconds: 'asc' },
+      ],
+    });
+
+    const myScore = session.result?.totalScore ?? session.result?.autoScore ?? 0;
+    const myTime = session.result?.timeTakenSeconds ?? 0;
+
+    // Calculate rank (higher score wins; on tie, shorter time wins)
+    let rank = 1;
+    for (const r of allResults) {
+      const rScore = r.totalScore ?? r.autoScore;
+      if (rScore > myScore || (rScore === myScore && r.timeTakenSeconds < myTime)) {
+        rank++;
+      }
+    }
+
+    const scores = allResults.map((r) => r.totalScore ?? r.autoScore);
+    const totalParticipants = allResults.length;
+    const averageScore = totalParticipants > 0
+      ? Math.round((scores.reduce((a, b) => a + b, 0) / totalParticipants) * 10) / 10
+      : 0;
+    const highestScore = scores.length > 0 ? Math.max(...scores) : 0;
 
     return NextResponse.json({
       success: true,
@@ -124,6 +211,7 @@ export async function GET(
         examTitle: session.exam.title,
         status: session.status,
         submittedAt: session.submittedAt,
+        passScore: session.exam.passScore,
         isPending: false,
         result: session.result
           ? {
@@ -132,7 +220,8 @@ export async function GET(
               manualScore: session.result.manualScore,
               maxPossibleScore: session.result.maxPossibleScore,
               correctCount: session.result.correctCount,
-              totalQuestions: session.result.totalQuestions,
+              // Use actual exam question count if stored value is stale (legacy data)
+              totalQuestions: actualTotalQuestions > 0 ? actualTotalQuestions : session.result.totalQuestions,
               timeTakenSeconds: session.result.timeTakenSeconds,
               isPassed: session.result.isPassed,
               gradeLabel: session.result.gradeLabel,
@@ -140,6 +229,14 @@ export async function GET(
               isFullyGraded: session.result.isFullyGraded,
             }
           : null,
+        ranking: {
+          rank,
+          totalParticipants,
+          averageScore,
+          highestScore,
+        },
+        unansweredCount,
+        pendingGradingCount,
         wrongAnswers,
       },
     });

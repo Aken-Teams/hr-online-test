@@ -24,14 +24,25 @@ interface WrongAnswerFromAPI {
   options?: { label: string; content: string }[];
 }
 
+interface RankingData {
+  rank: number;
+  totalParticipants: number;
+  averageScore: number;
+  highestScore: number;
+}
+
 interface ResultAPIResponse {
   sessionId: string;
   examTitle: string;
   status: string;
   submittedAt: string | null;
+  passScore?: number;
   isPending: boolean;
   message?: string;
   result: ExamResultData | null;
+  ranking?: RankingData;
+  unansweredCount?: number;
+  pendingGradingCount?: number;
   wrongAnswers?: WrongAnswerFromAPI[];
 }
 
@@ -50,7 +61,7 @@ const QUESTION_TYPE_LABELS: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Circular progress ring (CSS only)
+// Circular progress ring
 // ---------------------------------------------------------------------------
 
 function ScoreRing({
@@ -63,45 +74,62 @@ function ScoreRing({
   isPassed: boolean;
 }) {
   const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-  // SVG circle parameters
-  const radius = 60;
+  const radius = 54;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percentage / 100) * circumference;
 
-  const strokeColor = isPassed ? '#22c55e' : '#ef4444';
-  const bgStrokeColor = '#e5e7eb';
+  const strokeColor = isPassed ? '#0d9488' : '#ef4444';
+  const bgStrokeColor = '#e7e5e4';
 
   return (
     <div className="relative flex flex-col items-center">
-      <svg width="152" height="152" className="-rotate-90">
-        {/* Background circle */}
+      <svg width="136" height="136" className="-rotate-90">
         <circle
-          cx="76"
-          cy="76"
+          cx="68"
+          cy="68"
           r={radius}
           fill="none"
           stroke={bgStrokeColor}
-          strokeWidth="8"
+          strokeWidth="10"
         />
-        {/* Progress circle */}
         <circle
-          cx="76"
-          cy="76"
+          cx="68"
+          cy="68"
           r={radius}
           fill="none"
           stroke={strokeColor}
-          strokeWidth="8"
+          strokeWidth="10"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           className="transition-[stroke-dashoffset] duration-1000 ease-out"
         />
       </svg>
-      {/* Score text overlay */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-3xl font-bold text-stone-800">{score}</span>
-        <span className="text-sm text-stone-500">/ {maxScore}</span>
+        <span className="text-xs text-stone-400">/ {maxScore} 分</span>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stat cell
+// ---------------------------------------------------------------------------
+
+function StatCell({
+  value,
+  label,
+  className,
+}: {
+  value: string | number;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn('text-center', className)}>
+      <p className="text-lg font-bold text-stone-800 sm:text-xl">{value}</p>
+      <p className="mt-0.5 text-[11px] text-stone-400">{label}</p>
     </div>
   );
 }
@@ -126,20 +154,20 @@ function CategoryBar({
   const percentage = max > 0 ? Math.round((earned / max) * 100) : 0;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-stone-700">{label}</span>
         <span className="text-stone-500">
-          {correct}/{total} 题 ({earned}/{max} 分)
+          {correct}/{total} 题 &middot; {earned}/{max} 分
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-stone-100">
         <div
           className={cn(
             'h-full rounded-full transition-all duration-500 ease-out',
-            percentage >= 60 ? 'bg-green-500' : 'bg-red-400',
+            percentage >= 60 ? 'bg-teal-500' : percentage > 0 ? 'bg-amber-400' : 'bg-stone-200',
           )}
-          style={{ width: `${percentage}%` }}
+          style={{ width: `${Math.max(percentage, 2)}%` }}
         />
       </div>
     </div>
@@ -156,35 +184,69 @@ function WrongAnswerItem({
   questionType,
   yourAnswer,
   correctAnswer,
+  options,
 }: {
   index: number;
   questionContent: string;
   questionType: string;
   yourAnswer: string;
   correctAnswer: string;
+  options?: { label: string; content: string }[];
 }) {
+  // For choice questions, show the option content alongside the letter
+  const formatAnswer = (answer: string, isCorrect: boolean) => {
+    if (!options || options.length === 0) return answer;
+    // If answer is a letter like "A" or "A,B", map to option content
+    const letters = answer.split(',').map((s) => s.trim());
+    const mapped = letters.map((letter) => {
+      const opt = options.find((o) => o.label === letter);
+      return opt ? `${letter}. ${opt.content}` : letter;
+    });
+    return mapped.join(isCorrect ? '、' : '、');
+  };
+
   return (
-    <div className="rounded-lg border border-red-100 bg-red-50/50 p-4">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="text-sm font-medium text-stone-700">
-          第 {index} 题
+    <div className="rounded-xl border border-stone-100 bg-stone-50/50 p-4">
+      <div className="mb-2 flex items-start gap-2">
+        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-600">
+          {index}
         </span>
-        <Badge variant="default">
-          {QUESTION_TYPE_LABELS[questionType] || questionType}
-        </Badge>
+        <div className="flex-1">
+          <div className="mb-1">
+            <Badge variant="default">
+              {QUESTION_TYPE_LABELS[questionType] || questionType}
+            </Badge>
+          </div>
+          <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-wrap">
+            {questionContent}
+          </p>
+        </div>
       </div>
-      <p className="mb-3 text-sm text-stone-800 leading-relaxed whitespace-pre-wrap">
-        {questionContent}
-      </p>
-      <div className="space-y-1.5 text-sm">
-        <p className="text-red-700">
-          <span className="font-medium">你的答案: </span>
-          {yourAnswer || '（未作答）'}
-        </p>
-        <p className="text-green-700">
-          <span className="font-medium">正确答案: </span>
-          {correctAnswer}
-        </p>
+      <div className="ml-7 mt-2 space-y-1 text-sm">
+        <div className="flex gap-1">
+          <span className="shrink-0 text-red-500">
+            <svg className="mt-0.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </span>
+          <p className="text-stone-600">
+            <span className="text-stone-400">你的答案: </span>
+            {yourAnswer ? formatAnswer(yourAnswer, false) : '（未作答）'}
+          </p>
+        </div>
+        {correctAnswer && (
+          <div className="flex gap-1">
+            <span className="shrink-0 text-teal-500">
+              <svg className="mt-0.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </span>
+            <p className="text-stone-600">
+              <span className="text-stone-400">正确答案: </span>
+              {formatAnswer(correctAnswer, true)}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -200,6 +262,11 @@ export default function ResultPage() {
   const [result, setResult] = useState<ExamResultData | null>(null);
   const [wrongAnswers, setWrongAnswers] = useState<WrongAnswerFromAPI[]>([]);
   const [examTitle, setExamTitle] = useState('');
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
+  const [passScore, setPassScore] = useState<number>(60);
+  const [ranking, setRanking] = useState<RankingData | null>(null);
+  const [unansweredCount, setUnansweredCount] = useState(0);
+  const [pendingGradingCount, setPendingGradingCount] = useState(0);
   const [isPending, setIsPending] = useState(false);
   const [pendingMessage, setPendingMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -228,6 +295,8 @@ export default function ResultPage() {
 
         const resp = data.data;
         setExamTitle(resp.examTitle);
+        setSubmittedAt(resp.submittedAt);
+        if (resp.passScore) setPassScore(resp.passScore);
 
         if (resp.isPending) {
           setIsPending(true);
@@ -236,6 +305,9 @@ export default function ResultPage() {
         }
 
         setResult(resp.result);
+        setRanking(resp.ranking ?? null);
+        setUnansweredCount(resp.unansweredCount ?? 0);
+        setPendingGradingCount(resp.pendingGradingCount ?? 0);
         setWrongAnswers(resp.wrongAnswers || []);
       } catch {
         setError('网络错误，请稍后重试');
@@ -254,14 +326,25 @@ export default function ResultPage() {
     return Object.values(result.categoryScores);
   }, [result]);
 
-  // Format time taken
   const timeTaken = useMemo(() => {
     if (!result) return '';
     const totalSecs = result.timeTakenSeconds;
     const mins = Math.floor(totalSecs / 60);
     const secs = totalSecs % 60;
-    return `${mins} 分 ${secs} 秒`;
+    if (mins === 0) return `${secs}秒`;
+    return `${mins}分${secs}秒`;
   }, [result]);
+
+  const accuracyRate = useMemo(() => {
+    if (!result || result.totalQuestions === 0) return '0';
+    return Math.round((result.correctCount / result.totalQuestions) * 100).toString();
+  }, [result]);
+
+  const formattedSubmitTime = useMemo(() => {
+    if (!submittedAt) return '';
+    const d = new Date(submittedAt);
+    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }, [submittedAt]);
 
   // ---- Render --------------------------------------------------------------
 
@@ -277,7 +360,7 @@ export default function ResultPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <Logo size="sm" className="mb-8" />
-        <div className="w-full max-w-md rounded-xl border border-yellow-200 bg-white p-8 text-center shadow-sm">
+        <div className="w-full max-w-md rounded-2xl border border-yellow-200 bg-white p-8 text-center shadow-sm">
           <svg className="mx-auto mb-4 h-12 w-12 text-yellow-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -299,7 +382,7 @@ export default function ResultPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <Logo size="sm" className="mb-8" />
-        <div className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-8 text-center shadow-sm">
+        <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
           <h2 className="text-lg font-semibold text-stone-800">
             {error || '暂无成绩'}
           </h2>
@@ -316,19 +399,22 @@ export default function ResultPage() {
   }
 
   const displayScore = result.totalScore ?? result.autoScore;
-  const isPassed = result.isPassed ?? (displayScore >= (result.maxPossibleScore * 0.6));
+  const isPassed = result.isPassed ?? (displayScore >= passScore);
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:py-12">
+    <div className="min-h-screen px-4 py-6 sm:py-10">
       <div className="mx-auto max-w-2xl">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <Logo size="sm" className="mx-auto mb-4 justify-center" />
-          <h1 className="text-xl font-bold text-stone-800">考试成绩</h1>
+        <div className="mb-6 text-center">
+          <Logo size="sm" className="mx-auto mb-3 justify-center" />
+          <h1 className="text-lg font-bold text-stone-800">{examTitle || '考试成绩报告'}</h1>
+          {formattedSubmitTime && (
+            <p className="mt-1 text-xs text-stone-400">交卷时间: {formattedSubmitTime}</p>
+          )}
         </div>
 
-        {/* Score card */}
-        <div className="mb-6 rounded-xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+        {/* ===== Section 1: Score Overview ===== */}
+        <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col items-center">
             {/* Score ring */}
             <ScoreRing
@@ -338,55 +424,129 @@ export default function ResultPage() {
             />
 
             {/* Pass/fail badge */}
-            <div className="mt-4">
+            <div className="mt-3 flex items-center gap-2">
               <Badge variant={isPassed ? 'success' : 'danger'}>
                 {isPassed ? '合格' : '不合格'}
               </Badge>
               {result.gradeLabel && (
-                <Badge variant="info" className="ml-2">
-                  等级: {result.gradeLabel}
+                <Badge variant="info">
+                  等级 {result.gradeLabel}
                 </Badge>
               )}
             </div>
 
-            {/* Stats row */}
-            <div className="mt-6 grid w-full max-w-sm grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-stone-800">
-                  {result.correctCount}
-                </p>
-                <p className="text-xs text-stone-500">答对题数</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-stone-800">
-                  {result.totalQuestions}
-                </p>
-                <p className="text-xs text-stone-500">总题数</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-stone-800">{timeTaken}</p>
-                <p className="text-xs text-stone-500">用时</p>
-              </div>
-            </div>
+            <p className="mt-1.5 text-xs text-stone-400">
+              及格线: {passScore} 分
+            </p>
 
-            {/* Fully graded notice */}
+            {/* Pending grading notice */}
             {!result.isFullyGraded && (
-              <div className="mt-4 w-full rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-center">
-                <p className="text-sm text-yellow-800">
-                  部分主观题尚未阅卷，当前为客观题得分，总分以最终阅卷结果为准。
+              <div className="mt-3 w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-center">
+                <p className="text-xs text-amber-700">
+                  {pendingGradingCount > 0
+                    ? `${pendingGradingCount} 道主观题待批阅，当前显示客观题得分，总分以最终阅卷结果为准`
+                    : '部分主观题尚未阅卷，总分以最终阅卷结果为准'}
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Category breakdown */}
+        {/* ===== Section 2: Stats Grid ===== */}
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl border border-stone-200 bg-white px-3 py-4 text-center shadow-sm">
+            <p className="text-xl font-bold text-teal-600">{accuracyRate}%</p>
+            <p className="mt-0.5 text-[11px] text-stone-400">正确率</p>
+          </div>
+          <div className="rounded-2xl border border-stone-200 bg-white px-3 py-4 text-center shadow-sm">
+            <p className="text-xl font-bold text-stone-800">{result.correctCount}/{result.totalQuestions}</p>
+            <p className="mt-0.5 text-[11px] text-stone-400">答对/总题数</p>
+          </div>
+          <div className="rounded-2xl border border-stone-200 bg-white px-3 py-4 text-center shadow-sm">
+            <p className="text-xl font-bold text-stone-800">{timeTaken}</p>
+            <p className="mt-0.5 text-[11px] text-stone-400">答题用时</p>
+          </div>
+          <div className="rounded-2xl border border-stone-200 bg-white px-3 py-4 text-center shadow-sm">
+            <p className="text-xl font-bold text-stone-800">
+              {unansweredCount > 0 ? unansweredCount : '0'}
+            </p>
+            <p className="mt-0.5 text-[11px] text-stone-400">未作答</p>
+          </div>
+        </div>
+
+        {/* ===== Section 3: Ranking ===== */}
+        {ranking && ranking.totalParticipants > 0 && (
+          <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-stone-700">排名统计</h2>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-teal-600">
+                  {ranking.rank}
+                  <span className="text-sm font-normal text-stone-400">
+                    /{ranking.totalParticipants}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[11px] text-stone-400">我的排名</p>
+              </div>
+              <StatCell
+                value={ranking.averageScore}
+                label="平均分"
+              />
+              <StatCell
+                value={ranking.highestScore}
+                label="最高分"
+              />
+            </div>
+            {/* Visual rank bar */}
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-[10px] text-stone-400 mb-1">
+                <span>第1名</span>
+                <span>第{ranking.totalParticipants}名</span>
+              </div>
+              <div className="relative h-2 w-full rounded-full bg-stone-100">
+                <div
+                  className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-teal-500 shadow-sm"
+                  style={{
+                    left: ranking.totalParticipants > 1
+                      ? `${((ranking.rank - 1) / (ranking.totalParticipants - 1)) * 100}%`
+                      : '0%',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== Section 4: Score Breakdown ===== */}
+        {!result.isFullyGraded && (result.autoScore > 0 || result.manualScore != null) && (
+          <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-stone-700">评分明细</h2>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">客观题得分（自动判分）</span>
+                <span className="font-medium text-stone-800">{result.autoScore} 分</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">主观题得分（人工批阅）</span>
+                <span className="font-medium text-stone-800">
+                  {result.manualScore != null ? `${result.manualScore} 分` : '待批阅'}
+                </span>
+              </div>
+              <div className="border-t border-stone-100 pt-2 flex items-center justify-between">
+                <span className="font-medium text-stone-700">当前总分</span>
+                <span className="font-bold text-stone-800">{displayScore} 分</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== Section 5: Category Scores ===== */}
         {categoryScores.length > 0 && (
-          <div className="mb-6 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-base font-semibold text-stone-800">
+          <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-4 text-sm font-semibold text-stone-700">
               分类得分
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               {categoryScores.map((cat) => (
                 <CategoryBar
                   key={cat.type}
@@ -401,12 +561,15 @@ export default function ResultPage() {
           </div>
         )}
 
-        {/* Wrong answer analysis */}
+        {/* ===== Section 6: Wrong Answer Analysis ===== */}
         {wrongAnswers.length > 0 && (
-          <div className="mb-6 rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-base font-semibold text-stone-800">
+          <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-1 text-sm font-semibold text-stone-700">
               错题分析
             </h2>
+            <p className="mb-4 text-xs text-stone-400">
+              共 {wrongAnswers.length} 题答错，以下为详细解析
+            </p>
             <div className="space-y-3">
               {wrongAnswers.map((wa, idx) => (
                 <WrongAnswerItem
@@ -415,15 +578,26 @@ export default function ResultPage() {
                   questionContent={wa.questionContent}
                   questionType={wa.questionType}
                   yourAnswer={wa.yourAnswer || ''}
-                  correctAnswer={wa.correctAnswer || '(见试卷)'}
+                  correctAnswer={wa.correctAnswer || ''}
+                  options={wa.options}
                 />
               ))}
             </div>
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+        {/* No wrong answers — positive feedback */}
+        {wrongAnswers.length === 0 && result.correctCount > 0 && (
+          <div className="mb-4 rounded-2xl border border-teal-100 bg-teal-50/50 p-5 text-center shadow-sm">
+            <svg className="mx-auto mb-2 h-8 w-8 text-teal-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+            </svg>
+            <p className="text-sm font-medium text-teal-700">客观题全部回答正确</p>
+          </div>
+        )}
+
+        {/* ===== Action buttons ===== */}
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           {isPassed && (
             <Button onClick={() => router.push('/certificate')}>
               查看证书
@@ -441,6 +615,11 @@ export default function ResultPage() {
             返回首页
           </Button>
         </div>
+
+        {/* Footer note */}
+        <p className="mt-6 text-center text-[11px] text-stone-300">
+          本报告由系统自动生成，客观题由系统即时判分，主观题由管理员人工批阅
+        </p>
       </div>
     </div>
   );
