@@ -168,9 +168,9 @@ export default function CreateExamPage() {
             placeholder="例如：2024年第一季度新员工入职考试"
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">考试描述</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">考试描述</label>
             <textarea
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+              className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -193,8 +193,8 @@ export default function CreateExamPage() {
               min={0}
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">总分（自动计算）</label>
-              <div className="flex h-[38px] items-center rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm font-semibold text-gray-900">
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">总分（自动计算）</label>
+              <div className="flex h-[38px] items-center rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm font-semibold text-stone-800">
                 {totalScore}
               </div>
             </div>
@@ -249,12 +249,12 @@ export default function CreateExamPage() {
           />
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-700">切屏限制</p>
-              <p className="text-xs text-gray-500">允许的最大切屏次数，0 表示不限制</p>
+              <p className="text-sm font-medium text-stone-700">切屏限制</p>
+              <p className="text-xs text-stone-500">允许的最大切屏次数，0 表示不限制</p>
             </div>
             <input
               type="number"
-              className="w-20 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-center focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-20 rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-center focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
               value={tabSwitchLimit}
               onChange={(e) => setTabSwitchLimit(Number(e.target.value))}
               min={0}
@@ -267,7 +267,7 @@ export default function CreateExamPage() {
       <Card title="题目规则">
         <div className="space-y-4">
           {rules.map((rule, idx) => (
-            <div key={idx} className="flex items-end gap-3 rounded-lg border border-gray-100 bg-gray-50/50 p-4">
+            <div key={idx} className="flex items-end gap-3 rounded-lg border border-stone-100 bg-stone-50/50 p-4">
               <Select
                 label="题型"
                 options={QUESTION_TYPE_OPTIONS}
@@ -309,8 +309,8 @@ export default function CreateExamPage() {
           <Button variant="secondary" size="sm" onClick={addRule}>
             添加规则
           </Button>
-          <div className="text-sm text-gray-500">
-            总分：<span className="font-semibold text-gray-900">{totalScore}</span> 分
+          <div className="text-sm text-stone-500">
+            总分：<span className="font-semibold text-stone-800">{totalScore}</span> 分
           </div>
         </div>
       </Card>
@@ -318,7 +318,7 @@ export default function CreateExamPage() {
       {/* Department assignment */}
       <Card title="指派范围">
         <div className="space-y-3">
-          <p className="text-sm text-gray-500">选择参加考试的部门（不选则全部可参加）</p>
+          <p className="text-sm text-stone-500">选择参加考试的部门（不选则全部可参加）</p>
           <div className="flex flex-wrap gap-2">
             {DEPARTMENTS.map((dept) => {
               const selected = selectedDepartments.includes(dept);
@@ -329,8 +329,8 @@ export default function CreateExamPage() {
                   onClick={() => toggleDepartment(dept)}
                   className={`rounded-full px-3 py-1.5 text-sm font-medium border transition-colors ${
                     selected
-                      ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      ? 'border-teal-300 bg-teal-50 text-teal-700'
+                      : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'
                   }`}
                 >
                   {dept}
@@ -372,8 +372,8 @@ function ToggleRow({
   return (
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-700">{label}</p>
-        <p className="text-xs text-gray-500">{description}</p>
+        <p className="text-sm font-medium text-stone-700">{label}</p>
+        <p className="text-xs text-stone-500">{description}</p>
       </div>
       <button
         type="button"
@@ -381,7 +381,7 @@ function ToggleRow({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-          checked ? 'bg-indigo-600' : 'bg-gray-200'
+          checked ? 'bg-teal-600' : 'bg-stone-200'
         }`}
       >
         <span

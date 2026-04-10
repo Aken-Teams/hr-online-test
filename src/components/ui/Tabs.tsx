@@ -19,7 +19,7 @@ export function Tabs({ tabs, activeKey, onChange, className }: TabsProps) {
     <div
       role="tablist"
       className={cn(
-        'flex border-b border-gray-200',
+        'flex border-b border-stone-200',
         className
       )}
     >
@@ -33,15 +33,15 @@ export function Tabs({ tabs, activeKey, onChange, className }: TabsProps) {
             onClick={() => onChange(tab.key)}
             className={cn(
               'relative px-4 py-2.5 text-sm font-medium transition-colors duration-150',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-0',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-0',
               isActive
-                ? 'text-indigo-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-teal-600'
+                : 'text-stone-500 hover:text-stone-700'
             )}
           >
             {tab.label}
             {isActive && (
-              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-indigo-600" />
+              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-teal-600" />
             )}
           </button>
         );

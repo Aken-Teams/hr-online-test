@@ -144,12 +144,12 @@ export default function ExamGradingPage() {
       <Card>
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">阅卷进度</span>
-            <span className="font-medium text-gray-900">
+            <span className="text-stone-500">阅卷进度</span>
+            <span className="font-medium text-stone-800">
               {graded} / {total} 已完成
             </span>
           </div>
-          <Progress value={progressPct} color={progressPct === 100 ? 'green' : 'indigo'} />
+          <Progress value={progressPct} color={progressPct === 100 ? 'green' : 'teal'} />
         </div>
       </Card>
 
@@ -166,25 +166,25 @@ export default function ExamGradingPage() {
             return (
               <div
                 key={answer.answerId}
-                className="rounded-xl border border-gray-200 bg-white shadow-sm"
+                className="rounded-xl border border-stone-200 bg-white shadow-sm"
               >
                 {/* Header row */}
                 <button
                   type="button"
                   onClick={() => toggleExpand(answer.answerId)}
-                  className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50/50 transition-colors"
+                  className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-stone-50/50 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Badge variant={answer.isGraded ? 'success' : 'warning'}>
                       {answer.isGraded ? '已评分' : '待评分'}
                     </Badge>
-                    <span className="font-medium text-gray-900 truncate">
+                    <span className="font-medium text-stone-800 truncate">
                       {answer.employeeName}
                     </span>
-                    <span className="text-sm text-gray-500">{answer.department}</span>
+                    <span className="text-sm text-stone-500">{answer.department}</span>
                   </div>
                   <svg
-                    className={`h-5 w-5 text-gray-400 transition-transform ${
+                    className={`h-5 w-5 text-stone-400 transition-transform ${
                       isExpanded ? 'rotate-180' : ''
                     }`}
                     fill="none"
@@ -198,19 +198,19 @@ export default function ExamGradingPage() {
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div className="border-t border-gray-100 px-6 py-4 space-y-4">
+                  <div className="border-t border-stone-100 px-6 py-4 space-y-4">
                     {/* Question */}
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">题目</p>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                      <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-1">题目</p>
+                      <p className="text-sm text-stone-700 whitespace-pre-wrap">
                         {answer.questionContent}
                       </p>
                     </div>
 
                     {/* Answer */}
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">考生作答</p>
-                      <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 whitespace-pre-wrap">
+                      <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-1">考生作答</p>
+                      <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700 whitespace-pre-wrap">
                         {answer.answerContent || '（未作答）'}
                       </div>
                     </div>
@@ -229,9 +229,9 @@ export default function ExamGradingPage() {
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">评语</label>
+                        <label className="block text-sm font-medium text-stone-700 mb-1.5">评语</label>
                         <textarea
-                          className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+                          className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
                           rows={2}
                           value={values?.comment ?? (answer.graderComment || '')}
                           onChange={(e) => updateGrade(answer.answerId, 'comment', e.target.value)}

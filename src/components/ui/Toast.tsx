@@ -29,7 +29,7 @@ const typeStyles: Record<ToastType, string> = {
   success: 'border-green-200 bg-green-50 text-green-800',
   error: 'border-red-200 bg-red-50 text-red-800',
   warning: 'border-yellow-200 bg-yellow-50 text-yellow-800',
-  info: 'border-blue-200 bg-blue-50 text-blue-800',
+  info: 'border-teal-200 bg-teal-50 text-teal-800',
 };
 
 const typeIcons: Record<ToastType, ReactNode> = {
@@ -49,7 +49,7 @@ const typeIcons: Record<ToastType, ReactNode> = {
     </svg>
   ),
   info: (
-    <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+    <svg className="h-5 w-5 text-teal-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
     </svg>
   ),

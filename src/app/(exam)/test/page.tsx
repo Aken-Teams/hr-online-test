@@ -58,16 +58,16 @@ function SingleChoiceRenderer({ question, answer, onAnswer }: QuestionRendererPr
             className={cn(
               'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors',
               selected
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50',
+                ? 'border-teal-500 bg-teal-50 text-teal-900'
+                : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50',
             )}
           >
             <span
               className={cn(
                 'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-medium',
                 selected
-                  ? 'border-indigo-500 bg-indigo-600 text-white'
-                  : 'border-gray-300 bg-white text-gray-500',
+                  ? 'border-teal-500 bg-teal-600 text-white'
+                  : 'border-stone-300 bg-white text-stone-500',
               )}
             >
               {opt.label}
@@ -102,7 +102,7 @@ function MultiChoiceRenderer({ question, answer, onAnswer }: QuestionRendererPro
 
   return (
     <div className="space-y-2.5">
-      <p className="text-xs text-gray-500">（多选题，可选择多个选项）</p>
+      <p className="text-xs text-stone-500">（多选题，可选择多个选项）</p>
       {question.options.map((opt) => {
         const checked = selectedSet.has(opt.label);
         return (
@@ -113,16 +113,16 @@ function MultiChoiceRenderer({ question, answer, onAnswer }: QuestionRendererPro
             className={cn(
               'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors',
               checked
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-900'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50',
+                ? 'border-teal-500 bg-teal-50 text-teal-900'
+                : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50',
             )}
           >
             <span
               className={cn(
                 'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs font-medium',
                 checked
-                  ? 'border-indigo-500 bg-indigo-600 text-white'
-                  : 'border-gray-300 bg-white text-gray-500',
+                  ? 'border-teal-500 bg-teal-600 text-white'
+                  : 'border-stone-300 bg-white text-stone-500',
               )}
             >
               {checked ? (
@@ -161,7 +161,7 @@ function TrueFalseRenderer({ answer, onAnswer }: QuestionRendererProps) {
                 ? opt.value === 'true'
                   ? 'border-green-500 bg-green-50 text-green-700'
                   : 'border-red-500 bg-red-50 text-red-700'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50',
+                : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50',
             )}
           >
             {opt.label}
@@ -182,14 +182,14 @@ function ShortAnswerRenderer({ answer, onAnswer }: QuestionRendererProps) {
         rows={6}
         maxLength={SHORT_ANSWER_MAX_CHARS}
         className={cn(
-          'block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900',
-          'placeholder:text-gray-400',
-          'focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0',
+          'block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-800',
+          'placeholder:text-stone-400',
+          'focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0',
           'transition-colors duration-150',
         )}
         placeholder="请输入您的答案..."
       />
-      <p className="text-right text-xs text-gray-400">
+      <p className="text-right text-xs text-stone-400">
         {answer.length} / {SHORT_ANSWER_MAX_CHARS}
       </p>
     </div>
@@ -234,7 +234,7 @@ function FillBlankRenderer({ question, answer, onAnswer }: QuestionRendererProps
     <div className="space-y-3">
       {normalizedBlanks.map((val, idx) => (
         <div key={idx} className="flex items-center gap-2">
-          <span className="shrink-0 text-sm text-gray-500">
+          <span className="shrink-0 text-sm text-stone-500">
             第 {idx + 1} 空:
           </span>
           <input
@@ -242,9 +242,9 @@ function FillBlankRenderer({ question, answer, onAnswer }: QuestionRendererProps
             value={val}
             onChange={(e) => updateBlank(idx, e.target.value)}
             className={cn(
-              'block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900',
-              'placeholder:text-gray-400',
-              'focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0',
+              'block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800',
+              'placeholder:text-stone-400',
+              'focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0',
             )}
             placeholder={`请输入第 ${idx + 1} 空的答案`}
           />
@@ -264,14 +264,14 @@ function EssayRenderer({ answer, onAnswer, placeholder }: QuestionRendererProps 
         rows={8}
         maxLength={SHORT_ANSWER_MAX_CHARS}
         className={cn(
-          'block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900',
-          'placeholder:text-gray-400',
-          'focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0',
+          'block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm text-stone-800',
+          'placeholder:text-stone-400',
+          'focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0',
           'transition-colors duration-150',
         )}
         placeholder={placeholder || '请输入您的答案...'}
       />
-      <p className="text-right text-xs text-gray-400">
+      <p className="text-right text-xs text-stone-400">
         {answer.length} / {SHORT_ANSWER_MAX_CHARS}
       </p>
     </div>
@@ -343,7 +343,7 @@ function AnswerCard({
       {/* Card */}
       <div
         className={cn(
-          'fixed z-50 rounded-t-2xl border border-gray-200 bg-white shadow-xl',
+          'fixed z-50 rounded-t-2xl border border-stone-200 bg-white shadow-xl',
           // Mobile: bottom sheet
           'bottom-0 left-0 right-0 max-h-[60vh] overflow-y-auto sm:bottom-auto sm:left-auto',
           // Desktop: side panel
@@ -351,11 +351,11 @@ function AnswerCard({
         )}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3">
-          <h3 className="text-sm font-semibold text-gray-900">答题卡</h3>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-100 bg-white px-4 py-3">
+          <h3 className="text-sm font-semibold text-stone-800">答题卡</h3>
           <button
             onClick={onClose}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -364,18 +364,18 @@ function AnswerCard({
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5 border-b border-gray-100 px-4 py-2.5">
-          <span className="flex items-center gap-1.5 text-xs text-gray-500">
-            <span className="h-3 w-3 rounded-full bg-gray-200" /> 未答
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 border-b border-stone-100 px-4 py-2.5">
+          <span className="flex items-center gap-1.5 text-xs text-stone-500">
+            <span className="h-3 w-3 rounded-full bg-stone-200" /> 未答
           </span>
-          <span className="flex items-center gap-1.5 text-xs text-gray-500">
+          <span className="flex items-center gap-1.5 text-xs text-stone-500">
             <span className="h-3 w-3 rounded-full bg-green-500" /> 已答
           </span>
-          <span className="flex items-center gap-1.5 text-xs text-gray-500">
+          <span className="flex items-center gap-1.5 text-xs text-stone-500">
             <span className="h-3 w-3 rounded-full bg-orange-400" /> 标记
           </span>
-          <span className="flex items-center gap-1.5 text-xs text-gray-500">
-            <span className="h-3 w-3 rounded-full ring-2 ring-indigo-500 ring-offset-1" /> 当前
+          <span className="flex items-center gap-1.5 text-xs text-stone-500">
+            <span className="h-3 w-3 rounded-full ring-2 ring-teal-500 ring-offset-1" /> 当前
           </span>
         </div>
 
@@ -396,12 +396,12 @@ function AnswerCard({
                 }}
                 className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-colors',
-                  isCurrent && 'ring-2 ring-indigo-500 ring-offset-1',
+                  isCurrent && 'ring-2 ring-teal-500 ring-offset-1',
                   isFlagged
                     ? 'bg-orange-400 text-white'
                     : isAnswered
                       ? 'bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300',
+                      : 'bg-stone-200 text-stone-600 hover:bg-gray-300',
                 )}
                 title={`第 ${idx + 1} 题`}
               >
@@ -619,7 +619,7 @@ export default function TestPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <LoadingSpinner size="lg" />
-        <p className="mt-4 text-sm text-gray-500">正在加载考试...</p>
+        <p className="mt-4 text-sm text-stone-500">正在加载考试...</p>
         {/* Auto-redirect if truly no session */}
         <RedirectIfNoSession />
       </div>
@@ -645,27 +645,27 @@ export default function TestPage() {
       ? 'text-red-600'
       : timerSeconds <= 300
         ? 'text-yellow-600'
-        : 'text-gray-900';
+        : 'text-stone-800';
 
   return (
     <div className="flex min-h-screen flex-col">
       {/* ================================================================== */}
       {/* Top bar */}
       {/* ================================================================== */}
-      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-30 border-b border-stone-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2.5">
           {/* Logo */}
           <Logo size="sm" className="hidden sm:flex" />
 
           {/* Progress */}
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center justify-between text-xs text-stone-500">
               <span>
                 {answeredCount} / {totalQuestions} 已答
               </span>
               <span>{Math.round(progressPercent)}%</span>
             </div>
-            <Progress value={progressPercent} color="indigo" />
+            <Progress value={progressPercent} color="teal" />
           </div>
 
           {/* Timer */}
@@ -677,7 +677,7 @@ export default function TestPage() {
           <div className="flex items-center gap-2">
             <NetworkIndicator isOnline={isOnline} />
             {isSaving && (
-              <span className="text-xs text-gray-400">保存中...</span>
+              <span className="text-xs text-stone-400">保存中...</span>
             )}
             {pendingCount > 0 && (
               <Badge variant="warning">{pendingCount} 待同步</Badge>
@@ -691,22 +691,22 @@ export default function TestPage() {
       {/* ================================================================== */}
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
         {currentRawQuestion && (
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
             {/* Question header */}
-            <div className="flex items-start justify-between border-b border-gray-100 px-5 py-4 sm:px-6">
+            <div className="flex items-start justify-between border-b border-stone-100 px-5 py-4 sm:px-6">
               <div className="min-w-0 flex-1">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-gray-500">
+                  <span className="text-sm font-medium text-stone-500">
                     第 {currentIndex + 1} / {totalQuestions} 题
                   </span>
                   <Badge variant="info">
                     {QUESTION_TYPE_LABELS[currentRawQuestion.type] || currentRawQuestion.type}
                   </Badge>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-stone-400">
                     {currentRawQuestion.points} 分
                   </span>
                 </div>
-                <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
+                <p className="text-base leading-relaxed text-stone-800 whitespace-pre-wrap">
                   {currentRawQuestion.content}
                 </p>
               </div>
@@ -719,7 +719,7 @@ export default function TestPage() {
                   'ml-3 shrink-0 rounded-lg p-2 transition-colors',
                   isFlagged
                     ? 'bg-orange-100 text-orange-600'
-                    : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
+                    : 'text-stone-400 hover:bg-stone-100 hover:text-stone-600',
                 )}
                 title={isFlagged ? '取消标记' : '标记此题'}
               >
@@ -744,7 +744,7 @@ export default function TestPage() {
       {/* ================================================================== */}
       {/* Bottom navigation */}
       {/* ================================================================== */}
-      <footer className="sticky bottom-0 z-30 border-t border-gray-200 bg-white/95 backdrop-blur-sm">
+      <footer className="sticky bottom-0 z-30 border-t border-stone-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           {/* Left: prev/next */}
           <div className="flex items-center gap-2">
@@ -779,8 +779,8 @@ export default function TestPage() {
             className={cn(
               'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
               showAnswerCard
-                ? 'bg-indigo-100 text-indigo-700'
-                : 'text-gray-600 hover:bg-gray-100',
+                ? 'bg-teal-100 text-teal-700'
+                : 'text-stone-600 hover:bg-stone-100',
             )}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

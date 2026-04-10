@@ -144,13 +144,13 @@ export default function ExamListPage() {
                   <TableCell>{exam.questionCount ?? '--'}</TableCell>
                   <TableCell>{exam.timeLimitMinutes} 分钟</TableCell>
                   <TableCell>{exam.sessionCount ?? 0}</TableCell>
-                  <TableCell className="text-sm text-gray-500">
+                  <TableCell className="text-sm text-stone-500">
                     {formatDateTime(exam.openAt)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <button
-                        className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                        className="text-sm text-teal-600 hover:text-teal-800 font-medium"
                         onClick={() => router.push(`/admin/exams/${exam.id}`)}
                       >
                         编辑
@@ -180,7 +180,7 @@ export default function ExamListPage() {
                         </button>
                       )}
                       <button
-                        className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+                        className="text-sm text-stone-600 hover:text-stone-700 font-medium"
                         onClick={() => router.push(`/admin/exams/${exam.id}/results`)}
                       >
                         成绩

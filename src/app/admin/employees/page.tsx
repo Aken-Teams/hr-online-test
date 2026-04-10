@@ -285,7 +285,7 @@ export default function EmployeeListPage() {
                         className="h-8 w-8 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-500">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-xs font-medium text-stone-500">
                         {emp.name.charAt(0)}
                       </div>
                     )}
@@ -307,7 +307,7 @@ export default function EmployeeListPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <button
-                        className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                        className="text-sm text-teal-600 hover:text-teal-800 font-medium"
                         onClick={() => openPhotoDialog(emp)}
                       >
                         上传照片
@@ -413,7 +413,7 @@ export default function EmployeeListPage() {
         }
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-stone-500">
             上传正面免冠照片，系统将自动提取人脸特征用于人脸识别验证。
           </p>
 
@@ -440,10 +440,10 @@ export default function EmployeeListPage() {
                 ref={imgRef}
                 src={photoPreview}
                 alt="预览"
-                className="max-h-64 rounded-lg border border-gray-200 object-contain"
+                className="max-h-64 rounded-lg border border-stone-200 object-contain"
                 crossOrigin="anonymous"
               />
-              <p className="text-xs text-gray-400">{photoFile?.name}</p>
+              <p className="text-xs text-stone-400">{photoFile?.name}</p>
             </div>
           )}
 

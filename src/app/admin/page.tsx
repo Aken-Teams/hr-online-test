@@ -53,10 +53,10 @@ interface StatCardProps {
 
 function StatCard({ label, value, sub }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-      <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
+    <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+      <p className="text-sm font-medium text-stone-500">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-stone-800">{value}</p>
+      {sub && <p className="mt-0.5 text-xs text-stone-400">{sub}</p>}
     </div>
   );
 }
@@ -162,7 +162,7 @@ export default function AdminDashboardPage() {
       {/* Recent sessions */}
       <Card title="最近考试记录">
         {recentSessions.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">暂无考试记录</p>
+          <p className="py-8 text-center text-sm text-stone-400">暂无考试记录</p>
         ) : (
           <Table>
             <TableHeader>
@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>{session.score != null ? session.score : '--'}</TableCell>
-                  <TableCell className="text-gray-500 text-sm">
+                  <TableCell className="text-stone-500 text-sm">
                     {session.submittedAt
                       ? new Date(session.submittedAt).toLocaleString('zh-CN')
                       : '--'}

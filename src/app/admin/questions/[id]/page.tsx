@@ -252,9 +252,9 @@ export default function EditQuestionPage() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">题目内容</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">题目内容</label>
             <textarea
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+              className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
               rows={4}
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -310,9 +310,9 @@ export default function EditQuestionPage() {
                         toggleCorrect(opt.label);
                       }
                     }}
-                    className="h-4 w-4 text-indigo-600 border-gray-300"
+                    className="h-4 w-4 text-teal-600 border-stone-300"
                   />
-                  <span className="text-sm font-medium text-gray-700 w-4">{opt.label}</span>
+                  <span className="text-sm font-medium text-stone-700 w-4">{opt.label}</span>
                 </label>
                 <Input
                   value={opt.content}
@@ -350,9 +350,9 @@ export default function EditQuestionPage() {
                 value="true"
                 checked={tfAnswer === 'true'}
                 onChange={() => setTfAnswer('true')}
-                className="h-4 w-4 text-indigo-600 border-gray-300"
+                className="h-4 w-4 text-teal-600 border-stone-300"
               />
-              <span className="text-sm text-gray-700">是（正确）</span>
+              <span className="text-sm text-stone-700">是（正确）</span>
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -361,9 +361,9 @@ export default function EditQuestionPage() {
                 value="false"
                 checked={tfAnswer === 'false'}
                 onChange={() => setTfAnswer('false')}
-                className="h-4 w-4 text-indigo-600 border-gray-300"
+                className="h-4 w-4 text-teal-600 border-stone-300"
               />
-              <span className="text-sm text-gray-700">否（错误）</span>
+              <span className="text-sm text-stone-700">否（错误）</span>
             </label>
           </div>
         </Card>
@@ -374,9 +374,9 @@ export default function EditQuestionPage() {
         <Card title="参考答案与评分标准">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">参考答案</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">参考答案</label>
               <textarea
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+                className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
                 rows={4}
                 value={referenceAnswer}
                 onChange={(e) => setReferenceAnswer(e.target.value)}
@@ -384,9 +384,9 @@ export default function EditQuestionPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">评分标准</label>
+              <label className="block text-sm font-medium text-stone-700 mb-1.5">评分标准</label>
               <textarea
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+                className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
                 rows={3}
                 value={gradingRubric}
                 onChange={(e) => setGradingRubric(e.target.value)}

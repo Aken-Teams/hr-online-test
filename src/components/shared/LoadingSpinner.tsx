@@ -17,7 +17,7 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
   return (
     <div className={cn('flex items-center justify-center py-12', className)}>
       <svg
-        className={cn('animate-spin text-indigo-600', sizeStyles[size])}
+        className={cn('animate-spin text-teal-600', sizeStyles[size])}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"

@@ -20,7 +20,7 @@ export function Logo({ size = 'md', className }: LogoProps) {
     <div className={cn('flex items-center gap-2.5', className)}>
       <div
         className={cn(
-          'rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center',
+          'rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center',
           config.icon
         )}
       >
@@ -29,7 +29,7 @@ export function Logo({ size = 'md', className }: LogoProps) {
       <div className="flex flex-col">
         <span
           className={cn(
-            'font-bold tracking-tight text-gray-900 leading-tight',
+            'font-bold tracking-tight text-stone-800 leading-tight',
             config.text
           )}
         >
@@ -37,11 +37,11 @@ export function Logo({ size = 'md', className }: LogoProps) {
         </span>
         <span
           className={cn(
-            'text-gray-500 leading-tight',
+            'leading-tight text-stone-400',
             config.sub
           )}
         >
-          强茂科技
+          <span style={{ fontFamily: 'var(--font-serif)' }}>强茂科技</span>
         </span>
       </div>
     </div>

@@ -47,10 +47,10 @@ export const QUESTION_TYPE_COLORS: Record<
     badge: 'bg-blue-100 text-blue-800',
   },
   MULTI_CHOICE: {
-    bg: 'bg-indigo-50',
-    text: 'text-indigo-700',
-    border: 'border-indigo-200',
-    badge: 'bg-indigo-100 text-indigo-800',
+    bg: 'bg-teal-50',
+    text: 'text-teal-700',
+    border: 'border-teal-200',
+    badge: 'bg-teal-100 text-teal-800',
   },
   TRUE_FALSE: {
     bg: 'bg-green-50',

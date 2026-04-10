@@ -16,9 +16,9 @@ import type { ApiResponse, ExamData, ExamQuestionView } from '@/types/exam';
 
 function RuleItem({ text }: { text: string }) {
   return (
-    <li className="flex items-start gap-2.5 text-sm text-gray-700">
+    <li className="flex items-start gap-2.5 text-sm text-stone-700">
       <svg
-        className="mt-0.5 h-4 w-4 shrink-0 text-gray-400"
+        className="mt-0.5 h-4 w-4 shrink-0 text-stone-400"
         fill="none"
         viewBox="0 0 24 24"
         strokeWidth={2}
@@ -54,15 +54,15 @@ function RulesSection({ tabSwitchLimit }: { tabSwitchLimit: number }) {
   ];
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50">
+    <div className="rounded-lg border border-stone-200 bg-stone-50">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between px-4 py-3 text-left"
       >
-        <span className="text-sm font-medium text-gray-900">考试规则</span>
+        <span className="text-sm font-medium text-stone-800">考试规则</span>
         <svg
-          className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+          className={`h-4 w-4 text-stone-500 transition-transform duration-200 ${
             expanded ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -75,7 +75,7 @@ function RulesSection({ tabSwitchLimit }: { tabSwitchLimit: number }) {
       </button>
 
       {expanded && (
-        <div className="border-t border-gray-200 px-4 py-3">
+        <div className="border-t border-stone-200 px-4 py-3">
           <ul className="space-y-2.5">
             {rules.map((rule) => (
               <RuleItem key={rule} text={rule} />
@@ -272,8 +272,8 @@ export default function InstructionsPage() {
               d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
             />
           </svg>
-          <h2 className="text-lg font-semibold text-gray-900">无法加载考试</h2>
-          <p className="mt-2 text-sm text-gray-500">{error}</p>
+          <h2 className="text-lg font-semibold text-stone-800">无法加载考试</h2>
+          <p className="mt-2 text-sm text-stone-500">{error}</p>
           <Button
             variant="secondary"
             className="mt-6"
@@ -311,17 +311,17 @@ export default function InstructionsPage() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <Logo size="sm" className="mb-8" />
 
-      <div className="w-full max-w-lg rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="w-full max-w-lg rounded-xl border border-stone-200 bg-white shadow-sm">
         {/* Header */}
-        <div className="border-b border-gray-100 px-6 py-5">
+        <div className="border-b border-stone-100 px-6 py-5">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-gray-900">{exam.title}</h2>
+            <h2 className="text-lg font-semibold text-stone-800">{exam.title}</h2>
             {exam.isPracticeMode && (
               <Badge variant="info">练习模式</Badge>
             )}
           </div>
           {exam.description && (
-            <p className="mt-1.5 text-sm text-gray-500">{exam.description}</p>
+            <p className="mt-1.5 text-sm text-stone-500">{exam.description}</p>
           )}
         </div>
 
@@ -329,27 +329,27 @@ export default function InstructionsPage() {
         <div className="space-y-4 px-6 py-5">
           {/* Info grid */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-gray-50 px-4 py-3">
-              <p className="text-xs text-gray-500">题目组成</p>
-              <p className="mt-0.5 text-sm font-medium text-gray-900">
+            <div className="rounded-lg bg-stone-50 px-4 py-3">
+              <p className="text-xs text-stone-500">题目组成</p>
+              <p className="mt-0.5 text-sm font-medium text-stone-800">
                 {composition || `共 ${exam.totalScore} 分`}
               </p>
             </div>
-            <div className="rounded-lg bg-gray-50 px-4 py-3">
-              <p className="text-xs text-gray-500">考试时长</p>
-              <p className="mt-0.5 text-sm font-medium text-gray-900">
+            <div className="rounded-lg bg-stone-50 px-4 py-3">
+              <p className="text-xs text-stone-500">考试时长</p>
+              <p className="mt-0.5 text-sm font-medium text-stone-800">
                 {exam.timeLimitMinutes} 分钟
               </p>
             </div>
-            <div className="rounded-lg bg-gray-50 px-4 py-3">
-              <p className="text-xs text-gray-500">满分</p>
-              <p className="mt-0.5 text-sm font-medium text-gray-900">
+            <div className="rounded-lg bg-stone-50 px-4 py-3">
+              <p className="text-xs text-stone-500">满分</p>
+              <p className="mt-0.5 text-sm font-medium text-stone-800">
                 {exam.totalScore} 分
               </p>
             </div>
-            <div className="rounded-lg bg-gray-50 px-4 py-3">
-              <p className="text-xs text-gray-500">及格分数</p>
-              <p className="mt-0.5 text-sm font-medium text-gray-900">
+            <div className="rounded-lg bg-stone-50 px-4 py-3">
+              <p className="text-xs text-stone-500">及格分数</p>
+              <p className="mt-0.5 text-sm font-medium text-stone-800">
                 {exam.passScore} 分
               </p>
             </div>
@@ -359,8 +359,8 @@ export default function InstructionsPage() {
           <RulesSection tabSwitchLimit={exam.tabSwitchLimit} />
 
           {/* Privacy notice */}
-          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-            <p className="text-xs text-gray-500">
+          <div className="rounded-lg border border-stone-200 bg-white px-4 py-3">
+            <p className="text-xs text-stone-500">
               隐私声明：本系统仅用于公司内部技能考核，所有数据严格保密，不会用于其他用途。
             </p>
           </div>
@@ -379,9 +379,9 @@ export default function InstructionsPage() {
 
           {/* Already completed warning */}
           {!canStart && (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-              <p className="text-sm font-medium text-gray-800">您已完成本次考试</p>
-              <p className="mt-1 text-xs text-gray-600">
+            <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
+              <p className="text-sm font-medium text-stone-700">您已完成本次考试</p>
+              <p className="mt-1 text-xs text-stone-600">
                 已达最大作答次数 ({exam.maxAttempts} 次)，无法再次参加。
               </p>
             </div>
@@ -401,7 +401,7 @@ export default function InstructionsPage() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-100 px-6 py-4">
+        <div className="border-t border-stone-100 px-6 py-4">
           <Button
             size="lg"
             className="w-full"
@@ -421,7 +421,7 @@ export default function InstructionsPage() {
 
       <button
         onClick={() => router.push('/')}
-        className="mt-6 text-sm text-gray-500 transition-colors hover:text-gray-700"
+        className="mt-6 text-sm text-stone-500 transition-colors hover:text-stone-700"
       >
         返回首页
       </button>

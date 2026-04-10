@@ -13,9 +13,9 @@ export interface EmptyStateProps {
 export function EmptyState({ title, description, action, className }: EmptyStateProps) {
   return (
     <div className={cn('flex flex-col items-center justify-center py-16 text-center', className)}>
-      <div className="mb-4 rounded-full bg-gray-100 p-4">
+      <div className="mb-4 rounded-full bg-stone-100 p-4">
         <svg
-          className="h-8 w-8 text-gray-400"
+          className="h-8 w-8 text-stone-400"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
@@ -28,9 +28,9 @@ export function EmptyState({ title, description, action, className }: EmptyState
           />
         </svg>
       </div>
-      <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+      <h3 className="text-base font-semibold text-stone-800">{title}</h3>
       {description && (
-        <p className="mt-1.5 max-w-sm text-sm text-gray-500">{description}</p>
+        <p className="mt-1.5 max-w-sm text-sm text-stone-500">{description}</p>
       )}
       {action && <div className="mt-6">{action}</div>}
     </div>

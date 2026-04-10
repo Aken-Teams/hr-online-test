@@ -160,7 +160,7 @@ export default function ReportsPage() {
       <Card>
         <div className="max-w-md">
           {examsLoading ? (
-            <div className="h-10 animate-pulse rounded-lg bg-gray-200" />
+            <div className="h-10 animate-pulse rounded-lg bg-stone-200" />
           ) : (
             <Select
               label="选择考试"
@@ -183,40 +183,40 @@ export default function ReportsPage() {
         <>
           {/* Summary stats */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">参考人数</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">
+            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+              <p className="text-sm font-medium text-stone-500">参考人数</p>
+              <p className="mt-1 text-2xl font-bold text-stone-800">
                 {analytics.totalParticipants}
               </p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">平均分</p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">
+            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+              <p className="text-sm font-medium text-stone-500">平均分</p>
+              <p className="mt-1 text-2xl font-bold text-stone-800">
                 {analytics.avgScore?.toFixed(1) ?? '--'}
               </p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">通过率</p>
+            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+              <p className="text-sm font-medium text-stone-500">通过率</p>
               <p className="mt-1 text-2xl font-bold text-green-600">
                 {analytics.passRate != null
                   ? `${analytics.passRate.toFixed(1)}%`
                   : '--'}
               </p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">最高分</p>
-              <p className="mt-1 text-2xl font-bold text-indigo-600">
+            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+              <p className="text-sm font-medium text-stone-500">最高分</p>
+              <p className="mt-1 text-2xl font-bold text-teal-600">
                 {analytics.highestScore ?? '--'}
               </p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">最低分</p>
+            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+              <p className="text-sm font-medium text-stone-500">最低分</p>
               <p className="mt-1 text-2xl font-bold text-red-600">
                 {analytics.lowestScore ?? '--'}
               </p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-gray-500">缺考人数</p>
+            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+              <p className="text-sm font-medium text-stone-500">缺考人数</p>
               <p className="mt-1 text-2xl font-bold text-orange-600">
                 {analytics.absentCount ?? 0}
               </p>
@@ -231,25 +231,25 @@ export default function ReportsPage() {
                 <div className="space-y-2">
                   {analytics.scoreDistribution.map((item) => (
                     <div key={item.range} className="flex items-center gap-3">
-                      <span className="w-20 shrink-0 text-sm text-gray-600 text-right">
+                      <span className="w-20 shrink-0 text-sm text-stone-600 text-right">
                         {item.range}
                       </span>
-                      <div className="flex-1 h-6 bg-gray-100 rounded overflow-hidden">
+                      <div className="flex-1 h-6 bg-stone-100 rounded overflow-hidden">
                         <div
-                          className="h-full bg-indigo-500 rounded transition-all duration-300"
+                          className="h-full bg-teal-500 rounded transition-all duration-300"
                           style={{
                             width: `${(item.count / maxDistCount) * 100}%`,
                           }}
                         />
                       </div>
-                      <span className="w-8 shrink-0 text-sm font-medium text-gray-700 text-right">
+                      <span className="w-8 shrink-0 text-sm font-medium text-stone-700 text-right">
                         {item.count}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="py-8 text-center text-sm text-gray-400">暂无数据</p>
+                <p className="py-8 text-center text-sm text-stone-400">暂无数据</p>
               )}
             </Card>
 
@@ -270,16 +270,16 @@ export default function ReportsPage() {
                     };
                     return (
                       <div key={item.questionType} className="flex items-center gap-3">
-                        <span className="w-24 shrink-0 text-sm text-gray-600 text-right truncate">
+                        <span className="w-24 shrink-0 text-sm text-stone-600 text-right truncate">
                           {typeLabels[item.questionType] || item.questionType}
                         </span>
-                        <div className="flex-1 h-6 bg-gray-100 rounded overflow-hidden">
+                        <div className="flex-1 h-6 bg-stone-100 rounded overflow-hidden">
                           <div
                             className="h-full bg-green-500 rounded transition-all duration-300"
                             style={{ width: `${item.avgScoreRate}%` }}
                           />
                         </div>
-                        <span className="w-16 shrink-0 text-sm font-medium text-gray-700 text-right">
+                        <span className="w-16 shrink-0 text-sm font-medium text-stone-700 text-right">
                           {item.avgScoreRate.toFixed(1)}%
                         </span>
                       </div>
@@ -287,7 +287,7 @@ export default function ReportsPage() {
                   })}
                 </div>
               ) : (
-                <p className="py-8 text-center text-sm text-gray-400">暂无数据</p>
+                <p className="py-8 text-center text-sm text-stone-400">暂无数据</p>
               )}
             </Card>
           </div>
@@ -298,7 +298,7 @@ export default function ReportsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="border-b border-gray-200 text-gray-500">
+                    <tr className="border-b border-stone-200 text-stone-500">
                       <th className="pb-3 pr-4 font-medium">排名</th>
                       <th className="pb-3 pr-4 font-medium">姓名</th>
                       <th className="pb-3 pr-4 font-medium">工号</th>
@@ -310,21 +310,21 @@ export default function ReportsPage() {
                   </thead>
                   <tbody>
                     {analytics.rankings.map((r) => (
-                      <tr key={`${r.employeeNo}-${r.rank}`} className="border-b border-gray-100 last:border-0">
+                      <tr key={`${r.employeeNo}-${r.rank}`} className="border-b border-stone-100 last:border-0">
                         <td className="py-2.5 pr-4">
                           <span className={
                             r.rank <= 3
                               ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 text-xs font-bold text-yellow-800'
-                              : 'text-gray-500'
+                              : 'text-stone-500'
                           }>
                             {r.rank}
                           </span>
                         </td>
-                        <td className="py-2.5 pr-4 font-medium text-gray-900">{r.employeeName}</td>
-                        <td className="py-2.5 pr-4 text-gray-500">{r.employeeNo}</td>
-                        <td className="py-2.5 pr-4 text-gray-500">{r.department}</td>
-                        <td className="py-2.5 pr-4 text-right font-medium text-gray-900">{r.totalScore}</td>
-                        <td className="py-2.5 pr-4 text-right text-gray-500">
+                        <td className="py-2.5 pr-4 font-medium text-stone-800">{r.employeeName}</td>
+                        <td className="py-2.5 pr-4 text-stone-500">{r.employeeNo}</td>
+                        <td className="py-2.5 pr-4 text-stone-500">{r.department}</td>
+                        <td className="py-2.5 pr-4 text-right font-medium text-stone-800">{r.totalScore}</td>
+                        <td className="py-2.5 pr-4 text-right text-stone-500">
                           {Math.floor(r.timeTakenSeconds / 60)}分{r.timeTakenSeconds % 60}秒
                         </td>
                         <td className="py-2.5 text-center">
@@ -348,7 +348,7 @@ export default function ReportsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="border-b border-gray-200 text-gray-500">
+                    <tr className="border-b border-stone-200 text-stone-500">
                       <th className="pb-3 pr-4 font-medium">序号</th>
                       <th className="pb-3 pr-4 font-medium">姓名</th>
                       <th className="pb-3 pr-4 font-medium">工号</th>
@@ -357,11 +357,11 @@ export default function ReportsPage() {
                   </thead>
                   <tbody>
                     {analytics.absences.map((a, idx) => (
-                      <tr key={a.employeeNo} className="border-b border-gray-100 last:border-0">
-                        <td className="py-2.5 pr-4 text-gray-500">{idx + 1}</td>
-                        <td className="py-2.5 pr-4 font-medium text-gray-900">{a.employeeName}</td>
-                        <td className="py-2.5 pr-4 text-gray-500">{a.employeeNo}</td>
-                        <td className="py-2.5 text-gray-500">{a.department}</td>
+                      <tr key={a.employeeNo} className="border-b border-stone-100 last:border-0">
+                        <td className="py-2.5 pr-4 text-stone-500">{idx + 1}</td>
+                        <td className="py-2.5 pr-4 font-medium text-stone-800">{a.employeeName}</td>
+                        <td className="py-2.5 pr-4 text-stone-500">{a.employeeNo}</td>
+                        <td className="py-2.5 text-stone-500">{a.department}</td>
                       </tr>
                     ))}
                   </tbody>

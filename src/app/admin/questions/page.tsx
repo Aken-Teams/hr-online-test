@@ -231,13 +231,13 @@ export default function QuestionListPage() {
                     <TableCell>{q.department}</TableCell>
                     <TableCell>{q.level}</TableCell>
                     <TableCell>{q.points}</TableCell>
-                    <TableCell className="text-sm text-gray-500">
+                    <TableCell className="text-sm text-stone-500">
                       {q.sourceFile ? '导入' : '手动'}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <button
-                          className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                          className="text-sm text-teal-600 hover:text-teal-800 font-medium"
                           onClick={() => router.push(`/admin/questions/${q.id}`)}
                         >
                           编辑
@@ -259,7 +259,7 @@ export default function QuestionListPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-stone-500">
                 第 {page} / {totalPages} 页，共 {total} 条
               </p>
               <div className="flex items-center gap-2">

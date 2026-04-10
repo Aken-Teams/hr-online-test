@@ -275,7 +275,7 @@ function FaceTab() {
       )}
 
       {/* Webcam area */}
-      <div className="relative mx-auto aspect-[4/3] w-full max-w-xs overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
+      <div className="relative mx-auto aspect-[4/3] w-full max-w-xs overflow-hidden rounded-lg border-2 border-dashed border-stone-300 bg-stone-50">
         {capturing ? (
           <>
             <video
@@ -293,7 +293,7 @@ function FaceTab() {
         ) : (
           <div className="flex h-full flex-col items-center justify-center p-4 text-center">
             <svg
-              className="mb-2 h-10 w-10 text-gray-400"
+              className="mb-2 h-10 w-10 text-stone-400"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={1.5}
@@ -310,7 +310,7 @@ function FaceTab() {
                 d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"
               />
             </svg>
-            <p className="text-sm text-gray-500">点击下方按钮开启摄像头</p>
+            <p className="text-sm text-stone-500">点击下方按钮开启摄像头</p>
           </div>
         )}
       </div>
@@ -361,11 +361,11 @@ export default function VerifyPage() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <Logo size="sm" className="mb-8" />
 
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="w-full max-w-md rounded-xl border border-stone-200 bg-white shadow-sm">
         {/* Header */}
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">身份验证</h2>
-          <p className="mt-1 text-sm text-gray-500">
+        <div className="border-b border-stone-100 px-6 py-4">
+          <h2 className="text-lg font-semibold text-stone-800">身份验证</h2>
+          <p className="mt-1 text-sm text-stone-500">
             请先验证您的身份以进入考试
           </p>
         </div>
@@ -387,7 +387,7 @@ export default function VerifyPage() {
 
       <button
         onClick={() => window.history.back()}
-        className="mt-6 text-sm text-gray-500 transition-colors hover:text-gray-700"
+        className="mt-6 text-sm text-stone-500 transition-colors hover:text-stone-700"
       >
         返回首页
       </button>

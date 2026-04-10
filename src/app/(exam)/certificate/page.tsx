@@ -112,8 +112,8 @@ export default function CertificatePage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <Logo size="sm" className="mb-8" />
-        <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-8 text-center shadow-sm">
+          <h2 className="text-lg font-semibold text-stone-800">
             {error || '暂无证书'}
           </h2>
           <Button
@@ -134,98 +134,98 @@ export default function CertificatePage() {
         {/* Print-hidden controls */}
         <div className="mb-6 text-center print:hidden">
           <Logo size="sm" className="mx-auto mb-4 justify-center" />
-          <h1 className="text-xl font-bold text-gray-900">考核证书</h1>
+          <h1 className="text-xl font-bold text-stone-800">考核证书</h1>
         </div>
 
         {/* ================================================================ */}
         {/* Certificate card */}
         {/* ================================================================ */}
         <div
-          className="relative overflow-hidden rounded-xl border-2 border-indigo-200 bg-white shadow-lg print:border print:shadow-none"
+          className="relative overflow-hidden rounded-xl border-2 border-teal-200 bg-white shadow-lg print:border print:shadow-none"
           id="certificate"
         >
           {/* Decorative top border */}
-          <div className="h-2 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-500" />
+          <div className="h-2 bg-gradient-to-r from-teal-500 via-teal-600 to-teal-500" />
 
           {/* Inner border frame */}
-          <div className="m-4 border border-indigo-100 p-6 sm:m-6 sm:p-8">
+          <div className="m-4 border border-teal-100 p-6 sm:m-6 sm:p-8">
             {/* Company name */}
             <div className="mb-6 text-center">
-              <p className="text-lg font-bold tracking-widest text-indigo-900 sm:text-xl">
+              <p className="text-lg font-bold tracking-widest text-teal-900 sm:text-xl">
                 强茂科技有限公司
               </p>
-              <p className="mt-1 text-xs tracking-wider text-gray-500 sm:text-sm">
+              <p className="mt-1 text-xs tracking-wider text-stone-500 sm:text-sm">
                 PANJIT INTERNATIONAL INC.
               </p>
             </div>
 
             {/* Divider */}
-            <div className="mx-auto mb-6 h-px w-32 bg-indigo-200" />
+            <div className="mx-auto mb-6 h-px w-32 bg-teal-200" />
 
             {/* Certificate title */}
             <div className="mb-8 text-center">
-              <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+              <h2 className="text-2xl font-bold text-stone-800 sm:text-3xl">
                 技能考核证书
               </h2>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-stone-500">
                 Certificate of Completion
               </p>
             </div>
 
             {/* Certificate body */}
             <div className="mb-8 space-y-4 text-center">
-              <p className="text-sm text-gray-600">兹证明</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-stone-600">兹证明</p>
+              <p className="text-2xl font-bold text-stone-800">
                 {employee?.name || '---'}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-stone-600">
                 {employee?.department || '---'}
                 {employee?.role ? ` / ${employee.role}` : ''}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-stone-600">
                 已完成 2026 年度技能考核，成绩如下：
               </p>
             </div>
 
             {/* Score stats */}
             <div className="mx-auto mb-8 grid max-w-sm grid-cols-3 gap-4 text-center">
-              <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-4">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="rounded-lg border border-stone-100 bg-stone-50 px-3 py-4">
+                <p className="text-2xl font-bold text-stone-800">
                   {displayScore}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-stone-500">
                   总分 / {result.maxPossibleScore}
                 </p>
               </div>
-              <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-4">
-                <p className="text-2xl font-bold text-gray-900">
+              <div className="rounded-lg border border-stone-100 bg-stone-50 px-3 py-4">
+                <p className="text-2xl font-bold text-stone-800">
                   {result.correctCount}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-stone-500">
                   答对 / {result.totalQuestions}
                 </p>
               </div>
-              <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-4">
+              <div className="rounded-lg border border-stone-100 bg-stone-50 px-3 py-4">
                 <p className={`text-2xl font-bold ${grade.color}`}>
                   {result.gradeLabel || grade.label}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">等级</p>
+                <p className="mt-1 text-xs text-stone-500">等级</p>
               </div>
             </div>
 
             {/* Divider */}
-            <div className="mx-auto mb-6 h-px w-32 bg-indigo-200" />
+            <div className="mx-auto mb-6 h-px w-32 bg-teal-200" />
 
             {/* Issue date */}
             <div className="text-center">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-stone-500">
                 颁发日期：{today}
               </p>
             </div>
           </div>
 
           {/* Decorative bottom border */}
-          <div className="h-2 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-500" />
+          <div className="h-2 bg-gradient-to-r from-teal-500 via-teal-600 to-teal-500" />
         </div>
 
         {/* ================================================================ */}

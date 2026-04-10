@@ -48,12 +48,12 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center">
           <Logo size="lg" />
-          <h1 className="mt-6 text-xl font-bold text-gray-900">HR 管理后台登录</h1>
-          <p className="mt-1.5 text-sm text-gray-500">请使用管理员账号登录</p>
+          <h1 className="mt-6 text-xl font-bold text-stone-800">HR 管理后台登录</h1>
+          <p className="mt-1.5 text-sm text-stone-500">请使用管理员账号登录</p>
         </div>
 
         <Card>

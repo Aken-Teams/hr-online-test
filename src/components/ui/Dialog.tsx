@@ -55,16 +55,16 @@ export function Dialog({ open, onClose, title, children, footer, className }: Di
     >
       <div
         className={cn(
-          'w-full max-w-lg rounded-xl bg-white shadow-xl',
+          'w-full max-w-lg rounded-2xl bg-white shadow-xl',
           className
         )}
       >
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        <div className="border-b border-stone-100 px-6 py-4">
+          <h2 className="text-lg font-semibold text-stone-800">{title}</h2>
         </div>
         <div className="px-6 py-4">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+          <div className="flex items-center justify-end gap-3 border-t border-stone-100 px-6 py-4">
             {footer}
           </div>
         )}

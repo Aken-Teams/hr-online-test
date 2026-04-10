@@ -22,7 +22,7 @@ const TableHeader = forwardRef<
 >(({ className, ...props }, ref) => (
   <thead
     ref={ref}
-    className={cn('border-b border-gray-200 bg-gray-50/50', className)}
+    className={cn('border-b border-stone-200 bg-stone-50/50', className)}
     {...props}
   />
 ));
@@ -45,7 +45,7 @@ const TableRow = forwardRef<HTMLTableRowElement, HTMLAttributes<HTMLTableRowElem
     <tr
       ref={ref}
       className={cn(
-        'border-b border-gray-100 transition-colors hover:bg-gray-50/50',
+        'border-b border-stone-100 transition-colors hover:bg-stone-50/50',
         className
       )}
       {...props}
@@ -59,7 +59,7 @@ const TableHead = forwardRef<HTMLTableCellElement, ThHTMLAttributes<HTMLTableCel
     <th
       ref={ref}
       className={cn(
-        'h-10 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-gray-500',
+        'h-10 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-stone-500',
         className
       )}
       {...props}
@@ -72,7 +72,7 @@ const TableCell = forwardRef<HTMLTableCellElement, TdHTMLAttributes<HTMLTableCel
   ({ className, ...props }, ref) => (
     <td
       ref={ref}
-      className={cn('px-4 py-3 align-middle text-gray-700', className)}
+      className={cn('px-4 py-3 align-middle text-stone-700', className)}
       {...props}
     />
   )

@@ -131,25 +131,25 @@ export default function ExamResultsPage() {
       {/* Summary stats */}
       {summary && (
         <div className="grid grid-cols-4 gap-4">
-          <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">参考人数</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{summary.totalParticipants}</p>
+          <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+            <p className="text-sm font-medium text-stone-500">参考人数</p>
+            <p className="mt-1 text-2xl font-bold text-stone-800">{summary.totalParticipants}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">平均分</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">
+          <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+            <p className="text-sm font-medium text-stone-500">平均分</p>
+            <p className="mt-1 text-2xl font-bold text-stone-800">
               {summary.averageScore?.toFixed(1) ?? '--'}
             </p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">通过率</p>
+          <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+            <p className="text-sm font-medium text-stone-500">通过率</p>
             <p className="mt-1 text-2xl font-bold text-green-600">
               {summary.passRate != null ? `${summary.passRate.toFixed(1)}%` : '--'}
             </p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">最高分</p>
-            <p className="mt-1 text-2xl font-bold text-indigo-600">
+          <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+            <p className="text-sm font-medium text-stone-500">最高分</p>
+            <p className="mt-1 text-2xl font-bold text-teal-600">
               {summary.highestScore ?? '--'}
             </p>
           </div>
@@ -194,7 +194,7 @@ export default function ExamResultsPage() {
                       <Badge variant="default">待定</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm text-gray-500">
+                  <TableCell className="text-sm text-stone-500">
                     {row.timeTakenSeconds > 0 ? formatDuration(row.timeTakenSeconds) : '--'}
                   </TableCell>
                 </TableRow>

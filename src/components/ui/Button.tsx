@@ -5,13 +5,13 @@ import { cn } from '@/lib/utils';
 
 const variantStyles = {
   primary:
-    'bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:ring-indigo-500 disabled:bg-indigo-400',
+    'bg-teal-600 text-white hover:bg-teal-700 focus-visible:ring-teal-500 disabled:bg-teal-400',
   secondary:
-    'bg-gray-100 text-gray-900 hover:bg-gray-200 focus-visible:ring-gray-400 disabled:bg-gray-100 disabled:text-gray-400',
+    'bg-stone-100 text-stone-800 hover:bg-stone-200 focus-visible:ring-stone-400 disabled:bg-stone-100 disabled:text-stone-400',
   danger:
     'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 disabled:bg-red-400',
   ghost:
-    'bg-transparent text-gray-700 hover:bg-gray-100 focus-visible:ring-gray-400 disabled:text-gray-400',
+    'bg-transparent text-stone-700 hover:bg-stone-100 focus-visible:ring-stone-400 disabled:text-stone-400',
 } as const;
 
 const sizeStyles = {
@@ -71,7 +71,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-lg font-medium',
+          'inline-flex items-center justify-center gap-2 rounded-xl font-medium',
           'transition-colors duration-150',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
           'disabled:cursor-not-allowed',

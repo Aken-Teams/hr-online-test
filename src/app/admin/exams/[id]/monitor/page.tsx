@@ -145,16 +145,16 @@ export default function ExamMonitorPage() {
 
       {/* Stats bar */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">在线人数</p>
+        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+          <p className="text-sm font-medium text-stone-500">在线人数</p>
           <p className="mt-1 text-2xl font-bold text-blue-600">{onlineCount}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">已交卷</p>
+        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+          <p className="text-sm font-medium text-stone-500">已交卷</p>
           <p className="mt-1 text-2xl font-bold text-green-600">{submittedCount}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">异常行为</p>
+        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
+          <p className="text-sm font-medium text-stone-500">异常行为</p>
           <p className="mt-1 text-2xl font-bold text-red-600">{abnormalCount}</p>
         </div>
       </div>
@@ -193,7 +193,7 @@ export default function ExamMonitorPage() {
                       {s.tabSwitchCount}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm text-gray-500">
+                  <TableCell className="text-sm text-stone-500">
                     {s.lastActiveAt
                       ? new Date(s.lastActiveAt).toLocaleTimeString('zh-CN')
                       : '--'}
@@ -208,7 +208,7 @@ export default function ExamMonitorPage() {
       {/* Alert feed */}
       <Card title="异常事件">
         {alerts.length === 0 ? (
-          <p className="py-6 text-center text-sm text-gray-400">暂无异常事件</p>
+          <p className="py-6 text-center text-sm text-stone-400">暂无异常事件</p>
         ) : (
           <div className="max-h-64 overflow-y-auto space-y-2">
             {alerts.map((alert) => (

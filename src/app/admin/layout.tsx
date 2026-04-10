@@ -129,19 +129,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!ready) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="animate-pulse text-gray-400 text-sm">载入中...</div>
+      <div className="flex h-screen items-center justify-center bg-stone-50">
+        <div className="animate-pulse text-stone-400 text-sm">载入中...</div>
       </div>
     );
   }
 
   return (
     <ToastProvider>
-      <div className="flex h-screen overflow-hidden bg-gray-50">
+      <div className="flex h-screen overflow-hidden bg-stone-50">
         {/* Sidebar */}
-        <aside className="flex w-60 flex-col border-r border-gray-200 bg-white">
+        <aside className="flex w-60 flex-col border-r border-stone-200 bg-white">
           {/* Sidebar header */}
-          <div className="flex h-16 shrink-0 items-center border-b border-gray-100 px-5">
+          <div className="flex h-16 shrink-0 items-center border-b border-stone-100 px-5">
             <Logo size="sm" />
           </div>
 
@@ -160,11 +160,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       }}
                       className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                         active
-                          ? 'bg-indigo-50 text-indigo-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-teal-50 text-teal-700'
+                          : 'text-stone-600 hover:bg-stone-50 hover:text-stone-800'
                       }`}
                     >
-                      <span className={active ? 'text-indigo-600' : 'text-gray-400'}>
+                      <span className={active ? 'text-teal-600' : 'text-stone-400'}>
                         {item.icon}
                       </span>
                       {item.label}
@@ -176,18 +176,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </nav>
 
           {/* Sidebar footer */}
-          <div className="border-t border-gray-100 px-3 py-3">
-            <div className="text-xs text-gray-400 text-center">HR 考试管理系统 v1.0</div>
+          <div className="border-t border-stone-100 px-3 py-3">
+            <div className="text-xs text-stone-400 text-center">HR 考试管理系统 v1.0</div>
           </div>
         </aside>
 
         {/* Main content area */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Top bar */}
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6">
-            <h2 className="text-lg font-semibold text-gray-900">HR管理后台</h2>
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 bg-white px-6">
+            <h2 className="text-lg font-semibold text-stone-800">HR管理后台</h2>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500">管理员</span>
+              <span className="text-sm text-stone-500">管理员</span>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 退出登录
               </Button>
