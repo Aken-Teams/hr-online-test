@@ -15,6 +15,7 @@ import { useTimer } from '@/hooks/useTimer';
 import { useTabDetection } from '@/hooks/useTabDetection';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useExamStore } from '@/stores/exam-store';
+import { AntiCheat } from '@/components/shared/AntiCheat';
 import { cn } from '@/lib/utils';
 import type { ExamQuestionView } from '@/types/exam';
 
@@ -649,6 +650,7 @@ export default function TestPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <AntiCheat blockNavigation />
       {/* ================================================================== */}
       {/* Top bar */}
       {/* ================================================================== */}

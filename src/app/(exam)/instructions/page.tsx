@@ -158,6 +158,43 @@ export default function InstructionsPage() {
           return;
         }
 
+        // If there's an active IN_PROGRESS session, auto-resume and redirect
+        // to the test page — prevents re-login exploit during exam.
+        if (data.data.existingSession) {
+          try {
+            const startRes = await fetch(`/api/exam/${data.data.id}/start`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+            });
+            const startData = await startRes.json();
+            if (startRes.ok && startData.success && startData.data) {
+              const { sessionId, questions, timeRemaining } = startData.data;
+              setSession(
+                sessionId,
+                questions.map((q: ExamQuestionView) => ({
+                  id: q.id,
+                  type:
+                    q.type === 'SINGLE_CHOICE' || q.type === 'MULTI_CHOICE'
+                      ? 'choice'
+                      : q.type === 'TRUE_FALSE'
+                        ? 'truefalse'
+                        : 'essay',
+                  content: q.content,
+                  options: q.options.map((o: { label: string; content: string }) => ({ label: o.label, text: o.content })),
+                  multiSelect: q.isMultiSelect,
+                })),
+                timeRemaining,
+              );
+              localStorage.setItem('exam-questions-raw', JSON.stringify(questions));
+              localStorage.setItem('exam-session-id', sessionId);
+              router.replace('/test');
+              return;
+            }
+          } catch {
+            // Fall through to show instructions page normally
+          }
+        }
+
         setExam(data.data);
       } catch {
         setError('获取考试信息失败，请稍后重试');
@@ -167,7 +204,7 @@ export default function InstructionsPage() {
     }
 
     fetchExam();
-  }, [router]);
+  }, [router, setSession]);
 
   // ---------------------------------------------------------------------------
   // Time window check
@@ -419,12 +456,7 @@ export default function InstructionsPage() {
         </div>
       </div>
 
-      <button
-        onClick={() => router.push('/')}
-        className="mt-6 text-sm text-stone-500 transition-colors hover:text-stone-700"
-      >
-        返回首页
-      </button>
+      {/* No "返回首页" link — prevent re-login exploit during exam */}
     </div>
   );
 }

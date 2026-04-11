@@ -276,40 +276,52 @@ export default function ResultPage() {
   // ---- Fetch result --------------------------------------------------------
 
   useEffect(() => {
-    const sessionId = localStorage.getItem('exam-result-session');
+    async function loadResult(id: string) {
+      const res = await fetch(`/api/exam/${id}/result`);
+      const data: ApiResponse<ResultAPIResponse> = await res.json();
 
-    if (!sessionId) {
-      setError('未找到考试记录');
-      setLoading(false);
-      return;
+      if (!res.ok || !data.success || !data.data) {
+        setError(data.error || '获取成绩失败');
+        return;
+      }
+
+      const resp = data.data;
+      setExamTitle(resp.examTitle);
+      setSubmittedAt(resp.submittedAt);
+      if (resp.passScore) setPassScore(resp.passScore);
+
+      if (resp.isPending) {
+        setIsPending(true);
+        setPendingMessage(resp.message || '考试结果正在批阅中，请等待。');
+        return;
+      }
+
+      setResult(resp.result);
+      setRanking(resp.ranking ?? null);
+      setUnansweredCount(resp.unansweredCount ?? 0);
+      setPendingGradingCount(resp.pendingGradingCount ?? 0);
+      setWrongAnswers(resp.wrongAnswers || []);
     }
 
     async function fetchResult() {
       try {
-        const res = await fetch(`/api/exam/${sessionId}/result`);
-        const data: ApiResponse<ResultAPIResponse> = await res.json();
-
-        if (!res.ok || !data.success || !data.data) {
-          setError(data.error || '获取成绩失败');
+        // 1) Try stored session ID first (set after manual submit)
+        const sessionId = localStorage.getItem('exam-result-session');
+        if (sessionId) {
+          await loadResult(sessionId);
           return;
         }
 
-        const resp = data.data;
-        setExamTitle(resp.examTitle);
-        setSubmittedAt(resp.submittedAt);
-        if (resp.passScore) setPassScore(resp.passScore);
-
-        if (resp.isPending) {
-          setIsPending(true);
-          setPendingMessage(resp.message || '考试结果正在批阅中，请等待。');
+        // 2) Fallback: resolve examId from the available exam API
+        //    (covers "查看考试结果" from instructions page)
+        const availRes = await fetch('/api/exam/available');
+        const availData = await availRes.json();
+        if (availRes.ok && availData.success && availData.data?.id) {
+          await loadResult(availData.data.id);
           return;
         }
 
-        setResult(resp.result);
-        setRanking(resp.ranking ?? null);
-        setUnansweredCount(resp.unansweredCount ?? 0);
-        setPendingGradingCount(resp.pendingGradingCount ?? 0);
-        setWrongAnswers(resp.wrongAnswers || []);
+        setError('未找到考试记录');
       } catch {
         setError('网络错误，请稍后重试');
       } finally {

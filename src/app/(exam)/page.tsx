@@ -375,7 +375,24 @@ function FaceTab() {
 // ---------------------------------------------------------------------------
 
 export default function WelcomePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>('password');
+
+  // If user already has a token and an active exam session, redirect to test page
+  useEffect(() => {
+    const token = localStorage.getItem('exam-token');
+    if (!token) return;
+
+    fetch('/api/exam/available')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data?.existingSession) {
+          // Active session exists — send them to instructions which will auto-resume
+          router.replace('/instructions');
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">

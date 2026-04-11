@@ -88,6 +88,8 @@ export interface ExamData {
   canStart?: boolean;
   /** How many attempts the employee has already made */
   attemptCount?: number;
+  /** Active in-progress session if one exists (for auto-resume) */
+  existingSession?: { id: string; startedAt: string; attemptNumber: number } | null;
 }
 
 export interface ExamListItem {
