@@ -88,7 +88,7 @@ export default function QuestionListPage() {
     try {
       const params = new URLSearchParams();
       params.set('page', String(page));
-      params.set('pageSize', '20');
+      params.set('pageSize', '10');
       if (typeFilter) params.set('type', typeFilter);
       if (deptFilter) params.set('department', deptFilter);
       if (levelFilter) params.set('level', levelFilter);

@@ -37,6 +37,9 @@ export default function EmployeeListPage() {
   const { loadModels, computeDescriptor, modelsLoaded, modelsLoading, modelError } = useFaceAuth();
 
   const [employees, setEmployees] = useState<EmployeeData[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -62,24 +65,35 @@ export default function EmployeeListPage() {
   const imgRef = useRef<HTMLImageElement>(null);
 
   const fetchEmployees = useCallback(async () => {
+    setLoading(true);
     try {
       const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('pageSize', '10');
       if (search.trim()) params.set('search', search.trim());
 
       const res = await fetch(`/api/admin/employees?${params.toString()}`);
       if (!res.ok) throw new Error('加载失败');
       const json = await res.json();
-      setEmployees(json.data?.items ?? json.data ?? []);
+      const data = json.data;
+      setEmployees(data?.items ?? []);
+      setTotal(data?.total ?? 0);
+      setTotalPages(data?.totalPages ?? 1);
     } catch {
       toast('加载员工列表失败', 'error');
     } finally {
       setLoading(false);
     }
-  }, [search, toast]);
+  }, [page, search, toast]);
 
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   async function handleAddEmployee() {
     if (!newEmployee.name.trim() || !newEmployee.employeeNo.trim()) {
@@ -261,64 +275,92 @@ export default function EmployeeListPage() {
           }
         />
       ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>照片</TableHead>
-                <TableHead>姓名</TableHead>
-                <TableHead>工号</TableHead>
-                <TableHead>部门</TableHead>
-                <TableHead>岗位</TableHead>
-                <TableHead>人脸</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((emp) => (
-                <TableRow key={emp.id ?? emp.employeeNo}>
-                  <TableCell>
-                    {emp.photoUrl ? (
-                      <img
-                        src={emp.photoUrl}
-                        alt={emp.name}
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-xs font-medium text-stone-500">
-                        {emp.name.charAt(0)}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{emp.name}</TableCell>
-                  <TableCell>{emp.employeeNo}</TableCell>
-                  <TableCell>{emp.department}</TableCell>
-                  <TableCell>{emp.role}</TableCell>
-                  <TableCell>
-                    <Badge variant={emp.hasFaceDescriptor ? 'success' : 'default'}>
-                      {emp.hasFaceDescriptor ? '已录入' : '未录入'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={emp.isActive ? 'success' : 'default'}>
-                      {emp.isActive ? '在职' : '离职'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
-                      onClick={() => openPhotoDialog(emp)}
-                    >
-                      <Upload className="h-3 w-3" />
-                      上传照片
-                    </button>
-                  </TableCell>
+        <>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>照片</TableHead>
+                  <TableHead>姓名</TableHead>
+                  <TableHead>工号</TableHead>
+                  <TableHead>部门</TableHead>
+                  <TableHead>岗位</TableHead>
+                  <TableHead>人脸</TableHead>
+                  <TableHead>状态</TableHead>
+                  <TableHead>操作</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+              </TableHeader>
+              <TableBody>
+                {employees.map((emp) => (
+                  <TableRow key={emp.id ?? emp.employeeNo}>
+                    <TableCell>
+                      {emp.photoUrl ? (
+                        <img
+                          src={emp.photoUrl}
+                          alt={emp.name}
+                          className="h-8 w-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-xs font-medium text-stone-500">
+                          {emp.name.charAt(0)}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">{emp.name}</TableCell>
+                    <TableCell>{emp.employeeNo}</TableCell>
+                    <TableCell>{emp.department}</TableCell>
+                    <TableCell>{emp.role}</TableCell>
+                    <TableCell>
+                      <Badge variant={emp.hasFaceDescriptor ? 'success' : 'default'}>
+                        {emp.hasFaceDescriptor ? '已录入' : '未录入'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={emp.isActive ? 'success' : 'default'}>
+                        {emp.isActive ? '在职' : '离职'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                        onClick={() => openPhotoDialog(emp)}
+                      >
+                        <Upload className="h-3 w-3" />
+                        上传照片
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-stone-500">
+                第 {page} / {totalPages} 页，共 {total} 条
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  上一页
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Add employee dialog */}

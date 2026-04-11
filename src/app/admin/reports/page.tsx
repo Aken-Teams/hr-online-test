@@ -23,9 +23,10 @@ interface RankingItem {
   employeeName: string;
   employeeNo: string;
   department: string;
-  totalScore: number;
+  totalScore: number | null;
   timeTakenSeconds: number;
-  isPassed: boolean;
+  isPassed: boolean | null;
+  status?: string;
   submittedAt: string | null;
 }
 
@@ -311,11 +312,11 @@ export default function ReportsPage() {
                   <tbody>
                     {analytics.rankings.map((r) => (
                       <tr key={`${r.employeeNo}-${r.rank}`} className="border-b border-stone-100 last:border-0">
-                        <td className="py-2.5 pr-4">
+                        <td className="py-2.5 pr-4 w-12">
                           <span className={
                             r.rank <= 3
                               ? 'inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 text-xs font-bold text-yellow-800'
-                              : 'text-stone-500'
+                              : 'inline-flex h-6 w-6 items-center justify-center text-sm text-stone-500'
                           }>
                             {r.rank}
                           </span>
@@ -323,16 +324,26 @@ export default function ReportsPage() {
                         <td className="py-2.5 pr-4 font-medium text-stone-800">{r.employeeName}</td>
                         <td className="py-2.5 pr-4 text-stone-500">{r.employeeNo}</td>
                         <td className="py-2.5 pr-4 text-stone-500">{r.department}</td>
-                        <td className="py-2.5 pr-4 text-right font-medium text-stone-800">{r.totalScore}</td>
+                        <td className="py-2.5 pr-4 text-right font-medium text-stone-800">
+                          {r.totalScore != null ? r.totalScore : (
+                            <span className="text-amber-600 font-normal">待阅卷</span>
+                          )}
+                        </td>
                         <td className="py-2.5 pr-4 text-right text-stone-500">
                           {Math.floor(r.timeTakenSeconds / 60)}分{r.timeTakenSeconds % 60}秒
                         </td>
                         <td className="py-2.5 text-center">
-                          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                            r.isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
-                            {r.isPassed ? '合格' : '不合格'}
-                          </span>
+                          {r.totalScore == null || r.status === 'GRADING' ? (
+                            <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700">
+                              待阅卷
+                            </span>
+                          ) : (
+                            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                              r.isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                              {r.isPassed ? '合格' : '不合格'}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}

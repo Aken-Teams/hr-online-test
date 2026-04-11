@@ -151,7 +151,7 @@ export const MANUAL_GRADE_TYPES: QuestionType[] = [
 ];
 
 /** Default pagination page size */
-export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE_SIZE = 10;
 
 /** Maximum file upload size in bytes (10 MB) */
 export const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
