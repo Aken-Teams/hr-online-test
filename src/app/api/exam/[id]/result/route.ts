@@ -70,19 +70,10 @@ export async function GET(
       );
     }
 
-    if (!session.exam.showResultImmediately && !session.result?.isFullyGraded) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          sessionId: session.id,
-          examTitle: session.exam.title,
-          message: '考试结果正在批阅中，请等待管理员评分后查看。',
-          status: session.status,
-          submittedAt: session.submittedAt,
-          isPending: true,
-        },
-      });
-    }
+    // When not showResultImmediately and not fully graded, still return
+    // partial result (auto-graded objective scores) so employee can see
+    // their objective score with a clear "pending" indicator for subjective parts.
+    const isPendingGrading = !session.result?.isFullyGraded;
 
     // Load answers with question details for wrong answer analysis
     const answers = await prisma.answer.findMany({
@@ -219,6 +210,7 @@ export async function GET(
         submittedAt: session.submittedAt,
         passScore: session.exam.passScore,
         isPending: false,
+        isPendingGrading,
         result: session.result
           ? {
               totalScore: session.result.totalScore,

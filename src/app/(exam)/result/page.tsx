@@ -38,6 +38,7 @@ interface ResultAPIResponse {
   submittedAt: string | null;
   passScore?: number;
   isPending: boolean;
+  isPendingGrading?: boolean;
   message?: string;
   result: ExamResultData | null;
   ranking?: RankingData;
@@ -398,8 +399,10 @@ export default function ResultPage() {
     );
   }
 
-  const displayScore = result.totalScore ?? result.autoScore;
-  const isPassed = result.isPassed ?? (displayScore >= passScore);
+  const displayScore = result.totalScore ?? result.autoScore ?? 0;
+  const isPassed = result.isFullyGraded
+    ? (result.isPassed ?? (displayScore >= passScore))
+    : false; // Don't show "passed" until fully graded
 
   return (
     <div className="min-h-screen px-4 py-6 sm:py-10">
@@ -425,28 +428,45 @@ export default function ResultPage() {
 
             {/* Pass/fail badge */}
             <div className="mt-3 flex items-center gap-2">
-              <Badge variant={isPassed ? 'success' : 'danger'}>
-                {isPassed ? '合格' : '不合格'}
-              </Badge>
-              {result.gradeLabel && (
-                <Badge variant="info">
-                  等级 {result.gradeLabel}
-                </Badge>
+              {result.isFullyGraded ? (
+                <>
+                  <Badge variant={isPassed ? 'success' : 'danger'}>
+                    {isPassed ? '合格' : '不合格'}
+                  </Badge>
+                  {result.gradeLabel && (
+                    <Badge variant="info">
+                      等级 {result.gradeLabel}
+                    </Badge>
+                  )}
+                </>
+              ) : (
+                <Badge variant="warning">阅卷中</Badge>
               )}
             </div>
 
             <p className="mt-1.5 text-xs text-stone-400">
-              及格线: {passScore} 分
+              {result.isFullyGraded
+                ? `及格线: ${passScore} 分`
+                : `客观题得分 · 及格线 ${passScore} 分`}
             </p>
 
             {/* Pending grading notice */}
             {!result.isFullyGraded && (
-              <div className="mt-3 w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-center">
-                <p className="text-xs text-amber-700">
-                  {pendingGradingCount > 0
-                    ? `${pendingGradingCount} 道主观题待批阅，当前显示客观题得分，总分以最终阅卷结果为准`
-                    : '部分主观题尚未阅卷，总分以最终阅卷结果为准'}
-                </p>
+              <div className="mt-3 w-full rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <div className="flex items-start gap-2.5">
+                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-amber-800">主观题待阅卷</p>
+                    <p className="mt-0.5 text-xs text-amber-600">
+                      {pendingGradingCount > 0
+                        ? `${pendingGradingCount} 道主观题正在等待人力资源部评阅，当前仅显示客观题得分`
+                        : '部分主观题尚未阅卷'}
+                      ，总分以最终阅卷结果为准
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -518,23 +538,33 @@ export default function ResultPage() {
         )}
 
         {/* ===== Section 4: Score Breakdown ===== */}
-        {!result.isFullyGraded && (result.autoScore > 0 || result.manualScore != null) && (
-          <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+        {!result.isFullyGraded && (
+          <div className="mb-4 rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
             <h2 className="mb-3 text-sm font-semibold text-stone-700">评分明细</h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-stone-500">客观题得分（自动判分）</span>
-                <span className="font-medium text-stone-800">{result.autoScore} 分</span>
+            <div className="space-y-2.5 text-sm">
+              <div className="flex items-center justify-between rounded-lg bg-teal-50 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-teal-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-teal-700">客观题得分（自动判分）</span>
+                </div>
+                <span className="font-bold text-teal-800">{result.autoScore} 分</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-stone-500">主观题得分（人工批阅）</span>
-                <span className="font-medium text-stone-800">
+              <div className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-amber-700">主观题得分（人工批阅）</span>
+                </div>
+                <span className="font-bold text-amber-800">
                   {result.manualScore != null ? `${result.manualScore} 分` : '待批阅'}
                 </span>
               </div>
-              <div className="border-t border-stone-100 pt-2 flex items-center justify-between">
+              <div className="border-t border-stone-100 pt-2 flex items-center justify-between px-3">
                 <span className="font-medium text-stone-700">当前总分</span>
-                <span className="font-bold text-stone-800">{displayScore} 分</span>
+                <span className="text-lg font-bold text-stone-800">{displayScore ?? result.autoScore} 分</span>
               </div>
             </div>
           </div>
@@ -598,7 +628,7 @@ export default function ResultPage() {
 
         {/* ===== Action buttons ===== */}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          {isPassed && (
+          {isPassed && result.isFullyGraded && (
             <Button onClick={() => router.push('/certificate')}>
               查看证书
             </Button>
