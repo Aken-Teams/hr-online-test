@@ -154,11 +154,11 @@ export default function ExamGradingPage() {
       </Card>
 
       {/* Pending answers */}
-      {data?.answers.length === 0 ? (
+      {data?.answers?.length === 0 ? (
         <EmptyState title="全部完成" description="所有主观题已阅卷完毕" />
       ) : (
         <div className="space-y-3">
-          {data?.answers.map((answer) => {
+          {data?.answers?.map((answer) => {
             const isExpanded = expandedId === answer.answerId;
             const values = gradeValues[answer.answerId];
             const isSaving = savingId === answer.answerId;

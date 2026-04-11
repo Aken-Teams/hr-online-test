@@ -43,13 +43,28 @@ export async function GET(request: Request) {
       },
     });
 
+    // Get exam title
+    let examTitle = '';
+    if (examId) {
+      const exam = await prisma.exam.findUnique({
+        where: { id: examId },
+        select: { title: true },
+      });
+      examTitle = exam?.title ?? '';
+    }
+
     if (results.length === 0) {
       return NextResponse.json({
         success: true,
         data: {
-          avgScore: 0,
-          passRate: 0,
-          totalParticipants: 0,
+          summary: {
+            examTitle,
+            totalParticipants: 0,
+            averageScore: 0,
+            passRate: 0,
+            highestScore: 0,
+          },
+          results: [],
           scoreDistribution: [],
           difficultyAnalysis: [],
         },
@@ -134,6 +149,7 @@ export async function GET(request: Request) {
           include: {
             session: {
               select: {
+                id: true,
                 user: { select: { name: true, employeeNo: true, department: true } },
                 submittedAt: true,
               },
@@ -145,10 +161,13 @@ export async function GET(request: Request) {
 
     const rankings = rankingResults.map((r, idx) => ({
       rank: idx + 1,
+      sessionId: r.sessionId,
       employeeName: r.session.user.name,
       employeeNo: r.session.user.employeeNo,
       department: r.session.user.department,
       totalScore: r.totalScore ?? 0,
+      autoScore: r.autoScore ?? 0,
+      manualScore: r.manualScore,
       timeTakenSeconds: r.timeTakenSeconds,
       isPassed: r.isPassed ?? false,
       submittedAt: r.session.submittedAt?.toISOString() ?? null,
@@ -230,15 +249,18 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       data: {
-        avgScore,
-        passRate,
-        totalParticipants: results.length,
-        highestScore,
-        lowestScore,
-        avgTimeTaken,
+        summary: {
+          examTitle,
+          totalParticipants: results.length,
+          averageScore: avgScore,
+          passRate,
+          highestScore,
+          lowestScore,
+          avgTimeTaken,
+        },
+        results: rankings,
         scoreDistribution,
         difficultyAnalysis,
-        rankings,
         absences,
         absentCount: absences.length,
       },

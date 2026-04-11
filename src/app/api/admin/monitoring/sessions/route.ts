@@ -4,7 +4,7 @@ import { getAdminFromCookie } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const admin = await getAdminFromCookie();
     if (!admin) {
@@ -14,15 +14,38 @@ export async function GET() {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const examId = searchParams.get('examId');
+
     // SSE endpoint streaming active exam sessions every 3 seconds
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream({
       async start(controller) {
+        let closed = false;
+
+        const closeOnce = () => {
+          if (!closed) {
+            closed = true;
+            try { controller.close(); } catch { /* already closed */ }
+          }
+        };
+
+        let interval: ReturnType<typeof setInterval> | null = null;
+
         const sendEvent = async () => {
+          if (closed) return;
           try {
+            const sessionWhere: Record<string, unknown> = {};
+
+            if (examId) {
+              sessionWhere.examId = examId;
+            } else {
+              sessionWhere.status = 'IN_PROGRESS';
+            }
+
             const sessions = await prisma.examSession.findMany({
-              where: { status: 'IN_PROGRESS' },
+              where: sessionWhere,
               include: {
                 user: {
                   select: {
@@ -30,7 +53,6 @@ export async function GET() {
                     name: true,
                     employeeNo: true,
                     department: true,
-                    role: true,
                   },
                 },
                 exam: {
@@ -48,29 +70,37 @@ export async function GET() {
               orderBy: { startedAt: 'desc' },
             });
 
+            // Get total questions count for the exam
+            let totalQuestions = 0;
+            if (examId) {
+              totalQuestions = await prisma.examQuestion.count({
+                where: { examId },
+              });
+            }
+
+            if (closed) return; // check again after async queries
+
             const data = sessions.map((s) => ({
-              sessionId: s.id,
-              examId: s.examId,
-              examTitle: s.exam.title,
-              userId: s.userId,
+              id: s.id,
               employeeName: s.user.name,
               employeeNo: s.user.employeeNo,
               department: s.user.department,
-              startedAt: s.startedAt,
-              lastActiveAt: s.lastActiveAt,
+              answeredCount: s._count.answers,
+              totalQuestions,
+              status: s.status,
               tabSwitchCount: s.tabSwitchCount,
               tabSwitchLimit: s.exam.tabSwitchLimit,
+              lastActiveAt: s.lastActiveAt,
+              startedAt: s.startedAt,
               timeLimitMinutes: s.exam.timeLimitMinutes,
-              answeredCount: s._count.answers,
-              attemptNumber: s.attemptNumber,
             }));
 
-            const event = `data: ${JSON.stringify(data)}\n\n`;
+            const event = `data: ${JSON.stringify({ type: 'sessions', sessions: data })}\n\n`;
             controller.enqueue(encoder.encode(event));
-          } catch (err) {
-            console.error('SSE data fetch error:', err);
-            const event = `data: ${JSON.stringify({ error: '数据获取失败' })}\n\n`;
-            controller.enqueue(encoder.encode(event));
+          } catch {
+            // Controller closed or DB error — stop the stream
+            if (interval) clearInterval(interval);
+            closeOnce();
           }
         };
 
@@ -78,19 +108,14 @@ export async function GET() {
         await sendEvent();
 
         // Stream every 3 seconds
-        const interval = setInterval(async () => {
-          try {
-            await sendEvent();
-          } catch {
-            clearInterval(interval);
-            controller.close();
-          }
+        interval = setInterval(() => {
+          sendEvent();
         }, 3000);
 
         // Clean up on close after 10 minutes max (server-side timeout)
         setTimeout(() => {
-          clearInterval(interval);
-          controller.close();
+          if (interval) clearInterval(interval);
+          closeOnce();
         }, 10 * 60 * 1000);
       },
     });

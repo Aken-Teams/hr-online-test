@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
-import { batchGradingSchema } from '@/lib/validators';
-import { MANUAL_GRADE_TYPES, DEFAULT_PAGE_SIZE } from '@/lib/constants';
+import { batchGradingSchema, gradingSchema } from '@/lib/validators';
+import { MANUAL_GRADE_TYPES } from '@/lib/constants';
 
 export async function GET(request: Request) {
   try {
@@ -16,84 +16,95 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const examId = searchParams.get('examId');
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || String(DEFAULT_PAGE_SIZE), 10)));
 
-    const where: Record<string, unknown> = {
-      earnedPoints: null,
-      question: {
-        type: { in: MANUAL_GRADE_TYPES },
-      },
-      session: {
-        status: { in: ['SUBMITTED', 'GRADING', 'AUTO_SUBMITTED'] },
-      },
+    const sessionWhere: Record<string, unknown> = {
+      status: { in: ['SUBMITTED', 'GRADING', 'AUTO_SUBMITTED'] },
     };
-
     if (examId) {
-      (where.session as Record<string, unknown>).examId = examId;
+      sessionWhere.examId = examId;
     }
 
-    const [items, total] = await Promise.all([
-      prisma.answer.findMany({
-        where,
-        include: {
-          question: {
-            select: {
-              id: true,
-              type: true,
-              content: true,
-              points: true,
-              referenceAnswer: true,
-              gradingRubric: true,
-            },
+    // Get all manual-grading answers for matching sessions
+    const allManualAnswers = await prisma.answer.findMany({
+      where: {
+        question: {
+          type: { in: MANUAL_GRADE_TYPES },
+        },
+        session: sessionWhere,
+      },
+      include: {
+        question: {
+          select: {
+            id: true,
+            type: true,
+            content: true,
+            points: true,
+            referenceAnswer: true,
+            gradingRubric: true,
           },
-          session: {
-            select: {
-              id: true,
-              examId: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  employeeNo: true,
-                  department: true,
-                },
+        },
+        session: {
+          select: {
+            id: true,
+            examId: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                employeeNo: true,
+                department: true,
               },
-              exam: {
-                select: {
-                  id: true,
-                  title: true,
-                },
+            },
+            exam: {
+              select: {
+                id: true,
+                title: true,
               },
             },
           },
         },
-        orderBy: { answeredAt: 'asc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      prisma.answer.count({ where }),
-    ]);
+      },
+      orderBy: { answeredAt: 'asc' },
+    });
 
-    const answers = items.map((a) => ({
-      id: a.id,
+    // Get exam title
+    let examTitle = '';
+    if (examId) {
+      const exam = await prisma.exam.findUnique({
+        where: { id: examId },
+        select: { title: true },
+      });
+      examTitle = exam?.title ?? '';
+    }
+
+    // Split into pending and graded
+    const pendingAnswers = allManualAnswers.filter((a) => a.earnedPoints === null);
+    const gradedAnswers = allManualAnswers.filter((a) => a.earnedPoints !== null);
+
+    // Map to the format the frontend expects
+    const answers = pendingAnswers.map((a) => ({
+      answerId: a.id,
       sessionId: a.sessionId,
-      questionId: a.questionId,
+      employeeName: a.session.user.name,
+      department: a.session.user.department ?? '',
+      questionContent: a.question.content,
+      questionType: a.question.type,
+      maxPoints: a.question.points,
       answerContent: a.answerContent,
-      answeredAt: a.answeredAt,
-      question: a.question,
-      employee: a.session.user,
-      exam: a.session.exam,
+      earnedPoints: a.earnedPoints,
+      graderComment: a.graderComment,
+      isGraded: false,
+      referenceAnswer: a.question.referenceAnswer,
+      gradingRubric: a.question.gradingRubric,
     }));
 
     return NextResponse.json({
       success: true,
       data: {
-        items: answers,
-        total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize),
+        examTitle,
+        totalPending: pendingAnswers.length,
+        gradedCount: gradedAnswers.length,
+        answers,
       },
     });
   } catch (error) {
@@ -116,16 +127,26 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const parsed = batchGradingSchema.safeParse(body);
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: parsed.error.issues[0]?.message ?? '输入验证失败' },
-        { status: 400 }
-      );
+    // Support both single grade and batch format
+    let grades: { answerId: string; earnedPoints: number; comment?: string }[];
+
+    const batchParsed = batchGradingSchema.safeParse(body);
+    if (batchParsed.success) {
+      grades = batchParsed.data.grades;
+    } else {
+      // Try single grade format: { answerId, earnedPoints, comment }
+      const singleParsed = gradingSchema.safeParse(body);
+      if (singleParsed.success) {
+        grades = [singleParsed.data];
+      } else {
+        return NextResponse.json(
+          { success: false, error: batchParsed.error.issues[0]?.message ?? '输入验证失败' },
+          { status: 400 }
+        );
+      }
     }
 
-    const { grades } = parsed.data;
     const now = new Date();
     const gradedIds: string[] = [];
 
