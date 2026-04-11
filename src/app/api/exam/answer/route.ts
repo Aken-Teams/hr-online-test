@@ -32,12 +32,22 @@ export async function POST(request: Request) {
         userId: employee.userId,
         status: 'IN_PROGRESS',
       },
+      select: { id: true, questionOrder: true },
     });
 
     if (!session) {
       return NextResponse.json(
         { success: false, error: '考试会话不存在或已结束' },
         { status: 404 }
+      );
+    }
+
+    // Verify the question belongs to this exam session
+    const questionOrder = session.questionOrder as string[] | null;
+    if (questionOrder && Array.isArray(questionOrder) && !questionOrder.includes(questionId)) {
+      return NextResponse.json(
+        { success: false, error: '该题目不属于当前考试' },
+        { status: 400 }
       );
     }
 

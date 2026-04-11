@@ -228,7 +228,7 @@ export async function POST(
             null,
         },
       });
-    });
+    }, { timeout: 15000 });
 
     // Fetch the finalized result
     const result = await prisma.examResult.findUnique({
