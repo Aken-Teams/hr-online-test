@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { ArrowLeft } from 'lucide-react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import {
@@ -45,6 +46,7 @@ const STATUS_LABELS: Record<string, string> = {
   IN_PROGRESS: '进行中',
   SUBMITTED: '已交卷',
   AUTO_SUBMITTED: '自动提交',
+  GRADING: '待阅卷',
   COMPLETED: '已完成',
 };
 
@@ -137,7 +139,8 @@ export default function ExamMonitorPage() {
         title="实时监控"
         description={connected ? '已连接' : '连接断开，尝试重连中...'}
         actions={
-          <Button variant="ghost" onClick={() => router.push('/admin/exams')}>
+          <Button variant="outline" onClick={() => router.push('/admin/exams')}>
+            <ArrowLeft className="h-4 w-4" />
             返回列表
           </Button>
         }

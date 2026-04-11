@@ -15,12 +15,17 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const examId = searchParams.get('examId');
 
-    const resultWhere: Record<string, unknown> = {
-      totalScore: { not: null },
-    };
+    const resultWhere: Record<string, unknown> = {};
 
     if (examId) {
-      resultWhere.session = { examId };
+      resultWhere.session = {
+        examId,
+        status: { in: ['SUBMITTED', 'GRADING', 'COMPLETED', 'AUTO_SUBMITTED'] },
+      };
+    } else {
+      resultWhere.session = {
+        status: { in: ['SUBMITTED', 'GRADING', 'COMPLETED', 'AUTO_SUBMITTED'] },
+      };
     }
 
     // Fetch all exam results for analysis
@@ -82,16 +87,23 @@ export async function GET(request: Request) {
       });
     }
 
+    // Only count scored results (exclude GRADING sessions with null totalScore)
+    const scoredResults = results.filter((r) => r.totalScore != null);
+
     // Calculate avg score
-    const totalScoreSum = results.reduce(
+    const totalScoreSum = scoredResults.reduce(
       (sum, r) => sum + (r.totalScore ?? 0),
       0
     );
-    const avgScore = Math.round((totalScoreSum / results.length) * 10) / 10;
+    const avgScore = scoredResults.length > 0
+      ? Math.round((totalScoreSum / scoredResults.length) * 10) / 10
+      : 0;
 
     // Calculate pass rate
-    const passedCount = results.filter((r) => r.isPassed === true).length;
-    const passRate = Math.round((passedCount / results.length) * 1000) / 10;
+    const passedCount = scoredResults.filter((r) => r.isPassed === true).length;
+    const passRate = scoredResults.length > 0
+      ? Math.round((passedCount / scoredResults.length) * 1000) / 10
+      : 0;
 
     // Score distribution (ranges of 10)
     const distribution: Record<string, number> = {};
@@ -100,7 +112,7 @@ export async function GET(request: Request) {
       distribution[range] = 0;
     }
 
-    for (const r of results) {
+    for (const r of scoredResults) {
       const score = r.totalScore ?? 0;
       if (score >= 90) distribution['90-100']++;
       else if (score >= 80) distribution['80-89']++;
@@ -143,10 +155,10 @@ export async function GET(request: Request) {
       totalParticipants: data.count,
     }));
 
-    // Highest and lowest scores
-    const scores = results.map((r) => r.totalScore ?? 0);
-    const highestScore = Math.max(...scores);
-    const lowestScore = Math.min(...scores);
+    // Highest and lowest scores (only scored results)
+    const scores = scoredResults.map((r) => r.totalScore ?? 0);
+    const highestScore = scores.length > 0 ? Math.max(...scores) : 0;
+    const lowestScore = scores.length > 0 ? Math.min(...scores) : 0;
 
     // Average time taken
     const avgTimeTaken = Math.round(
@@ -156,11 +168,19 @@ export async function GET(request: Request) {
     // ---- Ranking: top results with employee info ----
     const rankingResults = examId
       ? await prisma.examResult.findMany({
-          where: { totalScore: { not: null }, session: { examId } },
+          where: {
+            session: {
+              examId,
+              status: { in: ['SUBMITTED', 'GRADING', 'COMPLETED', 'AUTO_SUBMITTED'] },
+            },
+          },
           include: {
             session: {
               select: {
                 id: true,
+                status: true,
+                tabSwitchCount: true,
+                isAutoSubmitted: true,
                 user: { select: { name: true, employeeNo: true, department: true } },
                 submittedAt: true,
               },
@@ -176,12 +196,15 @@ export async function GET(request: Request) {
       employeeName: r.session.user.name,
       employeeNo: r.session.user.employeeNo,
       department: r.session.user.department,
-      totalScore: r.totalScore ?? 0,
+      totalScore: r.totalScore,
       autoScore: r.autoScore ?? 0,
       manualScore: r.manualScore,
       timeTakenSeconds: r.timeTakenSeconds,
-      isPassed: r.isPassed ?? false,
+      isPassed: r.isPassed,
       submittedAt: r.session.submittedAt?.toISOString() ?? null,
+      status: r.session.status,
+      tabSwitchCount: r.session.tabSwitchCount,
+      isAutoSubmitted: r.session.isAutoSubmitted,
     }));
 
     // ---- Absence: assigned but not participated ----

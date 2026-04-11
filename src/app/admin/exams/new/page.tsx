@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useToast } from '@/components/ui/Toast';
@@ -152,7 +153,8 @@ export default function CreateExamPage() {
       <PageHeader
         title="创建考试"
         actions={
-          <Button variant="ghost" onClick={() => router.push('/admin/exams')}>
+          <Button variant="outline" onClick={() => router.push('/admin/exams')}>
+            <ArrowLeft className="h-4 w-4" />
             返回列表
           </Button>
         }

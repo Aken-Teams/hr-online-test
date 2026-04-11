@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ArrowLeft } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -41,6 +42,9 @@ interface ResultRow {
   manualScore: number | null;
   isPassed: boolean | null;
   timeTakenSeconds: number;
+  status?: string;
+  tabSwitchCount?: number;
+  isAutoSubmitted?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,7 +126,8 @@ export default function ExamResultsPage() {
             <Button variant="secondary" onClick={handleExport} loading={exporting}>
               导出Excel
             </Button>
-            <Button variant="ghost" onClick={() => router.push('/admin/exams')}>
+            <Button variant="outline" onClick={() => router.push('/admin/exams')}>
+              <ArrowLeft className="h-4 w-4" />
               返回列表
             </Button>
           </div>
@@ -172,6 +177,7 @@ export default function ExamResultsPage() {
                 <TableHead>客观题</TableHead>
                 <TableHead>主观题</TableHead>
                 <TableHead>是否通过</TableHead>
+                <TableHead>异常行为</TableHead>
                 <TableHead>用时</TableHead>
                 <TableHead>操作</TableHead>
               </TableRow>
@@ -183,18 +189,35 @@ export default function ExamResultsPage() {
                   <TableCell className="font-medium">{row.employeeName}</TableCell>
                   <TableCell>{row.department}</TableCell>
                   <TableCell className="font-semibold">
-                    {row.totalScore != null ? row.totalScore : '--'}
+                    {row.totalScore != null ? row.totalScore : (row.status === 'GRADING' ? '待阅卷' : '--')}
                   </TableCell>
                   <TableCell>{row.autoScore}</TableCell>
                   <TableCell>{row.manualScore != null ? row.manualScore : '--'}</TableCell>
                   <TableCell>
-                    {row.isPassed != null ? (
+                    {row.status === 'GRADING' ? (
+                      <Badge variant="warning">待阅卷</Badge>
+                    ) : row.isPassed != null ? (
                       <Badge variant={row.isPassed ? 'success' : 'danger'}>
                         {row.isPassed ? '通过' : '未通过'}
                       </Badge>
                     ) : (
                       <Badge variant="default">待定</Badge>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {(row.tabSwitchCount ?? 0) > 0 && (
+                        <Badge variant="danger">
+                          切屏{row.tabSwitchCount}次
+                        </Badge>
+                      )}
+                      {row.isAutoSubmitted && (
+                        <Badge variant="warning">超时自动提交</Badge>
+                      )}
+                      {(row.tabSwitchCount ?? 0) === 0 && !row.isAutoSubmitted && (
+                        <span className="text-sm text-stone-400">正常</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm text-stone-500">
                     {row.timeTakenSeconds > 0 ? formatDuration(row.timeTakenSeconds) : '--'}

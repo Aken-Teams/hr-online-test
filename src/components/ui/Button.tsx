@@ -12,6 +12,8 @@ const variantStyles = {
     'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 disabled:bg-red-400',
   ghost:
     'bg-transparent text-stone-700 hover:bg-stone-100 focus-visible:ring-stone-400 disabled:text-stone-400',
+  outline:
+    'border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 hover:text-stone-800 focus-visible:ring-stone-400 disabled:text-stone-400',
 } as const;
 
 const sizeStyles = {

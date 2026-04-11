@@ -93,7 +93,7 @@ export const SESSION_STATUS_LABELS: Record<SessionStatus, string> = {
   IN_PROGRESS: '进行中',
   SUBMITTED: '已提交',
   AUTO_SUBMITTED: '自动提交',
-  GRADING: '阅卷中',
+  GRADING: '待阅卷',
   COMPLETED: '已完成',
 };
 

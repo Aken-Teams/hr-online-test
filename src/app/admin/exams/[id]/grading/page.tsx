@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Progress } from '@/components/ui/Progress';
@@ -178,7 +179,8 @@ export default function ExamGradingPage() {
       <PageHeader
         title={data?.examTitle ? `阅卷 - ${data.examTitle}` : '阅卷'}
         actions={
-          <Button variant="ghost" onClick={() => router.push('/admin/exams')}>
+          <Button variant="outline" onClick={() => router.push('/admin/exams')}>
+            <ArrowLeft className="h-4 w-4" />
             返回列表
           </Button>
         }

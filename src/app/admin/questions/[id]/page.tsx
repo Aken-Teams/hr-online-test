@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -235,7 +236,8 @@ export default function EditQuestionPage() {
       <PageHeader
         title="编辑题目"
         actions={
-          <Button variant="ghost" onClick={() => router.push('/admin/questions')}>
+          <Button variant="outline" onClick={() => router.push('/admin/questions')}>
+            <ArrowLeft className="h-4 w-4" />
             返回列表
           </Button>
         }

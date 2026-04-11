@@ -65,12 +65,12 @@ function StatCard({ label, value, sub }: StatCardProps) {
 // Status badge mapping
 // ---------------------------------------------------------------------------
 
-const STATUS_BADGE_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' | 'danger'> = {
+const STATUS_BADGE_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' | 'danger' | 'purple'> = {
   NOT_STARTED: 'default',
   IN_PROGRESS: 'info',
   SUBMITTED: 'success',
   AUTO_SUBMITTED: 'warning',
-  GRADING: 'purple' as 'warning',
+  GRADING: 'purple',
   COMPLETED: 'success',
 };
 
@@ -79,7 +79,7 @@ const SESSION_STATUS_LABELS: Record<string, string> = {
   IN_PROGRESS: '进行中',
   SUBMITTED: '已提交',
   AUTO_SUBMITTED: '自动提交',
-  GRADING: '阅卷中',
+  GRADING: '待阅卷',
   COMPLETED: '已完成',
 };
 

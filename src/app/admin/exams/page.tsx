@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
 import { EXAM_STATUS_LABELS } from '@/lib/constants';
+import { Pencil, Send, Eye, ClipboardCheck, BarChart3 } from 'lucide-react';
 import type { ExamListItem, ExamStatus } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
@@ -148,41 +149,46 @@ export default function ExamListPage() {
                     {formatDateTime(exam.openAt)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
-                        className="text-sm text-teal-600 hover:text-teal-800 font-medium"
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
                         onClick={() => router.push(`/admin/exams/${exam.id}`)}
                       >
+                        <Pencil className="h-3 w-3" />
                         编辑
                       </button>
                       {exam.status === 'DRAFT' && (
                         <button
-                          className="text-sm text-green-600 hover:text-green-800 font-medium"
+                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
                           onClick={() => setPublishId(exam.id)}
                         >
+                          <Send className="h-3 w-3" />
                           发布
                         </button>
                       )}
                       {(exam.status === 'ACTIVE' || exam.status === 'PUBLISHED') && (
                         <button
-                          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                           onClick={() => router.push(`/admin/exams/${exam.id}/monitor`)}
                         >
+                          <Eye className="h-3 w-3" />
                           监控
                         </button>
                       )}
                       {(exam.status === 'ACTIVE' || exam.status === 'CLOSED') && (
                         <button
-                          className="text-sm text-amber-600 hover:text-amber-800 font-medium"
+                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
                           onClick={() => router.push(`/admin/exams/${exam.id}/grading`)}
                         >
+                          <ClipboardCheck className="h-3 w-3" />
                           阅卷
                         </button>
                       )}
                       <button
-                        className="text-sm text-stone-600 hover:text-stone-700 font-medium"
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
                         onClick={() => router.push(`/admin/exams/${exam.id}/results`)}
                       >
+                        <BarChart3 className="h-3 w-3" />
                         成绩
                       </button>
                     </div>
