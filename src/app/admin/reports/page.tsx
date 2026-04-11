@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/components/ui/Toast';
@@ -162,11 +162,11 @@ export default function ReportsPage() {
           {examsLoading ? (
             <div className="h-10 animate-pulse rounded-lg bg-stone-200" />
           ) : (
-            <Select
+            <CustomSelect
               label="选择考试"
               options={examOptions}
               value={selectedExamId}
-              onChange={(e) => setSelectedExamId(e.target.value)}
+              onChange={(val) => setSelectedExamId(val)}
               placeholder="请选择考试"
             />
           )}

@@ -182,7 +182,8 @@ export default function CreateQuestionPage() {
       <PageHeader
         title="新建题目"
         actions={
-          <Button variant="ghost" onClick={() => router.push('/admin/questions')}>
+          <Button variant="outline" onClick={() => router.push('/admin/questions')}>
+            <ArrowLeft className="h-4 w-4" />
             返回列表
           </Button>
         }

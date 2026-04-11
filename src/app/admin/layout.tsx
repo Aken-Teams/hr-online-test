@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/shared/Logo';
 import { Button } from '@/components/ui/Button';
 import { ToastProvider } from '@/components/ui/Toast';
-import { LogOut } from 'lucide-react';
+import { LogOut, CircleUserRound } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Sidebar navigation items
@@ -188,7 +188,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-stone-200 bg-white px-6">
             <h2 className="text-lg font-semibold text-stone-800">HR管理后台</h2>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-stone-500">管理员</span>
+              <div className="flex items-center gap-2">
+                <CircleUserRound className="h-7 w-7 text-stone-400" />
+                <span className="text-sm font-medium text-stone-600">管理员</span>
+              </div>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
                 退出登录

@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
 import { DEPARTMENTS } from '@/lib/constants';
+import { Upload } from 'lucide-react';
 import { useFaceAuth } from '@/hooks/useFaceAuth';
 import type { EmployeeData } from '@/types/exam';
 
@@ -305,14 +306,13 @@ export default function EmployeeListPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="text-sm text-teal-600 hover:text-teal-800 font-medium"
-                        onClick={() => openPhotoDialog(emp)}
-                      >
-                        上传照片
-                      </button>
-                    </div>
+                    <button
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                      onClick={() => openPhotoDialog(emp)}
+                    >
+                      <Upload className="h-3 w-3" />
+                      上传照片
+                    </button>
                   </TableCell>
                 </TableRow>
               ))}

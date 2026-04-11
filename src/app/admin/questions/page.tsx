@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
 import { DEPARTMENTS, QUESTION_TYPE_LABELS } from '@/lib/constants';
+import { Pencil, Trash2 } from 'lucide-react';
 import type { QuestionData, QuestionType, PaginatedResponse } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
@@ -235,17 +236,19 @@ export default function QuestionListPage() {
                       {q.sourceFile ? '导入' : '手动'}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <button
-                          className="text-sm text-teal-600 hover:text-teal-800 font-medium"
+                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
                           onClick={() => router.push(`/admin/questions/${q.id}`)}
                         >
+                          <Pencil className="h-3 w-3" />
                           编辑
                         </button>
                         <button
-                          className="text-sm text-red-600 hover:text-red-800 font-medium"
+                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
                           onClick={() => setDeleteId(q.id)}
                         >
+                          <Trash2 className="h-3 w-3" />
                           删除
                         </button>
                       </div>
