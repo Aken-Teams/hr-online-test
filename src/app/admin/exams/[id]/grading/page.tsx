@@ -28,6 +28,7 @@ interface PendingAnswer {
   earnedPoints: number | null;
   graderComment: string | null;
   isGraded: boolean;
+  referenceAnswer?: string | null;
 }
 
 interface GradingData {
@@ -153,9 +154,12 @@ export default function ExamGradingPage() {
         </div>
       </Card>
 
-      {/* Pending answers */}
+      {/* Answers list */}
       {data?.answers?.length === 0 ? (
-        <EmptyState title="全部完成" description="所有主观题已阅卷完毕" />
+        <EmptyState
+          title="暂无主观题"
+          description="该考试尚未有考生提交主观题作答"
+        />
       ) : (
         <div className="space-y-3">
           {data?.answers?.map((answer) => {
@@ -166,7 +170,11 @@ export default function ExamGradingPage() {
             return (
               <div
                 key={answer.answerId}
-                className="rounded-xl border border-stone-200 bg-white shadow-sm"
+                className={`rounded-xl border shadow-sm ${
+                  answer.isGraded
+                    ? 'border-green-200 bg-green-50/30'
+                    : 'border-stone-200 bg-white'
+                }`}
               >
                 {/* Header row */}
                 <button
@@ -182,6 +190,11 @@ export default function ExamGradingPage() {
                       {answer.employeeName}
                     </span>
                     <span className="text-sm text-stone-500">{answer.department}</span>
+                    {answer.isGraded && (
+                      <span className="text-sm font-medium text-green-700">
+                        {answer.earnedPoints}/{answer.maxPoints} 分
+                      </span>
+                    )}
                   </div>
                   <svg
                     className={`h-5 w-5 text-stone-400 transition-transform ${
@@ -207,7 +220,17 @@ export default function ExamGradingPage() {
                       </p>
                     </div>
 
-                    {/* Answer */}
+                    {/* Reference answer */}
+                    {answer.referenceAnswer && (
+                      <div>
+                        <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-1">参考答案</p>
+                        <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800 whitespace-pre-wrap">
+                          {answer.referenceAnswer}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Student answer */}
                     <div>
                       <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-1">考生作答</p>
                       <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-700 whitespace-pre-wrap">
@@ -215,38 +238,57 @@ export default function ExamGradingPage() {
                       </div>
                     </div>
 
-                    {/* Grading form */}
-                    <div className="flex items-end gap-4">
-                      <div className="w-32">
-                        <Input
-                          label={`得分（满分 ${answer.maxPoints}）`}
-                          type="number"
-                          value={values?.score ?? (answer.earnedPoints != null ? String(answer.earnedPoints) : '')}
-                          onChange={(e) => updateGrade(answer.answerId, 'score', e.target.value)}
-                          min={0}
-                          max={answer.maxPoints}
-                          placeholder="0"
-                        />
+                    {/* Grading form or graded result */}
+                    {answer.isGraded ? (
+                      <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                        <div className="flex items-center gap-4">
+                          <div>
+                            <p className="text-xs text-green-600 font-medium">得分</p>
+                            <p className="text-lg font-bold text-green-800">
+                              {answer.earnedPoints} / {answer.maxPoints}
+                            </p>
+                          </div>
+                          {answer.graderComment && (
+                            <div className="flex-1 border-l border-green-200 pl-4">
+                              <p className="text-xs text-green-600 font-medium">评语</p>
+                              <p className="text-sm text-green-800">{answer.graderComment}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-stone-700 mb-1.5">评语</label>
-                        <textarea
-                          className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
-                          rows={2}
-                          value={values?.comment ?? (answer.graderComment || '')}
-                          onChange={(e) => updateGrade(answer.answerId, 'comment', e.target.value)}
-                          placeholder="评语（可选）"
-                        />
+                    ) : (
+                      <div className="flex items-end gap-4">
+                        <div className="w-32">
+                          <Input
+                            label={`得分（满分 ${answer.maxPoints}）`}
+                            type="number"
+                            value={values?.score ?? ''}
+                            onChange={(e) => updateGrade(answer.answerId, 'score', e.target.value)}
+                            min={0}
+                            max={answer.maxPoints}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-stone-700 mb-1.5">评语</label>
+                          <textarea
+                            className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
+                            rows={2}
+                            value={values?.comment ?? ''}
+                            onChange={(e) => updateGrade(answer.answerId, 'comment', e.target.value)}
+                            placeholder="评语（可选）"
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveGrade(answer)}
+                          loading={isSaving}
+                          className="shrink-0"
+                        >
+                          保存
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSaveGrade(answer)}
-                        loading={isSaving}
-                        className="shrink-0"
-                      >
-                        保存
-                      </Button>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>

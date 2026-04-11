@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const examId = searchParams.get('examId');
 
     const sessionWhere: Record<string, unknown> = {
-      status: { in: ['SUBMITTED', 'GRADING', 'AUTO_SUBMITTED'] },
+      status: { in: ['SUBMITTED', 'GRADING', 'AUTO_SUBMITTED', 'COMPLETED'] },
     };
     if (examId) {
       sessionWhere.examId = examId;
@@ -81,8 +81,8 @@ export async function GET(request: Request) {
     const pendingAnswers = allManualAnswers.filter((a) => a.earnedPoints === null);
     const gradedAnswers = allManualAnswers.filter((a) => a.earnedPoints !== null);
 
-    // Map to the format the frontend expects
-    const answers = pendingAnswers.map((a) => ({
+    // Map ALL answers (pending first, then graded) for the frontend
+    const mapAnswer = (a: typeof allManualAnswers[number]) => ({
       answerId: a.id,
       sessionId: a.sessionId,
       employeeName: a.session.user.name,
@@ -96,7 +96,13 @@ export async function GET(request: Request) {
       isGraded: a.earnedPoints != null,
       referenceAnswer: a.question.referenceAnswer,
       gradingRubric: a.question.gradingRubric,
-    }));
+    });
+
+    // Pending answers first, then graded ones
+    const answers = [
+      ...pendingAnswers.map(mapAnswer),
+      ...gradedAnswers.map(mapAnswer),
+    ];
 
     return NextResponse.json({
       success: true,
