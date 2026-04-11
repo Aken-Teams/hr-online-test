@@ -93,7 +93,7 @@ export async function GET(request: Request) {
       answerContent: a.answerContent,
       earnedPoints: a.earnedPoints,
       graderComment: a.graderComment,
-      isGraded: false,
+      isGraded: a.earnedPoints != null,
       referenceAnswer: a.question.referenceAnswer,
       gradingRubric: a.question.gradingRubric,
     }));

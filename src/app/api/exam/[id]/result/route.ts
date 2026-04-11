@@ -96,9 +96,15 @@ export async function GET(
       },
     });
 
-    // Load ALL exam questions to fill gaps for old data that has missing Answer records
+    // Load this session's exam questions (scoped by questionOrder)
+    const questionOrder = session.questionOrder as string[] | null;
+    const sessionQuestionIds = questionOrder && Array.isArray(questionOrder) ? questionOrder : [];
+
     const examQuestions = await prisma.examQuestion.findMany({
-      where: { examId: session.examId },
+      where: {
+        examId: session.examId,
+        ...(sessionQuestionIds.length > 0 ? { questionId: { in: sessionQuestionIds } } : {}),
+      },
       include: {
         question: {
           include: {

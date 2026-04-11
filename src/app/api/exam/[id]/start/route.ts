@@ -64,9 +64,15 @@ export async function POST(
     });
 
     if (existingSession) {
-      // Resume: load questions for existing session
+      // Resume: load only this session's questions (via questionOrder)
+      const orderArray = existingSession.questionOrder as string[] | null;
+      const questionIds = orderArray && Array.isArray(orderArray) ? orderArray : [];
+
       const examQuestions = await prisma.examQuestion.findMany({
-        where: { examId },
+        where: {
+          examId,
+          ...(questionIds.length > 0 ? { questionId: { in: questionIds } } : {}),
+        },
         include: {
           question: {
             include: {
@@ -74,14 +80,12 @@ export async function POST(
             },
           },
         },
-        orderBy: { sortOrder: 'asc' },
       });
 
-      // Re-order based on stored questionOrder
-      const orderArray = existingSession.questionOrder as string[] | null;
+      // Sort according to questionOrder
       let orderedQuestions = examQuestions;
-      if (orderArray && Array.isArray(orderArray)) {
-        const orderMap = new Map(orderArray.map((id, idx) => [id, idx]));
+      if (questionIds.length > 0) {
+        const orderMap = new Map(questionIds.map((id, idx) => [id, idx]));
         orderedQuestions = [...examQuestions].sort((a, b) => {
           const aIdx = orderMap.get(a.questionId) ?? a.sortOrder;
           const bIdx = orderMap.get(b.questionId) ?? b.sortOrder;

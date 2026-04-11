@@ -57,6 +57,14 @@ export async function GET(request: Request) {
       return NextResponse.json({
         success: true,
         data: {
+          examTitle,
+          totalParticipants: 0,
+          avgScore: 0,
+          averageScore: 0,
+          passRate: 0,
+          highestScore: 0,
+          lowestScore: 0,
+          avgTimeTaken: 0,
           summary: {
             examTitle,
             totalParticipants: 0,
@@ -64,9 +72,12 @@ export async function GET(request: Request) {
             passRate: 0,
             highestScore: 0,
           },
+          rankings: [],
           results: [],
           scoreDistribution: [],
           difficultyAnalysis: [],
+          absences: [],
+          absentCount: 0,
         },
       });
     }
@@ -249,6 +260,16 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       data: {
+        // Flat structure matching frontend AnalyticsData interface
+        examTitle,
+        totalParticipants: results.length,
+        avgScore,
+        averageScore: avgScore,
+        passRate,
+        highestScore,
+        lowestScore,
+        avgTimeTaken,
+        // Also keep summary for results page compatibility
         summary: {
           examTitle,
           totalParticipants: results.length,
@@ -258,6 +279,7 @@ export async function GET(request: Request) {
           lowestScore,
           avgTimeTaken,
         },
+        rankings,
         results: rankings,
         scoreDistribution,
         difficultyAnalysis,

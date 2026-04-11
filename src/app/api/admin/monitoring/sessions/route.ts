@@ -70,30 +70,27 @@ export async function GET(request: Request) {
               orderBy: { startedAt: 'desc' },
             });
 
-            // Get total questions count for the exam
-            let totalQuestions = 0;
-            if (examId) {
-              totalQuestions = await prisma.examQuestion.count({
-                where: { examId },
-              });
-            }
-
             if (closed) return; // check again after async queries
 
-            const data = sessions.map((s) => ({
+            const data = sessions.map((s) => {
+              // Use session's questionOrder for accurate per-session count
+              const qOrder = s.questionOrder as string[] | null;
+              const sessionTotalQuestions = qOrder && Array.isArray(qOrder) ? qOrder.length : 0;
+              return {
               id: s.id,
               employeeName: s.user.name,
               employeeNo: s.user.employeeNo,
               department: s.user.department,
               answeredCount: s._count.answers,
-              totalQuestions,
+              totalQuestions: sessionTotalQuestions,
               status: s.status,
               tabSwitchCount: s.tabSwitchCount,
               tabSwitchLimit: s.exam.tabSwitchLimit,
               lastActiveAt: s.lastActiveAt,
               startedAt: s.startedAt,
               timeLimitMinutes: s.exam.timeLimitMinutes,
-            }));
+            };
+            });
 
             const event = `data: ${JSON.stringify({ type: 'sessions', sessions: data })}\n\n`;
             controller.enqueue(encoder.encode(event));

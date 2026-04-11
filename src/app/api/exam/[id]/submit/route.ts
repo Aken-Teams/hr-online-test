@@ -59,9 +59,15 @@ export async function POST(
 
     const now = new Date();
 
-    // Load all questions for this exam
+    // Load this session's questions (scoped by questionOrder)
+    const questionOrder = session.questionOrder as string[] | null;
+    const sessionQuestionIds = questionOrder && Array.isArray(questionOrder) ? questionOrder : [];
+
     const examQuestions = await prisma.examQuestion.findMany({
-      where: { examId },
+      where: {
+        examId,
+        ...(sessionQuestionIds.length > 0 ? { questionId: { in: sessionQuestionIds } } : {}),
+      },
       include: {
         question: true,
       },
