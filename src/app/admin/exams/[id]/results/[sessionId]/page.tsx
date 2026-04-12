@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { ArrowLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
 // ---------------------------------------------------------------------------
@@ -275,9 +276,10 @@ export default function SessionDetailPage() {
         description={`${data.examTitle} · ${data.employee.department} · 工号 ${data.employee.employeeNo}`}
         actions={
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => router.push(`/admin/exams/${examId}/results`)}
           >
+            <ArrowLeft className="h-4 w-4" />
             返回成绩列表
           </Button>
         }

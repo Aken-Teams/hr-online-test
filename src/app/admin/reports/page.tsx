@@ -158,7 +158,7 @@ export default function ReportsPage() {
       />
 
       {/* Exam selector */}
-      <Card>
+      <Card className="overflow-visible">
         <div className="max-w-md">
           {examsLoading ? (
             <div className="h-10 animate-pulse rounded-lg bg-stone-200" />
@@ -183,59 +183,59 @@ export default function ReportsPage() {
       {analytics && !loading && (
         <>
           {/* Summary stats */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-stone-500">参考人数</p>
-              <p className="mt-1 text-2xl font-bold text-stone-800">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+            <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+              <p className="text-xs font-medium text-stone-500 sm:text-sm">参考人数</p>
+              <p className="mt-0.5 text-xl font-bold text-stone-800 sm:mt-1 sm:text-2xl">
                 {analytics.totalParticipants}
               </p>
             </div>
-            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-stone-500">平均分</p>
-              <p className="mt-1 text-2xl font-bold text-stone-800">
+            <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+              <p className="text-xs font-medium text-stone-500 sm:text-sm">平均分</p>
+              <p className="mt-0.5 text-xl font-bold text-stone-800 sm:mt-1 sm:text-2xl">
                 {analytics.avgScore?.toFixed(1) ?? '--'}
               </p>
             </div>
-            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-stone-500">通过率</p>
-              <p className="mt-1 text-2xl font-bold text-green-600">
+            <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+              <p className="text-xs font-medium text-stone-500 sm:text-sm">通过率</p>
+              <p className="mt-0.5 text-xl font-bold text-green-600 sm:mt-1 sm:text-2xl">
                 {analytics.passRate != null
                   ? `${analytics.passRate.toFixed(1)}%`
                   : '--'}
               </p>
             </div>
-            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-stone-500">最高分</p>
-              <p className="mt-1 text-2xl font-bold text-teal-600">
+            <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+              <p className="text-xs font-medium text-stone-500 sm:text-sm">最高分</p>
+              <p className="mt-0.5 text-xl font-bold text-teal-600 sm:mt-1 sm:text-2xl">
                 {analytics.highestScore ?? '--'}
               </p>
             </div>
-            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-stone-500">最低分</p>
-              <p className="mt-1 text-2xl font-bold text-red-600">
+            <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+              <p className="text-xs font-medium text-stone-500 sm:text-sm">最低分</p>
+              <p className="mt-0.5 text-xl font-bold text-red-600 sm:mt-1 sm:text-2xl">
                 {analytics.lowestScore ?? '--'}
               </p>
             </div>
-            <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-sm font-medium text-stone-500">缺考人数</p>
-              <p className="mt-1 text-2xl font-bold text-orange-600">
+            <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+              <p className="text-xs font-medium text-stone-500 sm:text-sm">缺考人数</p>
+              <p className="mt-0.5 text-xl font-bold text-orange-600 sm:mt-1 sm:text-2xl">
                 {analytics.absentCount ?? 0}
               </p>
             </div>
           </div>
 
           {/* Charts */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
             {/* Score distribution */}
             <Card title="成绩分布图">
               {analytics.scoreDistribution && analytics.scoreDistribution.length > 0 ? (
                 <div className="space-y-2">
                   {analytics.scoreDistribution.map((item) => (
-                    <div key={item.range} className="flex items-center gap-3">
-                      <span className="w-20 shrink-0 text-sm text-stone-600 text-right">
+                    <div key={item.range} className="flex items-center gap-2 sm:gap-3">
+                      <span className="w-14 shrink-0 text-xs text-stone-600 text-right sm:w-20 sm:text-sm">
                         {item.range}
                       </span>
-                      <div className="flex-1 h-6 bg-stone-100 rounded overflow-hidden">
+                      <div className="flex-1 h-5 sm:h-6 bg-stone-100 rounded overflow-hidden">
                         <div
                           className="h-full bg-teal-500 rounded transition-all duration-300"
                           style={{
@@ -243,7 +243,7 @@ export default function ReportsPage() {
                           }}
                         />
                       </div>
-                      <span className="w-8 shrink-0 text-sm font-medium text-stone-700 text-right">
+                      <span className="w-6 shrink-0 text-xs font-medium text-stone-700 text-right sm:w-8 sm:text-sm">
                         {item.count}
                       </span>
                     </div>
@@ -270,17 +270,17 @@ export default function ReportsPage() {
                       PRACTICAL: '实操题',
                     };
                     return (
-                      <div key={item.questionType} className="flex items-center gap-3">
-                        <span className="w-24 shrink-0 text-sm text-stone-600 text-right truncate">
+                      <div key={item.questionType} className="flex items-center gap-2 sm:gap-3">
+                        <span className="w-16 shrink-0 text-xs text-stone-600 text-right truncate sm:w-24 sm:text-sm">
                           {typeLabels[item.questionType] || item.questionType}
                         </span>
-                        <div className="flex-1 h-6 bg-stone-100 rounded overflow-hidden">
+                        <div className="flex-1 h-5 sm:h-6 bg-stone-100 rounded overflow-hidden">
                           <div
                             className="h-full bg-green-500 rounded transition-all duration-300"
                             style={{ width: `${item.avgScoreRate}%` }}
                           />
                         </div>
-                        <span className="w-16 shrink-0 text-sm font-medium text-stone-700 text-right">
+                        <span className="w-12 shrink-0 text-xs font-medium text-stone-700 text-right sm:w-16 sm:text-sm">
                           {item.avgScoreRate.toFixed(1)}%
                         </span>
                       </div>
@@ -296,7 +296,56 @@ export default function ReportsPage() {
           {/* Ranking table */}
           {analytics.rankings && analytics.rankings.length > 0 && (
             <Card title="成绩排名">
-              <div className="overflow-x-auto">
+              {/* Mobile: card list */}
+              <div className="space-y-3 md:hidden">
+                {analytics.rankings.map((r) => (
+                  <div
+                    key={`m-${r.employeeNo}-${r.rank}`}
+                    className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={
+                          r.rank <= 3
+                            ? 'flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-xs font-bold text-yellow-800'
+                            : 'flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600'
+                        }>
+                          {r.rank}
+                        </span>
+                        <span className="text-sm font-medium text-stone-800">{r.employeeName}</span>
+                      </div>
+                      {r.totalScore == null || r.status === 'GRADING' ? (
+                        <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700">
+                          待阅卷
+                        </span>
+                      ) : (
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                          r.isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {r.isPassed ? '合格' : '不合格'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {r.department} · {r.employeeNo}
+                    </p>
+                    <div className="mt-1.5 flex items-center justify-between text-xs">
+                      <span className="text-stone-500">
+                        得分：{' '}
+                        <span className="font-semibold text-stone-800">
+                          {r.totalScore != null ? r.totalScore : '待阅卷'}
+                        </span>
+                      </span>
+                      <span className="text-stone-400">
+                        {Math.floor(r.timeTakenSeconds / 60)}分{r.timeTakenSeconds % 60}秒
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-stone-200 text-stone-500">
@@ -356,7 +405,26 @@ export default function ReportsPage() {
           {/* Absence table */}
           {analytics.absences && analytics.absences.length > 0 && (
             <Card title={`缺考名单 (${analytics.absences.length} 人)`}>
-              <div className="overflow-x-auto">
+              {/* Mobile: card list */}
+              <div className="space-y-2 md:hidden">
+                {analytics.absences.map((a, idx) => (
+                  <div
+                    key={`m-${a.employeeNo}`}
+                    className="flex items-center gap-3 rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-2.5"
+                  >
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-stone-800">{a.employeeName}</p>
+                      <p className="text-xs text-stone-500">{a.department} · {a.employeeNo}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-stone-200 text-stone-500">

@@ -122,7 +122,8 @@ export default function ExamMonitorPage() {
   const submittedCount = sessions.filter(
     (s) => s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED' || s.status === 'COMPLETED'
   ).length;
-  const abnormalCount = sessions.filter((s) => s.tabSwitchCount > 0).length;
+  const abnormalSessions = sessions.filter((s) => s.tabSwitchCount > 0);
+  const abnormalCount = abnormalSessions.length;
 
   if (loading) {
     return (
@@ -147,18 +148,18 @@ export default function ExamMonitorPage() {
       />
 
       {/* Stats bar */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-sm font-medium text-stone-500">在线人数</p>
-          <p className="mt-1 text-2xl font-bold text-blue-600">{onlineCount}</p>
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+          <p className="text-xs font-medium text-stone-500 sm:text-sm">在线人数</p>
+          <p className="mt-0.5 text-xl font-bold text-blue-600 sm:mt-1 sm:text-2xl">{onlineCount}</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-sm font-medium text-stone-500">已交卷</p>
-          <p className="mt-1 text-2xl font-bold text-green-600">{submittedCount}</p>
+        <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+          <p className="text-xs font-medium text-stone-500 sm:text-sm">已交卷</p>
+          <p className="mt-0.5 text-xl font-bold text-green-600 sm:mt-1 sm:text-2xl">{submittedCount}</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-sm font-medium text-stone-500">异常行为</p>
-          <p className="mt-1 text-2xl font-bold text-red-600">{abnormalCount}</p>
+        <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+          <p className="text-xs font-medium text-stone-500 sm:text-sm">异常行为</p>
+          <p className="mt-0.5 text-xl font-bold text-red-600 sm:mt-1 sm:text-2xl">{abnormalCount}</p>
         </div>
       </div>
 
@@ -167,57 +168,96 @@ export default function ExamMonitorPage() {
         {sessions.length === 0 ? (
           <EmptyState title="暂无考生数据" description="等待考生开始考试" />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>姓名</TableHead>
-                <TableHead>部门</TableHead>
-                <TableHead>进度</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>切屏次数</TableHead>
-                <TableHead>最后活动</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Mobile: card list */}
+            <div className="space-y-3 md:hidden">
               {sessions.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.employeeName}</TableCell>
-                  <TableCell>{s.department}</TableCell>
-                  <TableCell>
-                    {s.answeredCount}/{s.totalQuestions}
-                  </TableCell>
-                  <TableCell>
+                <div
+                  key={s.id}
+                  className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-stone-800">{s.employeeName}</span>
                     <Badge variant={STATUS_VARIANT[s.status] ?? 'default'}>
                       {STATUS_LABELS[s.status] ?? s.status}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className={s.tabSwitchCount > 0 ? 'text-red-600 font-medium' : ''}>
-                      {s.tabSwitchCount}
+                  </div>
+                  <p className="mt-1 text-xs text-stone-500">
+                    {s.department} · 进度 {s.answeredCount}/{s.totalQuestions}
+                  </p>
+                  <div className="mt-1.5 flex items-center justify-between text-xs text-stone-400">
+                    <span>
+                      切屏:{' '}
+                      <span className={s.tabSwitchCount > 0 ? 'text-red-600 font-medium' : 'text-stone-700'}>
+                        {s.tabSwitchCount}
+                      </span>
                     </span>
-                  </TableCell>
-                  <TableCell className="text-sm text-stone-500">
-                    {s.lastActiveAt
-                      ? new Date(s.lastActiveAt).toLocaleTimeString('zh-CN')
-                      : '--'}
-                  </TableCell>
-                </TableRow>
+                    <span>
+                      {s.lastActiveAt
+                        ? new Date(s.lastActiveAt).toLocaleTimeString('zh-CN')
+                        : '--'}
+                    </span>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>姓名</TableHead>
+                    <TableHead>部门</TableHead>
+                    <TableHead>进度</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>切屏次数</TableHead>
+                    <TableHead>最后活动</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sessions.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-medium">{s.employeeName}</TableCell>
+                      <TableCell>{s.department}</TableCell>
+                      <TableCell>
+                        {s.answeredCount}/{s.totalQuestions}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_VARIANT[s.status] ?? 'default'}>
+                          {STATUS_LABELS[s.status] ?? s.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className={s.tabSwitchCount > 0 ? 'text-red-600 font-medium' : ''}>
+                          {s.tabSwitchCount}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-stone-500">
+                        {s.lastActiveAt
+                          ? new Date(s.lastActiveAt).toLocaleTimeString('zh-CN')
+                          : '--'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </Card>
 
       {/* Alert feed */}
       <Card title="异常事件">
-        {alerts.length === 0 ? (
+        {alerts.length === 0 && abnormalSessions.length === 0 ? (
           <p className="py-6 text-center text-sm text-stone-400">暂无异常事件</p>
         ) : (
           <div className="max-h-64 overflow-y-auto space-y-2">
+            {/* Real-time SSE alerts */}
             {alerts.map((alert) => (
               <div
                 key={alert.id}
-                className="flex items-start gap-3 rounded-lg border border-red-100 bg-red-50/50 px-4 py-2.5"
+                className="flex items-start gap-3 rounded-lg border border-red-100 bg-red-50/50 px-3 py-2.5 sm:px-4"
               >
                 <svg
                   className="mt-0.5 h-4 w-4 shrink-0 text-red-500"
@@ -242,6 +282,36 @@ export default function ExamMonitorPage() {
                 </div>
               </div>
             ))}
+            {/* Tab-switch warnings derived from session data */}
+            {abnormalSessions
+              .filter((s) => !alerts.some((a) => a.employeeName === s.employeeName))
+              .map((s) => (
+                <div
+                  key={`tab-${s.id}`}
+                  className="flex items-start gap-3 rounded-lg border border-amber-100 bg-amber-50/50 px-3 py-2.5 sm:px-4"
+                >
+                  <svg
+                    className="mt-0.5 h-4 w-4 shrink-0 text-amber-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                    />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-amber-800">
+                      <span className="font-medium">{s.employeeName}</span>
+                      {' - '}
+                      切屏 {s.tabSwitchCount} 次
+                    </p>
+                  </div>
+                </div>
+              ))}
           </div>
         )}
       </Card>

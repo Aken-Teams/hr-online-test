@@ -187,29 +187,29 @@ export default function ExamGradingPage() {
       />
 
       {/* Stats + Progress */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-sm font-medium text-stone-500">待评分</p>
-          <p className="mt-1 text-2xl font-bold text-orange-600">{pending}</p>
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+          <p className="text-xs font-medium text-stone-500 sm:text-sm">待评分</p>
+          <p className="mt-0.5 text-xl font-bold text-orange-600 sm:mt-1 sm:text-2xl">{pending}</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-sm font-medium text-stone-500">已评分</p>
-          <p className="mt-1 text-2xl font-bold text-green-600">{graded}</p>
+        <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+          <p className="text-xs font-medium text-stone-500 sm:text-sm">已评分</p>
+          <p className="mt-0.5 text-xl font-bold text-green-600 sm:mt-1 sm:text-2xl">{graded}</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-sm font-medium text-stone-500">完成进度</p>
-          <div className="mt-2">
+        <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+          <p className="text-xs font-medium text-stone-500 sm:text-sm">完成进度</p>
+          <div className="mt-1.5 sm:mt-2">
             <Progress value={progressPct} color={progressPct === 100 ? 'green' : 'teal'} />
           </div>
-          <p className="mt-1 text-xs text-stone-400">{progressPct}%</p>
+          <p className="mt-0.5 text-xs text-stone-400 sm:mt-1">{progressPct}%</p>
         </div>
       </div>
 
       {/* Tabs + Search */}
       <div className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-stone-200 px-4">
+        <div className="flex flex-col gap-2 border-b border-stone-200 px-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <Tabs tabs={tabs} activeKey={activeTab} onChange={setActiveTab} className="!border-b-0" />
-          <div className="w-64 py-2">
+          <div className="w-full pb-2 sm:w-64 sm:py-2">
             <div className="relative">
               <svg
                 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
@@ -226,7 +226,7 @@ export default function ExamGradingPage() {
               </svg>
               <input
                 type="text"
-                placeholder="搜索姓名、部门或题目..."
+                placeholder="搜索姓名、部门..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-lg border border-stone-300 py-1.5 pl-9 pr-3 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
@@ -235,78 +235,120 @@ export default function ExamGradingPage() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Content */}
         {filteredAnswers.length === 0 ? (
-          <div className="px-6 py-12">
+          <div className="px-4 py-12 sm:px-6">
             <EmptyState
               title={searchQuery ? '无匹配结果' : activeTab === 'pending' ? '暂无待评分题目' : '暂无已评分题目'}
               description={searchQuery ? '请尝试其他搜索关键词' : ''}
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-stone-200 bg-stone-50/50 text-stone-500">
-                  <th className="px-4 py-3 font-medium">状态</th>
-                  <th className="px-4 py-3 font-medium">考生</th>
-                  <th className="px-4 py-3 font-medium">部门</th>
-                  <th className="px-4 py-3 font-medium">题型</th>
-                  <th className="px-4 py-3 font-medium max-w-xs">题目摘要</th>
-                  <th className="px-4 py-3 font-medium text-center">满分</th>
-                  <th className="px-4 py-3 font-medium text-center">得分</th>
-                  <th className="px-4 py-3 font-medium text-center">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAnswers.map((answer) => (
-                  <tr
-                    key={answer.answerId}
-                    className="border-b border-stone-100 last:border-0 hover:bg-stone-50/50 transition-colors"
-                  >
-                    <td className="px-4 py-3">
+          <>
+            {/* Mobile: card list */}
+            <div className="space-y-3 p-3 md:hidden">
+              {filteredAnswers.map((answer) => (
+                <div
+                  key={answer.answerId}
+                  className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
                       <Badge variant={answer.isGraded ? 'success' : 'warning'}>
                         {answer.isGraded ? '已评' : '待评'}
                       </Badge>
-                    </td>
-                    <td className="px-4 py-3 font-medium text-stone-800">
-                      {answer.employeeName}
-                    </td>
-                    <td className="px-4 py-3 text-stone-500">{answer.department}</td>
-                    <td className="px-4 py-3 text-stone-500">
-                      {QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
-                    </td>
-                    <td className="px-4 py-3 max-w-xs">
-                      <p className="truncate text-stone-600" title={answer.questionContent}>
-                        {answer.questionContent}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-center text-stone-600">
-                      {answer.maxPoints}
-                    </td>
-                    <td className="px-4 py-3 text-center">
+                      <span className="text-sm font-medium text-stone-800">{answer.employeeName}</span>
+                    </div>
+                    <span className="text-xs text-stone-400">
                       {answer.isGraded ? (
-                        <span className="font-semibold text-green-700">
-                          {answer.earnedPoints}
-                        </span>
-                      ) : (
-                        <span className="text-stone-400">--</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Button
-                        size="sm"
-                        variant={answer.isGraded ? 'ghost' : 'primary'}
-                        onClick={() => openGradingDialog(answer)}
-                      >
-                        {answer.isGraded ? '查看' : '评分'}
-                      </Button>
-                    </td>
+                        <span className="font-semibold text-green-700">{answer.earnedPoints}</span>
+                      ) : '--'} / {answer.maxPoints}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-stone-500">
+                    {answer.department} · {QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
+                  </p>
+                  <p className="mt-1 line-clamp-2 text-sm text-stone-600 leading-relaxed">
+                    {answer.questionContent}
+                  </p>
+                  <div className="mt-2 flex justify-end">
+                    <Button
+                      size="sm"
+                      variant={answer.isGraded ? 'ghost' : 'primary'}
+                      onClick={() => openGradingDialog(answer)}
+                    >
+                      {answer.isGraded ? '查看' : '评分'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-stone-200 bg-stone-50/50 text-stone-500">
+                    <th className="px-4 py-3 font-medium">状态</th>
+                    <th className="px-4 py-3 font-medium">考生</th>
+                    <th className="px-4 py-3 font-medium">部门</th>
+                    <th className="px-4 py-3 font-medium">题型</th>
+                    <th className="px-4 py-3 font-medium max-w-xs">题目摘要</th>
+                    <th className="px-4 py-3 font-medium text-center">满分</th>
+                    <th className="px-4 py-3 font-medium text-center">得分</th>
+                    <th className="px-4 py-3 font-medium text-center">操作</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredAnswers.map((answer) => (
+                    <tr
+                      key={answer.answerId}
+                      className="border-b border-stone-100 last:border-0 hover:bg-stone-50/50 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <Badge variant={answer.isGraded ? 'success' : 'warning'}>
+                          {answer.isGraded ? '已评' : '待评'}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-stone-800">
+                        {answer.employeeName}
+                      </td>
+                      <td className="px-4 py-3 text-stone-500">{answer.department}</td>
+                      <td className="px-4 py-3 text-stone-500">
+                        {QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
+                      </td>
+                      <td className="px-4 py-3 max-w-xs">
+                        <p className="truncate text-stone-600" title={answer.questionContent}>
+                          {answer.questionContent}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-center text-stone-600">
+                        {answer.maxPoints}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {answer.isGraded ? (
+                          <span className="font-semibold text-green-700">
+                            {answer.earnedPoints}
+                          </span>
+                        ) : (
+                          <span className="text-stone-400">--</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Button
+                          size="sm"
+                          variant={answer.isGraded ? 'ghost' : 'primary'}
+                          onClick={() => openGradingDialog(answer)}
+                        >
+                          {answer.isGraded ? '查看' : '评分'}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -334,9 +376,9 @@ export default function ExamGradingPage() {
             )
           }
         >
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             {/* Meta info */}
-            <div className="flex flex-wrap gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm sm:flex sm:flex-wrap sm:gap-4">
               <div>
                 <span className="text-stone-500">考生：</span>
                 <span className="font-medium text-stone-800">{gradingAnswer.employeeName}</span>
@@ -391,8 +433,8 @@ export default function ExamGradingPage() {
 
             {/* Grading form or result */}
             {gradingAnswer.isGraded ? (
-              <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-                <div className="flex items-center gap-6">
+              <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-3 sm:px-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
                   <div>
                     <p className="text-xs font-medium text-green-600">得分</p>
                     <p className="text-xl font-bold text-green-800">
@@ -400,7 +442,7 @@ export default function ExamGradingPage() {
                     </p>
                   </div>
                   {gradingAnswer.graderComment && (
-                    <div className="flex-1 border-l border-green-200 pl-4">
+                    <div className="flex-1 border-t border-green-200 pt-2 sm:border-t-0 sm:pt-0 sm:border-l sm:pl-4">
                       <p className="text-xs font-medium text-green-600">评语</p>
                       <p className="text-sm text-green-800">{gradingAnswer.graderComment}</p>
                     </div>
@@ -408,9 +450,9 @@ export default function ExamGradingPage() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-stone-200 bg-white p-4 space-y-3">
-                <div className="flex items-end gap-4">
-                  <div className="w-40">
+              <div className="rounded-lg border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
+                  <div className="w-full sm:w-40">
                     <Input
                       label={`得分（0 - ${gradingAnswer.maxPoints}）`}
                       type="number"
@@ -421,14 +463,14 @@ export default function ExamGradingPage() {
                       placeholder="0"
                     />
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1.5">
                     {[0, Math.floor(gradingAnswer.maxPoints / 2), gradingAnswer.maxPoints].map(
                       (v) => (
                         <button
                           key={v}
                           type="button"
                           onClick={() => setGradeScore(String(v))}
-                          className="rounded-md border border-stone-200 px-2.5 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+                          className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors"
                         >
                           {v}分
                         </button>

@@ -136,26 +136,26 @@ export default function ExamResultsPage() {
 
       {/* Summary stats */}
       {summary && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-            <p className="text-sm font-medium text-stone-500">参考人数</p>
-            <p className="mt-1 text-2xl font-bold text-stone-800">{summary.totalParticipants}</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+            <p className="text-xs font-medium text-stone-500 sm:text-sm">参考人数</p>
+            <p className="mt-0.5 text-xl font-bold text-stone-800 sm:mt-1 sm:text-2xl">{summary.totalParticipants}</p>
           </div>
-          <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-            <p className="text-sm font-medium text-stone-500">平均分</p>
-            <p className="mt-1 text-2xl font-bold text-stone-800">
+          <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+            <p className="text-xs font-medium text-stone-500 sm:text-sm">平均分</p>
+            <p className="mt-0.5 text-xl font-bold text-stone-800 sm:mt-1 sm:text-2xl">
               {summary.averageScore?.toFixed(1) ?? '--'}
             </p>
           </div>
-          <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-            <p className="text-sm font-medium text-stone-500">通过率</p>
-            <p className="mt-1 text-2xl font-bold text-green-600">
+          <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+            <p className="text-xs font-medium text-stone-500 sm:text-sm">通过率</p>
+            <p className="mt-0.5 text-xl font-bold text-green-600 sm:mt-1 sm:text-2xl">
               {summary.passRate != null ? `${summary.passRate.toFixed(1)}%` : '--'}
             </p>
           </div>
-          <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-            <p className="text-sm font-medium text-stone-500">最高分</p>
-            <p className="mt-1 text-2xl font-bold text-teal-600">
+          <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+            <p className="text-xs font-medium text-stone-500 sm:text-sm">最高分</p>
+            <p className="mt-0.5 text-xl font-bold text-teal-600 sm:mt-1 sm:text-2xl">
               {summary.highestScore ?? '--'}
             </p>
           </div>
@@ -167,73 +167,138 @@ export default function ExamResultsPage() {
         <EmptyState title="暂无成绩数据" description="该考试尚未有考生提交" />
       ) : (
         <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>排名</TableHead>
-                <TableHead>姓名</TableHead>
-                <TableHead>部门</TableHead>
-                <TableHead>总分</TableHead>
-                <TableHead>客观题</TableHead>
-                <TableHead>主观题</TableHead>
-                <TableHead>是否通过</TableHead>
-                <TableHead>异常行为</TableHead>
-                <TableHead>用时</TableHead>
-                <TableHead>操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {results.map((row) => (
-                <TableRow key={row.sessionId}>
-                  <TableCell className="font-medium">{row.rank}</TableCell>
-                  <TableCell className="font-medium">{row.employeeName}</TableCell>
-                  <TableCell>{row.department}</TableCell>
-                  <TableCell className="font-semibold">
-                    {row.totalScore != null ? row.totalScore : (row.status === 'GRADING' ? '待阅卷' : '--')}
-                  </TableCell>
-                  <TableCell>{row.autoScore}</TableCell>
-                  <TableCell>{row.manualScore != null ? row.manualScore : '--'}</TableCell>
-                  <TableCell>
-                    {row.status === 'GRADING' ? (
-                      <Badge variant="warning">待阅卷</Badge>
-                    ) : row.isPassed != null ? (
-                      <Badge variant={row.isPassed ? 'success' : 'danger'}>
-                        {row.isPassed ? '通过' : '未通过'}
-                      </Badge>
-                    ) : (
-                      <Badge variant="default">待定</Badge>
+          {/* Mobile: card list */}
+          <div className="space-y-3 md:hidden">
+            {results.map((row) => (
+              <div
+                key={row.sessionId}
+                className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">
+                      {row.rank}
+                    </span>
+                    <span className="text-sm font-medium text-stone-800">{row.employeeName}</span>
+                  </div>
+                  {row.status === 'GRADING' ? (
+                    <Badge variant="warning">待阅卷</Badge>
+                  ) : row.isPassed != null ? (
+                    <Badge variant={row.isPassed ? 'success' : 'danger'}>
+                      {row.isPassed ? '通过' : '未通过'}
+                    </Badge>
+                  ) : (
+                    <Badge variant="default">待定</Badge>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-stone-500">{row.department}</p>
+                <div className="mt-1.5 flex items-center justify-between text-xs">
+                  <span className="text-stone-500">
+                    总分:{' '}
+                    <span className="font-semibold text-stone-800">
+                      {row.totalScore != null ? row.totalScore : (row.status === 'GRADING' ? '待阅卷' : '--')}
+                    </span>
+                    <span className="text-stone-400 ml-1.5">
+                      (客观 {row.autoScore} / 主观 {row.manualScore != null ? row.manualScore : '--'})
+                    </span>
+                  </span>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-xs text-stone-400">
+                  <div className="flex flex-wrap gap-1">
+                    {(row.tabSwitchCount ?? 0) > 0 && (
+                      <Badge variant="danger">切屏{row.tabSwitchCount}次</Badge>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {(row.tabSwitchCount ?? 0) > 0 && (
-                        <Badge variant="danger">
-                          切屏{row.tabSwitchCount}次
-                        </Badge>
-                      )}
-                      {row.isAutoSubmitted && (
-                        <Badge variant="warning">超时自动提交</Badge>
-                      )}
-                      {(row.tabSwitchCount ?? 0) === 0 && !row.isAutoSubmitted && (
-                        <span className="text-sm text-stone-400">正常</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-stone-500">
-                    {row.timeTakenSeconds > 0 ? formatDuration(row.timeTakenSeconds) : '--'}
-                  </TableCell>
-                  <TableCell>
+                    {row.isAutoSubmitted && (
+                      <Badge variant="warning">超时提交</Badge>
+                    )}
+                    {(row.tabSwitchCount ?? 0) === 0 && !row.isAutoSubmitted && (
+                      <span>正常</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span>{row.timeTakenSeconds > 0 ? formatDuration(row.timeTakenSeconds) : '--'}</span>
                     <Link
                       href={`/admin/exams/${examId}/results/${row.sessionId}`}
-                      className="text-sm font-medium text-teal-600 hover:text-teal-700"
+                      className="font-medium text-teal-600 hover:text-teal-700"
                     >
                       详细
                     </Link>
-                  </TableCell>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>排名</TableHead>
+                  <TableHead>姓名</TableHead>
+                  <TableHead>部门</TableHead>
+                  <TableHead>总分</TableHead>
+                  <TableHead>客观题</TableHead>
+                  <TableHead>主观题</TableHead>
+                  <TableHead>是否通过</TableHead>
+                  <TableHead>异常行为</TableHead>
+                  <TableHead>用时</TableHead>
+                  <TableHead>操作</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {results.map((row) => (
+                  <TableRow key={row.sessionId}>
+                    <TableCell className="font-medium">{row.rank}</TableCell>
+                    <TableCell className="font-medium">{row.employeeName}</TableCell>
+                    <TableCell>{row.department}</TableCell>
+                    <TableCell className="font-semibold">
+                      {row.totalScore != null ? row.totalScore : (row.status === 'GRADING' ? '待阅卷' : '--')}
+                    </TableCell>
+                    <TableCell>{row.autoScore}</TableCell>
+                    <TableCell>{row.manualScore != null ? row.manualScore : '--'}</TableCell>
+                    <TableCell>
+                      {row.status === 'GRADING' ? (
+                        <Badge variant="warning">待阅卷</Badge>
+                      ) : row.isPassed != null ? (
+                        <Badge variant={row.isPassed ? 'success' : 'danger'}>
+                          {row.isPassed ? '通过' : '未通过'}
+                        </Badge>
+                      ) : (
+                        <Badge variant="default">待定</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {(row.tabSwitchCount ?? 0) > 0 && (
+                          <Badge variant="danger">
+                            切屏{row.tabSwitchCount}次
+                          </Badge>
+                        )}
+                        {row.isAutoSubmitted && (
+                          <Badge variant="warning">超时自动提交</Badge>
+                        )}
+                        {(row.tabSwitchCount ?? 0) === 0 && !row.isAutoSubmitted && (
+                          <span className="text-sm text-stone-400">正常</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-stone-500">
+                      {row.timeTakenSeconds > 0 ? formatDuration(row.timeTakenSeconds) : '--'}
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/admin/exams/${examId}/results/${row.sessionId}`}
+                        className="text-sm font-medium text-teal-600 hover:text-teal-700"
+                      >
+                        详细
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       )}
     </div>

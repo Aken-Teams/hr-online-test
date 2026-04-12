@@ -50,21 +50,21 @@ export function Dialog({ open, onClose, title, children, footer, className }: Di
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4"
       onClick={handleBackdropClick}
     >
       <div
         className={cn(
-          'w-full max-w-lg rounded-2xl bg-white shadow-xl',
+          'w-full max-w-lg rounded-t-2xl sm:rounded-2xl bg-white shadow-xl',
           className
         )}
       >
-        <div className="border-b border-stone-100 px-6 py-4">
-          <h2 className="text-lg font-semibold text-stone-800">{title}</h2>
+        <div className="border-b border-stone-100 px-4 py-3 sm:px-6 sm:py-4">
+          <h2 className="text-base sm:text-lg font-semibold text-stone-800">{title}</h2>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto px-6 py-4">{children}</div>
+        <div className="max-h-[70vh] overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-3 border-t border-stone-100 px-6 py-4">
+          <div className="flex items-center justify-end gap-2 sm:gap-3 border-t border-stone-100 px-4 py-3 sm:px-6 sm:py-4">
             {footer}
           </div>
         )}
