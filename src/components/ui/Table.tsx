@@ -8,7 +8,7 @@ const Table = forwardRef<HTMLTableElement, HTMLAttributes<HTMLTableElement>>(
     <div className="w-full overflow-x-auto">
       <table
         ref={ref}
-        className={cn('w-full caption-bottom text-sm', className)}
+        className={cn('w-full min-w-[600px] caption-bottom text-sm', className)}
         {...props}
       />
     </div>

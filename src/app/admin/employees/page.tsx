@@ -277,67 +277,117 @@ export default function EmployeeListPage() {
       ) : (
         <>
           <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>照片</TableHead>
-                  <TableHead>姓名</TableHead>
-                  <TableHead>工号</TableHead>
-                  <TableHead>部门</TableHead>
-                  <TableHead>岗位</TableHead>
-                  <TableHead>人脸</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employees.map((emp) => (
-                  <TableRow key={emp.id ?? emp.employeeNo}>
-                    <TableCell>
-                      {emp.photoUrl ? (
-                        <img
-                          src={emp.photoUrl}
-                          alt={emp.name}
-                          className="h-8 w-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-xs font-medium text-stone-500">
-                          {emp.name.charAt(0)}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{emp.name}</TableCell>
-                    <TableCell>{emp.employeeNo}</TableCell>
-                    <TableCell>{emp.department}</TableCell>
-                    <TableCell>{emp.role}</TableCell>
-                    <TableCell>
-                      <Badge variant={emp.hasFaceDescriptor ? 'success' : 'default'}>
-                        {emp.hasFaceDescriptor ? '已录入' : '未录入'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={emp.isActive ? 'success' : 'default'}>
-                        {emp.isActive ? '在职' : '离职'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
-                        onClick={() => openPhotoDialog(emp)}
-                      >
-                        <Upload className="h-3 w-3" />
-                        上传照片
-                      </button>
-                    </TableCell>
+            {/* Mobile: card list */}
+            <div className="space-y-3 md:hidden">
+              {employees.map((emp) => (
+                <div
+                  key={emp.id ?? emp.employeeNo}
+                  className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    {emp.photoUrl ? (
+                      <img
+                        src={emp.photoUrl}
+                        alt={emp.name}
+                        className="h-10 w-10 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-200 text-sm font-medium text-stone-600">
+                        {emp.name.charAt(0)}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-stone-800">{emp.name}</span>
+                        <Badge variant={emp.isActive ? 'success' : 'default'}>
+                          {emp.isActive ? '在职' : '离职'}
+                        </Badge>
+                      </div>
+                      <p className="mt-0.5 text-xs text-stone-500">
+                        {emp.employeeNo} · {emp.department}{emp.role ? ` · ${emp.role}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <Badge variant={emp.hasFaceDescriptor ? 'success' : 'default'}>
+                      人脸: {emp.hasFaceDescriptor ? '已录入' : '未录入'}
+                    </Badge>
+                    <button
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                      onClick={() => openPhotoDialog(emp)}
+                    >
+                      <Upload className="h-3 w-3" />
+                      上传照片
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>照片</TableHead>
+                    <TableHead>姓名</TableHead>
+                    <TableHead>工号</TableHead>
+                    <TableHead>部门</TableHead>
+                    <TableHead>岗位</TableHead>
+                    <TableHead>人脸</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>操作</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {employees.map((emp) => (
+                    <TableRow key={emp.id ?? emp.employeeNo}>
+                      <TableCell>
+                        {emp.photoUrl ? (
+                          <img
+                            src={emp.photoUrl}
+                            alt={emp.name}
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 text-xs font-medium text-stone-500">
+                            {emp.name.charAt(0)}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">{emp.name}</TableCell>
+                      <TableCell>{emp.employeeNo}</TableCell>
+                      <TableCell>{emp.department}</TableCell>
+                      <TableCell>{emp.role}</TableCell>
+                      <TableCell>
+                        <Badge variant={emp.hasFaceDescriptor ? 'success' : 'default'}>
+                          {emp.hasFaceDescriptor ? '已录入' : '未录入'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={emp.isActive ? 'success' : 'default'}>
+                          {emp.isActive ? '在职' : '离职'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                          onClick={() => openPhotoDialog(emp)}
+                        >
+                          <Upload className="h-3 w-3" />
+                          上传照片
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-stone-500">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+              <p className="text-xs text-stone-500 sm:text-sm">
                 第 {page} / {totalPages} 页，共 {total} 条
               </p>
               <div className="flex items-center gap-2">

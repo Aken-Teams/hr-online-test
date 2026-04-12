@@ -53,9 +53,9 @@ interface StatCardProps {
 
 function StatCard({ label, value, sub }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm">
-      <p className="text-sm font-medium text-stone-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-stone-800">{value}</p>
+    <div className="rounded-xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm sm:px-5 sm:py-4">
+      <p className="text-xs font-medium text-stone-500 sm:text-sm">{label}</p>
+      <p className="mt-0.5 text-xl font-bold text-stone-800 sm:mt-1 sm:text-2xl">{value}</p>
       {sub && <p className="mt-0.5 text-xs text-stone-400">{sub}</p>}
     </div>
   );
@@ -132,7 +132,7 @@ export default function AdminDashboardPage() {
       <PageHeader title="仪表盘" description="系统运行概览" />
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="考试总数" value={stats?.totalExams ?? 0} />
         <StatCard label="题库总量" value={stats?.totalQuestions ?? 0} />
         <StatCard label="员工数量" value={stats?.totalEmployees ?? 0} />
@@ -164,38 +164,71 @@ export default function AdminDashboardPage() {
         {recentSessions.length === 0 ? (
           <p className="py-8 text-center text-sm text-stone-400">暂无考试记录</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>姓名</TableHead>
-                <TableHead>部门</TableHead>
-                <TableHead>考试</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>得分</TableHead>
-                <TableHead>提交时间</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Mobile: card list */}
+            <div className="space-y-3 md:hidden">
               {recentSessions.map((session) => (
-                <TableRow key={session.id}>
-                  <TableCell className="font-medium">{session.employeeName}</TableCell>
-                  <TableCell>{session.department}</TableCell>
-                  <TableCell>{session.examTitle}</TableCell>
-                  <TableCell>
+                <div
+                  key={session.id}
+                  className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-stone-800">{session.employeeName}</span>
                     <Badge variant={STATUS_BADGE_VARIANT[session.status] ?? 'default'}>
                       {SESSION_STATUS_LABELS[session.status] ?? session.status}
                     </Badge>
-                  </TableCell>
-                  <TableCell>{session.score != null ? session.score : '--'}</TableCell>
-                  <TableCell className="text-stone-500 text-sm">
-                    {session.submittedAt
-                      ? new Date(session.submittedAt).toLocaleString('zh-CN')
-                      : '--'}
-                  </TableCell>
-                </TableRow>
+                  </div>
+                  <p className="mt-1 text-xs text-stone-500">
+                    {session.department} · {session.examTitle}
+                  </p>
+                  <div className="mt-1.5 flex items-center justify-between text-xs text-stone-400">
+                    <span>得分: <span className="font-medium text-stone-700">{session.score != null ? session.score : '--'}</span></span>
+                    <span>
+                      {session.submittedAt
+                        ? new Date(session.submittedAt).toLocaleString('zh-CN')
+                        : '--'}
+                    </span>
+                  </div>
+                </div>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>姓名</TableHead>
+                    <TableHead>部门</TableHead>
+                    <TableHead>考试</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>得分</TableHead>
+                    <TableHead>提交时间</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentSessions.map((session) => (
+                    <TableRow key={session.id}>
+                      <TableCell className="font-medium">{session.employeeName}</TableCell>
+                      <TableCell>{session.department}</TableCell>
+                      <TableCell>{session.examTitle}</TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_BADGE_VARIANT[session.status] ?? 'default'}>
+                          {SESSION_STATUS_LABELS[session.status] ?? session.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{session.score != null ? session.score : '--'}</TableCell>
+                      <TableCell className="text-stone-500 text-sm">
+                        {session.submittedAt
+                          ? new Date(session.submittedAt).toLocaleString('zh-CN')
+                          : '--'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </Card>
     </div>

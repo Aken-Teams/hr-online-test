@@ -133,87 +133,156 @@ export default function ExamListPage() {
       ) : (
         <>
           <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>标题</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>题目数</TableHead>
-                  <TableHead>时长</TableHead>
-                  <TableHead>参考人数</TableHead>
-                  <TableHead>创建时间</TableHead>
-                  <TableHead>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {exams.map((exam) => (
-                  <TableRow key={exam.id}>
-                    <TableCell className="font-medium">{exam.title}</TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_BADGE_VARIANT[exam.status] ?? 'default'}>
-                        {EXAM_STATUS_LABELS[exam.status] ?? exam.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{exam.questionCount ?? '--'}</TableCell>
-                    <TableCell>{exam.timeLimitMinutes} 分钟</TableCell>
-                    <TableCell>{exam.sessionCount ?? 0}</TableCell>
-                    <TableCell className="text-sm text-stone-500">
-                      {formatDateTime(exam.openAt)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
-                          onClick={() => router.push(`/admin/exams/${exam.id}`)}
-                        >
-                          <Pencil className="h-3 w-3" />
-                          编辑
-                        </button>
-                        {exam.status === 'DRAFT' && (
-                          <button
-                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
-                            onClick={() => setPublishId(exam.id)}
-                          >
-                            <Send className="h-3 w-3" />
-                            发布
-                          </button>
-                        )}
-                        {(exam.status === 'ACTIVE' || exam.status === 'PUBLISHED') && (
-                          <button
-                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-                            onClick={() => router.push(`/admin/exams/${exam.id}/monitor`)}
-                          >
-                            <Eye className="h-3 w-3" />
-                            监控
-                          </button>
-                        )}
-                        {(exam.status === 'ACTIVE' || exam.status === 'CLOSED') && (
-                          <button
-                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
-                            onClick={() => router.push(`/admin/exams/${exam.id}/grading`)}
-                          >
-                            <ClipboardCheck className="h-3 w-3" />
-                            阅卷
-                          </button>
-                        )}
-                        <button
-                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
-                          onClick={() => router.push(`/admin/exams/${exam.id}/results`)}
-                        >
-                          <BarChart3 className="h-3 w-3" />
-                          成绩
-                        </button>
-                      </div>
-                    </TableCell>
+            {/* Mobile: card list */}
+            <div className="space-y-3 md:hidden">
+              {exams.map((exam) => (
+                <div
+                  key={exam.id}
+                  className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-stone-800">{exam.title}</span>
+                    <Badge variant={STATUS_BADGE_VARIANT[exam.status] ?? 'default'}>
+                      {EXAM_STATUS_LABELS[exam.status] ?? exam.status}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-stone-500">
+                    {exam.questionCount ?? '--'} 题 · {exam.timeLimitMinutes} 分钟 · {exam.sessionCount ?? 0} 人参考
+                  </p>
+                  <p className="mt-0.5 text-xs text-stone-400">
+                    {formatDateTime(exam.openAt)}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <button
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                      onClick={() => router.push(`/admin/exams/${exam.id}`)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      编辑
+                    </button>
+                    {exam.status === 'DRAFT' && (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                        onClick={() => setPublishId(exam.id)}
+                      >
+                        <Send className="h-3 w-3" />
+                        发布
+                      </button>
+                    )}
+                    {(exam.status === 'ACTIVE' || exam.status === 'PUBLISHED') && (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                        onClick={() => router.push(`/admin/exams/${exam.id}/monitor`)}
+                      >
+                        <Eye className="h-3 w-3" />
+                        监控
+                      </button>
+                    )}
+                    {(exam.status === 'ACTIVE' || exam.status === 'CLOSED') && (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                        onClick={() => router.push(`/admin/exams/${exam.id}/grading`)}
+                      >
+                        <ClipboardCheck className="h-3 w-3" />
+                        阅卷
+                      </button>
+                    )}
+                    <button
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
+                      onClick={() => router.push(`/admin/exams/${exam.id}/results`)}
+                    >
+                      <BarChart3 className="h-3 w-3" />
+                      成绩
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>标题</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>题目数</TableHead>
+                    <TableHead>时长</TableHead>
+                    <TableHead>参考人数</TableHead>
+                    <TableHead>创建时间</TableHead>
+                    <TableHead>操作</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {exams.map((exam) => (
+                    <TableRow key={exam.id}>
+                      <TableCell className="font-medium">{exam.title}</TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_BADGE_VARIANT[exam.status] ?? 'default'}>
+                          {EXAM_STATUS_LABELS[exam.status] ?? exam.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{exam.questionCount ?? '--'}</TableCell>
+                      <TableCell>{exam.timeLimitMinutes} 分钟</TableCell>
+                      <TableCell>{exam.sessionCount ?? 0}</TableCell>
+                      <TableCell className="text-sm text-stone-500">
+                        {formatDateTime(exam.openAt)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                            onClick={() => router.push(`/admin/exams/${exam.id}`)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                            编辑
+                          </button>
+                          {exam.status === 'DRAFT' && (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                              onClick={() => setPublishId(exam.id)}
+                            >
+                              <Send className="h-3 w-3" />
+                              发布
+                            </button>
+                          )}
+                          {(exam.status === 'ACTIVE' || exam.status === 'PUBLISHED') && (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                              onClick={() => router.push(`/admin/exams/${exam.id}/monitor`)}
+                            >
+                              <Eye className="h-3 w-3" />
+                              监控
+                            </button>
+                          )}
+                          {(exam.status === 'ACTIVE' || exam.status === 'CLOSED') && (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                              onClick={() => router.push(`/admin/exams/${exam.id}/grading`)}
+                            >
+                              <ClipboardCheck className="h-3 w-3" />
+                              阅卷
+                            </button>
+                          )}
+                          <button
+                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
+                            onClick={() => router.push(`/admin/exams/${exam.id}/results`)}
+                          >
+                            <BarChart3 className="h-3 w-3" />
+                            成绩
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-stone-500">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+              <p className="text-xs text-stone-500 sm:text-sm">
                 第 {page} / {totalPages} 页，共 {total} 条
               </p>
               <div className="flex items-center gap-2">

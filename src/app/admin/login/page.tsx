@@ -76,8 +76,8 @@ export default function AdminLoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      {/* ===== Left: Introduction ===== */}
-      <div className="relative flex flex-col justify-center overflow-hidden bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 px-6 py-12 md:w-[55%] md:px-12 lg:px-20">
+      {/* ===== Left: Introduction (hidden on mobile) ===== */}
+      <div className="relative hidden flex-col justify-center overflow-hidden bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 px-6 py-12 md:flex md:w-[55%] md:px-12 lg:px-20">
         {/* Decorative shapes */}
         <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-white/5" />
@@ -132,11 +132,20 @@ export default function AdminLoginPage() {
       </div>
 
       {/* ===== Right: Login ===== */}
-      <div className="flex flex-col items-center justify-center px-6 py-10 md:w-[45%] md:px-10 lg:px-16">
+      <div className="flex flex-col items-center justify-start px-5 pt-10 pb-6 md:min-h-0 md:justify-center md:px-10 md:py-10 md:w-[45%] lg:px-16">
+        {/* Mobile-only compact header */}
+        <div className="mb-5 flex flex-col items-center md:hidden">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-600">
+            <span className="text-lg font-bold text-white">P</span>
+          </div>
+          <h1 className="mt-2 text-base font-bold text-stone-800">HR 管理后台</h1>
+          <p className="mt-0.5 text-xs text-stone-400">请使用管理员账号登录</p>
+        </div>
+
         <div className="w-full max-w-sm">
           <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
-            {/* Card header */}
-            <div className="border-b border-stone-100 px-6 py-5">
+            {/* Card header (desktop only) */}
+            <div className="hidden border-b border-stone-100 px-6 py-5 md:block">
               <h2 className="text-lg font-semibold text-stone-800">管理员登录</h2>
               <p className="mt-1 text-xs text-stone-400">
                 请使用管理员账号登录系统

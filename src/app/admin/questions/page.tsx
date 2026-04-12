@@ -154,39 +154,31 @@ export default function QuestionListPage() {
 
       {/* Filter bar */}
       <Card>
-        <div className="flex items-end gap-4">
-          <div className="w-40">
-            <Select
-              label="题型"
-              options={TYPE_OPTIONS}
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-            />
-          </div>
-          <div className="w-40">
-            <Select
-              label="部门"
-              options={DEPT_OPTIONS}
-              value={deptFilter}
-              onChange={(e) => setDeptFilter(e.target.value)}
-            />
-          </div>
-          <div className="w-40">
-            <Select
-              label="级别"
-              options={LEVEL_OPTIONS}
-              value={levelFilter}
-              onChange={(e) => setLevelFilter(e.target.value)}
-            />
-          </div>
-          <div className="flex-1">
-            <Input
-              label="搜索"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="输入关键词搜索题目..."
-            />
-          </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          <Select
+            label="题型"
+            options={TYPE_OPTIONS}
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          />
+          <Select
+            label="部门"
+            options={DEPT_OPTIONS}
+            value={deptFilter}
+            onChange={(e) => setDeptFilter(e.target.value)}
+          />
+          <Select
+            label="级别"
+            options={LEVEL_OPTIONS}
+            value={levelFilter}
+            onChange={(e) => setLevelFilter(e.target.value)}
+          />
+          <Input
+            label="搜索"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="搜索题目..."
+          />
         </div>
       </Card>
 
@@ -204,65 +196,107 @@ export default function QuestionListPage() {
       ) : (
         <>
           <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>题型</TableHead>
-                  <TableHead>题目</TableHead>
-                  <TableHead>部门</TableHead>
-                  <TableHead>级别</TableHead>
-                  <TableHead>分值</TableHead>
-                  <TableHead>来源</TableHead>
-                  <TableHead>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {questions.map((q) => (
-                  <TableRow key={q.id}>
-                    <TableCell>
-                      <Badge variant={TYPE_BADGE[q.type] ?? 'default'}>
-                        {QUESTION_TYPE_LABELS[q.type] ?? q.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs">
-                      <span className="text-sm" title={q.content}>
-                        {truncate(q.content, 60)}
-                      </span>
-                    </TableCell>
-                    <TableCell>{q.department}</TableCell>
-                    <TableCell>{q.level}</TableCell>
-                    <TableCell>{q.points}</TableCell>
-                    <TableCell className="text-sm text-stone-500">
-                      {q.sourceFile ? '导入' : '手动'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
-                          onClick={() => router.push(`/admin/questions/${q.id}`)}
-                        >
-                          <Pencil className="h-3 w-3" />
-                          编辑
-                        </button>
-                        <button
-                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
-                          onClick={() => setDeleteId(q.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          删除
-                        </button>
-                      </div>
-                    </TableCell>
+            {/* Mobile: card list */}
+            <div className="space-y-3 md:hidden">
+              {questions.map((q) => (
+                <div
+                  key={q.id}
+                  className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge variant={TYPE_BADGE[q.type] ?? 'default'}>
+                      {QUESTION_TYPE_LABELS[q.type] ?? q.type}
+                    </Badge>
+                    <span className="text-xs text-stone-400">{q.points} 分</span>
+                  </div>
+                  <p className="mt-1.5 text-sm text-stone-700 leading-relaxed">
+                    {truncate(q.content, 80)}
+                  </p>
+                  <p className="mt-1 text-xs text-stone-400">
+                    {q.department} · {q.level} · {q.sourceFile ? '导入' : '手动'}
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <button
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                      onClick={() => router.push(`/admin/questions/${q.id}`)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      编辑
+                    </button>
+                    <button
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                      onClick={() => setDeleteId(q.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      删除
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>题型</TableHead>
+                    <TableHead>题目</TableHead>
+                    <TableHead>部门</TableHead>
+                    <TableHead>级别</TableHead>
+                    <TableHead>分值</TableHead>
+                    <TableHead>来源</TableHead>
+                    <TableHead>操作</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {questions.map((q) => (
+                    <TableRow key={q.id}>
+                      <TableCell>
+                        <Badge variant={TYPE_BADGE[q.type] ?? 'default'}>
+                          {QUESTION_TYPE_LABELS[q.type] ?? q.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        <span className="text-sm" title={q.content}>
+                          {truncate(q.content, 60)}
+                        </span>
+                      </TableCell>
+                      <TableCell>{q.department}</TableCell>
+                      <TableCell>{q.level}</TableCell>
+                      <TableCell>{q.points}</TableCell>
+                      <TableCell className="text-sm text-stone-500">
+                        {q.sourceFile ? '导入' : '手动'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                            onClick={() => router.push(`/admin/questions/${q.id}`)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                            编辑
+                          </button>
+                          <button
+                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                            onClick={() => setDeleteId(q.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            删除
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-stone-500">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+              <p className="text-xs text-stone-500 sm:text-sm">
                 第 {page} / {totalPages} 页，共 {total} 条
               </p>
               <div className="flex items-center gap-2">

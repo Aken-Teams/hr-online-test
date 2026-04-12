@@ -272,7 +272,7 @@ export default function EditExamPage() {
               placeholder="考试说明（可选）"
             />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             <Input
               label="时长（分钟）"
               type="number"
@@ -287,7 +287,7 @@ export default function EditExamPage() {
               onChange={(e) => setPassScore(Number(e.target.value))}
               min={0}
             />
-            <div>
+            <div className="col-span-2 sm:col-span-1">
               <label className="block text-sm font-medium text-stone-700 mb-1.5">总分（自动计算）</label>
               <div className="flex h-[38px] items-center rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm font-semibold text-stone-800">
                 {totalScore}
@@ -299,7 +299,7 @@ export default function EditExamPage() {
 
       {/* Open window */}
       <Card title="开放时间">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <Input
             label="开始时间"
             type="datetime-local"
@@ -362,43 +362,48 @@ export default function EditExamPage() {
       <Card title="题目规则">
         <div className="space-y-4">
           {rules.map((rule, idx) => (
-            <div key={idx} className="flex items-end gap-3 rounded-lg border border-stone-100 bg-stone-50/50 p-4">
-              <Select
-                label="题型"
-                options={QUESTION_TYPE_OPTIONS}
-                value={rule.questionType}
-                onChange={(e) => updateRule(idx, 'questionType', e.target.value as QuestionType)}
-              />
-              <Input
-                label="数量"
-                type="number"
-                value={rule.count}
-                onChange={(e) => updateRule(idx, 'count', Number(e.target.value))}
-                min={1}
-              />
-              <Input
-                label="每题分值"
-                type="number"
-                value={rule.pointsPerQuestion}
-                onChange={(e) => updateRule(idx, 'pointsPerQuestion', Number(e.target.value))}
-                min={1}
-              />
-              <Input
-                label="通用题占比(%)"
-                type="number"
-                value={rule.commonRatio}
-                onChange={(e) => updateRule(idx, 'commonRatio', Number(e.target.value))}
-                min={0}
-                max={100}
-              />
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => removeRule(idx)}
-                className="shrink-0 mb-0.5"
-              >
-                删除
-              </Button>
+            <div key={idx} className="rounded-lg border border-stone-100 bg-stone-50/50 p-3 sm:p-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
+                <div className="col-span-2 sm:col-span-1">
+                  <Select
+                    label="题型"
+                    options={QUESTION_TYPE_OPTIONS}
+                    value={rule.questionType}
+                    onChange={(e) => updateRule(idx, 'questionType', e.target.value as QuestionType)}
+                  />
+                </div>
+                <Input
+                  label="数量"
+                  type="number"
+                  value={rule.count}
+                  onChange={(e) => updateRule(idx, 'count', Number(e.target.value))}
+                  min={1}
+                />
+                <Input
+                  label="每题分值"
+                  type="number"
+                  value={rule.pointsPerQuestion}
+                  onChange={(e) => updateRule(idx, 'pointsPerQuestion', Number(e.target.value))}
+                  min={1}
+                />
+                <Input
+                  label="通用题占比(%)"
+                  type="number"
+                  value={rule.commonRatio}
+                  onChange={(e) => updateRule(idx, 'commonRatio', Number(e.target.value))}
+                  min={0}
+                  max={100}
+                />
+              </div>
+              <div className="mt-3 flex justify-end">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => removeRule(idx)}
+                >
+                  删除
+                </Button>
+              </div>
             </div>
           ))}
           <Button variant="secondary" size="sm" onClick={addRule}>
@@ -437,7 +442,7 @@ export default function EditExamPage() {
       </Card>
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pb-6">
+      <div className="flex items-center justify-end gap-2 pb-6 sm:gap-3">
         <Button variant="secondary" onClick={() => router.push('/admin/exams')}>
           取消
         </Button>

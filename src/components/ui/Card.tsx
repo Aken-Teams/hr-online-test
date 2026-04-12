@@ -14,12 +14,12 @@ export function Card({ title, description, className, children }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-stone-200 bg-white shadow-sm',
+        'overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm',
         className
       )}
     >
       {(title || description) && (
-        <div className="border-b border-stone-100 px-6 py-4">
+        <div className="border-b border-stone-100 px-4 py-3 sm:px-6 sm:py-4">
           {title && (
             <h3 className="text-base font-semibold text-stone-800">{title}</h3>
           )}
@@ -28,7 +28,7 @@ export function Card({ title, description, className, children }: CardProps) {
           )}
         </div>
       )}
-      <div className="px-6 py-4">{children}</div>
+      <div className="px-4 py-3 sm:px-6 sm:py-4">{children}</div>
     </div>
   );
 }
