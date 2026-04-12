@@ -293,8 +293,8 @@ export default function InstructionsPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <Logo size="sm" className="mb-8" />
+      <div className="flex min-h-screen flex-col items-center justify-start px-4 pt-10 md:justify-center md:pt-0">
+        <Logo size="sm" className="mb-4 md:mb-8" />
         <div className="w-full max-w-md rounded-xl border border-red-200 bg-white p-8 text-center shadow-sm">
           <svg
             className="mx-auto mb-4 h-12 w-12 text-red-400"
@@ -345,14 +345,14 @@ export default function InstructionsPage() {
     .join('，');
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
-      <Logo size="sm" className="mb-8" />
+    <div className="flex min-h-screen flex-col items-center justify-start px-4 pt-6 pb-8 md:justify-center md:py-12">
+      <Logo size="sm" className="mb-4 md:mb-8" />
 
       <div className="w-full max-w-lg rounded-xl border border-stone-200 bg-white shadow-sm">
         {/* Header */}
-        <div className="border-b border-stone-100 px-6 py-5">
+        <div className="border-b border-stone-100 px-4 py-4 md:px-6 md:py-5">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-stone-800">{exam.title}</h2>
+            <h2 className="text-base font-semibold text-stone-800 md:text-lg">{exam.title}</h2>
             {exam.isPracticeMode && (
               <Badge variant="info">练习模式</Badge>
             )}
@@ -363,28 +363,28 @@ export default function InstructionsPage() {
         </div>
 
         {/* Exam details */}
-        <div className="space-y-4 px-6 py-5">
+        <div className="space-y-3 px-4 py-4 md:space-y-4 md:px-6 md:py-5">
           {/* Info grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-stone-50 px-4 py-3">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
+            <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
               <p className="text-xs text-stone-500">题目组成</p>
-              <p className="mt-0.5 text-sm font-medium text-stone-800">
+              <p className="mt-0.5 text-xs font-medium text-stone-800 md:text-sm">
                 {composition || `共 ${exam.totalScore} 分`}
               </p>
             </div>
-            <div className="rounded-lg bg-stone-50 px-4 py-3">
+            <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
               <p className="text-xs text-stone-500">考试时长</p>
               <p className="mt-0.5 text-sm font-medium text-stone-800">
                 {exam.timeLimitMinutes} 分钟
               </p>
             </div>
-            <div className="rounded-lg bg-stone-50 px-4 py-3">
+            <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
               <p className="text-xs text-stone-500">满分</p>
               <p className="mt-0.5 text-sm font-medium text-stone-800">
                 {exam.totalScore} 分
               </p>
             </div>
-            <div className="rounded-lg bg-stone-50 px-4 py-3">
+            <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
               <p className="text-xs text-stone-500">及格分数</p>
               <p className="mt-0.5 text-sm font-medium text-stone-800">
                 {exam.passScore} 分
@@ -438,7 +438,7 @@ export default function InstructionsPage() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-stone-100 px-6 py-4">
+        <div className="border-t border-stone-100 px-4 py-3 md:px-6 md:py-4">
           <Button
             size="lg"
             className="w-full"
