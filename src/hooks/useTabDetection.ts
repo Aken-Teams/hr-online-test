@@ -37,16 +37,20 @@ export function useTabDetection(
     if (document.hidden) {
       // User navigated away
       setIsVisible(false);
-      setSwitchCount((prev) => {
-        const next = prev + 1;
-        onSwitchRef.current?.(next);
-        return next;
-      });
+      setSwitchCount((prev) => prev + 1);
     } else {
       // User returned
       setIsVisible(true);
     }
   }, []);
+
+  // Fire the callback in a separate effect to avoid setState-during-setState
+  // (the callback typically calls toast() which updates ToastProvider state).
+  useEffect(() => {
+    if (switchCount > 0) {
+      onSwitchRef.current?.(switchCount);
+    }
+  }, [switchCount]);
 
   useEffect(() => {
     // Initialise based on current visibility state (tab may already be

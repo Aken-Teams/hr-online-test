@@ -331,24 +331,47 @@ function AnswerCard({
   visible,
   onClose,
 }: AnswerCardProps) {
-  if (!visible) return null;
+  const [mounted, setMounted] = useState(false);
+  const [animateIn, setAnimateIn] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      // Trigger animation on next frame so CSS transition fires
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setAnimateIn(true));
+      });
+    } else {
+      setAnimateIn(false);
+      const timer = setTimeout(() => setMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  if (!mounted) return null;
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm sm:hidden"
+        className={cn(
+          'fixed inset-0 z-40 bg-black/30 backdrop-blur-sm sm:hidden transition-opacity duration-300',
+          animateIn ? 'opacity-100' : 'opacity-0',
+        )}
         onClick={onClose}
       />
 
       {/* Card */}
       <div
         className={cn(
-          'fixed z-50 rounded-t-2xl border border-stone-200 bg-white shadow-xl',
-          // Mobile: bottom sheet
+          'fixed z-50 rounded-t-2xl border border-stone-200 bg-white shadow-xl transition-transform duration-300 ease-out',
+          // Mobile: bottom sheet slide up
           'bottom-0 left-0 right-0 max-h-[60vh] overflow-y-auto sm:bottom-auto sm:left-auto',
-          // Desktop: side panel
+          animateIn ? 'translate-y-0' : 'translate-y-full',
+          // Desktop: side panel slide in from right
           'sm:right-4 sm:top-20 sm:w-72 sm:rounded-xl sm:max-h-[calc(100vh-6rem)]',
+          'sm:transition-all sm:duration-300',
+          animateIn ? 'sm:translate-y-0 sm:opacity-100' : 'sm:translate-x-4 sm:opacity-0',
         )}
       >
         {/* Header */}
@@ -538,11 +561,13 @@ export default function TestPage() {
 
   // Tab detection
   const tabSwitchLimitRef = useState(3)[0]; // default; overridden if exam data available
+  const [forceSubmitCountdown, setForceSubmitCountdown] = useState<number | null>(null);
+
   useTabDetection((count) => {
     if (count >= tabSwitchLimitRef) {
-      toast('切屏次数过多，正在强制交卷...', 'error');
+      // Show countdown overlay instead of immediate submit
+      setForceSubmitCountdown(5);
       // Audit the event
-      const token = localStorage.getItem('exam-token');
       if (sessionId) {
         fetch(`/api/exam/${sessionId}/audit`, {
           method: 'POST',
@@ -553,7 +578,6 @@ export default function TestPage() {
           }),
         }).catch(() => {});
       }
-      handleSubmit();
     } else if (count > 0) {
       toast(`警告：您已切屏 ${count} 次，累计 ${tabSwitchLimitRef} 次将强制交卷`, 'warning');
       // Audit single switch event
@@ -569,6 +593,19 @@ export default function TestPage() {
       }
     }
   });
+
+  // Force submit countdown timer
+  useEffect(() => {
+    if (forceSubmitCountdown === null) return;
+    if (forceSubmitCountdown <= 0) {
+      handleSubmit();
+      return;
+    }
+    const timer = setTimeout(() => {
+      setForceSubmitCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [forceSubmitCountdown, handleSubmit]);
 
   // ---- UI state ------------------------------------------------------------
 
@@ -655,15 +692,15 @@ export default function TestPage() {
       {/* Top bar */}
       {/* ================================================================== */}
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2.5">
+        <div className="mx-auto flex max-w-4xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
           {/* Logo */}
           <Logo size="sm" className="hidden sm:flex" />
 
           {/* Progress */}
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:gap-1">
             <div className="flex items-center justify-between text-xs text-stone-500">
               <span>
-                {answeredCount} / {totalQuestions} 已答
+                {answeredCount}/{totalQuestions}
               </span>
               <span>{Math.round(progressPercent)}%</span>
             </div>
@@ -671,12 +708,12 @@ export default function TestPage() {
           </div>
 
           {/* Timer */}
-          <div className={cn('shrink-0 text-lg font-mono font-bold tabular-nums', timerColor)}>
+          <div className={cn('shrink-0 font-mono font-bold tabular-nums text-base sm:text-lg', timerColor)}>
             {formattedTime}
           </div>
 
           {/* Network + save indicators */}
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 sm:flex">
             <NetworkIndicator isOnline={isOnline} />
             {isSaving && (
               <span className="text-xs text-stone-400">保存中...</span>
@@ -691,15 +728,15 @@ export default function TestPage() {
       {/* ================================================================== */}
       {/* Question area */}
       {/* ================================================================== */}
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-3 py-3 sm:px-4 sm:py-6">
         {currentRawQuestion && (
           <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
             {/* Question header */}
-            <div className="flex items-start justify-between border-b border-stone-100 px-5 py-4 sm:px-6">
+            <div className="flex items-start justify-between border-b border-stone-100 px-4 py-3 sm:px-6 sm:py-4">
               <div className="min-w-0 flex-1">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-stone-500">
-                    第 {currentIndex + 1} / {totalQuestions} 题
+                <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
+                  <span className="text-xs font-medium text-stone-500 sm:text-sm">
+                    第 {currentIndex + 1}/{totalQuestions} 题
                   </span>
                   <Badge variant="info">
                     {QUESTION_TYPE_LABELS[currentRawQuestion.type] || currentRawQuestion.type}
@@ -708,7 +745,7 @@ export default function TestPage() {
                     {currentRawQuestion.points} 分
                   </span>
                 </div>
-                <p className="text-base leading-relaxed text-stone-800 whitespace-pre-wrap">
+                <p className="text-sm leading-relaxed text-stone-800 whitespace-pre-wrap sm:text-base">
                   {currentRawQuestion.content}
                 </p>
               </div>
@@ -718,21 +755,21 @@ export default function TestPage() {
                 type="button"
                 onClick={handleFlag}
                 className={cn(
-                  'ml-3 shrink-0 rounded-lg p-2 transition-colors',
+                  'ml-2 shrink-0 rounded-lg p-1.5 transition-colors sm:ml-3 sm:p-2',
                   isFlagged
                     ? 'bg-orange-100 text-orange-600'
                     : 'text-stone-400 hover:bg-stone-100 hover:text-stone-600',
                 )}
                 title={isFlagged ? '取消标记' : '标记此题'}
               >
-                <svg className="h-5 w-5" fill={isFlagged ? 'currentColor' : 'none'} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill={isFlagged ? 'currentColor' : 'none'} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" />
                 </svg>
               </button>
             </div>
 
             {/* Answer area */}
-            <div className="px-5 py-5 sm:px-6">
+            <div className="px-4 py-4 sm:px-6 sm:py-5">
               <QuestionRenderer
                 question={currentRawQuestion}
                 answer={currentAnswer}
@@ -747,19 +784,19 @@ export default function TestPage() {
       {/* Bottom navigation */}
       {/* ================================================================== */}
       <footer className="sticky bottom-0 z-30 border-t border-stone-200 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-3 py-2 sm:px-4 sm:py-3">
           {/* Left: prev/next */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Button
               variant="secondary"
               size="sm"
               onClick={prevQuestion}
               disabled={currentIndex === 0}
             >
-              <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <svg className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
               </svg>
-              上一题
+              <span className="hidden sm:inline">上一题</span>
             </Button>
             <Button
               variant="secondary"
@@ -767,8 +804,8 @@ export default function TestPage() {
               onClick={nextQuestion}
               disabled={currentIndex === totalQuestions - 1}
             >
-              下一题
-              <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <span className="hidden sm:inline">下一题</span>
+              <svg className="h-4 w-4 sm:ml-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
               </svg>
             </Button>
@@ -779,7 +816,7 @@ export default function TestPage() {
             type="button"
             onClick={() => setShowAnswerCard(!showAnswerCard)}
             className={cn(
-              'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3 sm:py-2',
               showAnswerCard
                 ? 'bg-teal-100 text-teal-700'
                 : 'text-stone-600 hover:bg-stone-100',
@@ -831,6 +868,34 @@ export default function TestPage() {
         cancelText="继续答题"
         loading={submitting}
       />
+
+      {/* ================================================================== */}
+      {/* Force submit countdown overlay */}
+      {/* ================================================================== */}
+      {forceSubmitCountdown !== null && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+              <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-stone-800">切屏次数已达上限</h3>
+            <p className="mt-2 text-sm text-stone-600">
+              系统检测到您多次切换窗口，违反考试规则。
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <span className="text-3xl font-bold tabular-nums text-red-600">
+                {forceSubmitCountdown}
+              </span>
+              <span className="text-sm text-stone-500">秒后自动交卷</span>
+            </div>
+            <p className="mt-3 text-xs text-stone-400">
+              试卷将自动提交，无法取消
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
