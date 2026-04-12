@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Dialog } from '@/components/ui/Dialog';
-import { Select } from '@/components/ui/Select';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import {
@@ -446,12 +446,12 @@ export default function EmployeeListPage() {
             }
             placeholder="员工工号"
           />
-          <Select
+          <CustomSelect
             label="部门"
             options={DEPARTMENT_OPTIONS}
             value={newEmployee.department}
-            onChange={(e) =>
-              setNewEmployee((prev) => ({ ...prev, department: e.target.value }))
+            onChange={(val) =>
+              setNewEmployee((prev) => ({ ...prev, department: val }))
             }
           />
           <Input

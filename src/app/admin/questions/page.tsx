@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
@@ -153,25 +153,25 @@ export default function QuestionListPage() {
       />
 
       {/* Filter bar */}
-      <Card>
+      <Card className="overflow-visible">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          <Select
+          <CustomSelect
             label="题型"
             options={TYPE_OPTIONS}
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
+            onChange={(val) => setTypeFilter(val)}
           />
-          <Select
+          <CustomSelect
             label="部门"
             options={DEPT_OPTIONS}
             value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
+            onChange={(val) => setDeptFilter(val)}
           />
-          <Select
+          <CustomSelect
             label="级别"
             options={LEVEL_OPTIONS}
             value={levelFilter}
-            onChange={(e) => setLevelFilter(e.target.value)}
+            onChange={(val) => setLevelFilter(val)}
           />
           <Input
             label="搜索"

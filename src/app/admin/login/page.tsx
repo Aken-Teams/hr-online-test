@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
@@ -86,21 +87,19 @@ export default function AdminLoginPage() {
         <div className="relative mx-auto w-full max-w-lg">
           {/* Logo */}
           <div className="mb-8 flex items-center gap-2.5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-              <span className="text-lg font-bold text-white">P</span>
-            </div>
+            <Image src="/logo.png" alt="智考云" width={48} height={48} className="h-12 w-12 shrink-0" />
             <div className="flex flex-col">
               <span className="text-xl font-bold tracking-tight text-white leading-tight">
-                PANJIT
+                智考云
               </span>
-              <span className="text-xs leading-tight text-white/60" style={{ fontFamily: 'var(--font-serif)' }}>
-                强茂科技
+              <span className="text-xs leading-tight text-white/60">
+                企业考核平台
               </span>
             </div>
           </div>
 
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            HR 管理后台
+            考核管理后台
           </h1>
           <p className="mt-2 text-sm text-amber-50/70 sm:text-base">
             考试管理 · 成绩统计 · 员工管理
@@ -124,21 +123,15 @@ export default function AdminLoginPage() {
             ))}
           </div>
 
-          {/* Footer */}
-          <p className="mt-12 text-xs text-amber-100/30">
-            仅限授权管理员使用
-          </p>
         </div>
       </div>
 
       {/* ===== Right: Login ===== */}
-      <div className="flex flex-col items-center justify-start px-5 pt-10 pb-6 md:min-h-0 md:justify-center md:px-10 md:py-10 md:w-[45%] lg:px-16">
+      <div className="flex min-h-screen flex-col items-center justify-start px-5 pt-10 pb-6 md:min-h-0 md:justify-center md:px-10 md:py-10 md:w-[45%] lg:px-16">
         {/* Mobile-only compact header */}
         <div className="mb-5 flex flex-col items-center md:hidden">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-600">
-            <span className="text-lg font-bold text-white">P</span>
-          </div>
-          <h1 className="mt-2 text-base font-bold text-stone-800">HR 管理后台</h1>
+          <Image src="/logo.png" alt="智考云" width={48} height={48} className="h-12 w-12" />
+          <h1 className="mt-2 text-base font-bold text-stone-800">考核管理后台</h1>
           <p className="mt-0.5 text-xs text-stone-400">请使用管理员账号登录</p>
         </div>
 
@@ -191,6 +184,11 @@ export default function AdminLoginPage() {
               </form>
             </div>
           </div>
+
+          {/* Footer */}
+          <a href="https://www.zh-aoi.com/" target="_blank" rel="noopener noreferrer" className="mt-6 block text-center text-xs text-stone-400 hover:text-teal-600 transition-colors">
+            Powered by 智合科技 © 2026
+          </a>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Logo } from '@/components/shared/Logo';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -406,24 +407,22 @@ export default function WelcomePage() {
         <div className="relative mx-auto w-full max-w-lg">
           {/* Logo — white version */}
           <div className="mb-8 flex items-center gap-2.5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-              <span className="text-lg font-bold text-white">P</span>
-            </div>
+            <Image src="/logo.png" alt="智考云" width={48} height={48} className="h-12 w-12 shrink-0" />
             <div className="flex flex-col">
               <span className="text-xl font-bold tracking-tight text-white leading-tight">
-                PANJIT
+                智考云
               </span>
-              <span className="text-xs leading-tight text-white/60" style={{ fontFamily: 'var(--font-serif)' }}>
-                强茂科技
+              <span className="text-xs leading-tight text-white/60">
+                企业考核平台
               </span>
             </div>
           </div>
 
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            2026年度技能考核
+            员工在线技能考核
           </h1>
           <p className="mt-2 text-sm text-amber-50/70 sm:text-base">
-            强茂半导体员工在线测试平台
+            企业员工入职及技能在线测试平台
           </p>
 
           {/* Divider */}
@@ -444,10 +443,6 @@ export default function WelcomePage() {
             ))}
           </div>
 
-          {/* Footer */}
-          <p className="mt-12 text-xs text-amber-100/30">
-            如遇问题请联系人力资源部
-          </p>
         </div>
       </div>
 
@@ -484,6 +479,11 @@ export default function WelcomePage() {
               {activeTab === 'password' ? <PasswordTab /> : <FaceTab />}
             </div>
           </div>
+
+          {/* Footer */}
+          <a href="https://www.zh-aoi.com/" target="_blank" rel="noopener noreferrer" className="mt-6 block text-center text-xs text-stone-400 hover:text-teal-600 transition-colors">
+            Powered by 智合科技 © 2026
+          </a>
         </div>
       </div>
     </div>

@@ -1,11 +1,12 @@
 'use client';
 
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 const sizeConfig = {
-  sm: { icon: 'h-7 w-7', text: 'text-lg', sub: 'text-[10px]' },
-  md: { icon: 'h-9 w-9', text: 'text-xl', sub: 'text-xs' },
-  lg: { icon: 'h-12 w-12', text: 'text-2xl', sub: 'text-sm' },
+  sm: { icon: 'h-7 w-7', img: 28, text: 'text-lg', sub: 'text-[10px]' },
+  md: { icon: 'h-9 w-9', img: 36, text: 'text-xl', sub: 'text-xs' },
+  lg: { icon: 'h-12 w-12', img: 48, text: 'text-2xl', sub: 'text-sm' },
 } as const;
 
 export interface LogoProps {
@@ -18,14 +19,14 @@ export function Logo({ size = 'md', className }: LogoProps) {
 
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
-      <div
-        className={cn(
-          'rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center',
-          config.icon
-        )}
-      >
-        <span className="font-bold text-white text-[0.6em] leading-none">P</span>
-      </div>
+      <Image
+        src="/logo.png"
+        alt="智考云"
+        width={config.img}
+        height={config.img}
+        className={cn('shrink-0', config.icon)}
+        priority
+      />
       <div className="flex flex-col">
         <span
           className={cn(
@@ -33,7 +34,7 @@ export function Logo({ size = 'md', className }: LogoProps) {
             config.text
           )}
         >
-          PANJIT
+          智考云
         </span>
         <span
           className={cn(
@@ -41,7 +42,7 @@ export function Logo({ size = 'md', className }: LogoProps) {
             config.sub
           )}
         >
-          <span style={{ fontFamily: 'var(--font-serif)' }}>强茂科技</span>
+          企业考核平台
         </span>
       </div>
     </div>

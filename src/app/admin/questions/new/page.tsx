@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useToast } from '@/components/ui/Toast';
 import { DEPARTMENTS, QUESTION_TYPE_LABELS } from '@/lib/constants';
 import type { QuestionType } from '@/types/exam';
@@ -190,13 +190,13 @@ export default function CreateQuestionPage() {
       />
 
       {/* Common fields */}
-      <Card title="基本信息">
+      <Card title="基本信息" className="overflow-visible">
         <div className="space-y-4">
-          <Select
+          <CustomSelect
             label="题型"
             options={QUESTION_TYPE_OPTIONS}
             value={questionType}
-            onChange={(e) => setQuestionType(e.target.value as QuestionType)}
+            onChange={(val) => setQuestionType(val as QuestionType)}
           />
 
           <div>
@@ -211,17 +211,17 @@ export default function CreateQuestionPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Select
+            <CustomSelect
               label="部门"
               options={DEPARTMENT_OPTIONS}
               value={department}
-              onChange={(e) => setDepartment(e.target.value)}
+              onChange={(val) => setDepartment(val)}
             />
-            <Select
+            <CustomSelect
               label="级别"
               options={LEVEL_OPTIONS}
               value={level}
-              onChange={(e) => setLevel(e.target.value)}
+              onChange={(val) => setLevel(val)}
             />
             <Input
               label="角色"

@@ -144,21 +144,6 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      {/* Quick actions */}
-      <Card title="快捷操作">
-        <div className="flex flex-wrap gap-3">
-          <Button size="sm" onClick={() => router.push('/admin/exams/new')}>
-            创建考试
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => router.push('/admin/questions/import')}>
-            导入题库
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => router.push('/admin/employees/import')}>
-            导入员工
-          </Button>
-        </div>
-      </Card>
-
       {/* Recent sessions */}
       <Card title="最近考试记录">
         {recentSessions.length === 0 ? (

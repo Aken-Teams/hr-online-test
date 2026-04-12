@@ -164,7 +164,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {renderNavItems()}
           </nav>
           <div className="border-t border-stone-100 px-3 py-3">
-            <div className="text-xs text-stone-400 text-center">HR 考试管理系统 v1.0</div>
+            <a href="https://www.zh-aoi.com/" target="_blank" rel="noopener noreferrer" className="block text-xs text-stone-400 text-center hover:text-teal-600 transition-colors">Powered by 智合科技 © 2026</a>
           </div>
         </aside>
 
@@ -181,7 +181,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
-              <h2 className="text-base font-semibold text-stone-800 md:text-lg">HR管理后台</h2>
+              <h2 className="text-base font-semibold text-stone-800 md:text-lg">考核管理后台</h2>
             </div>
             <div className="flex items-center gap-2 md:gap-4">
               <div className="hidden items-center gap-2 sm:flex">

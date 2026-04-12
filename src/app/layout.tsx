@@ -2,8 +2,24 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '强茂科技 - 员工技能考核系统',
-  description: '强茂半导体员工入职及技能在线测试平台',
+  title: {
+    default: '智考云 - 企业员工在线考核平台',
+    template: '%s | 智考云',
+  },
+  description: '智考云是专业的企业员工在线考核平台，支持选择题、判断题、简答题等多种题型，提供限时考试、自动评分、成绩统计等功能。',
+  keywords: ['在线考试', '企业考核', '员工测试', '技能考核', '智考云'],
+  authors: [{ name: '智合科技', url: 'https://www.zh-aoi.com/' }],
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
+  openGraph: {
+    title: '智考云 - 企业员工在线考核平台',
+    description: '专业的企业员工在线考核平台，支持多种题型与自动评分',
+    siteName: '智考云',
+    locale: 'zh_CN',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({

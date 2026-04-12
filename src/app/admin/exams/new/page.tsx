@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useToast } from '@/components/ui/Toast';
 import { DEPARTMENTS, QUESTION_TYPE_LABELS } from '@/lib/constants';
 import type { QuestionType } from '@/types/exam';
@@ -266,17 +266,17 @@ export default function CreateExamPage() {
       </Card>
 
       {/* Question rules */}
-      <Card title="题目规则">
+      <Card title="题目规则" className="overflow-visible">
         <div className="space-y-4">
           {rules.map((rule, idx) => (
             <div key={idx} className="rounded-lg border border-stone-100 bg-stone-50/50 p-3 sm:p-4">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
                 <div className="col-span-2 sm:col-span-1">
-                  <Select
+                  <CustomSelect
                     label="题型"
                     options={QUESTION_TYPE_OPTIONS}
                     value={rule.questionType}
-                    onChange={(e) => updateRule(idx, 'questionType', e.target.value as QuestionType)}
+                    onChange={(val) => updateRule(idx, 'questionType', val as QuestionType)}
                   />
                 </div>
                 <Input

@@ -152,10 +152,10 @@ export default function CertificatePage() {
             {/* Company name */}
             <div className="mb-6 text-center">
               <p className="text-lg font-bold tracking-widest text-teal-900 sm:text-xl">
-                强茂科技有限公司
+                智考云
               </p>
               <p className="mt-1 text-xs tracking-wider text-stone-500 sm:text-sm">
-                PANJIT INTERNATIONAL INC.
+                企业考核平台
               </p>
             </div>
 
