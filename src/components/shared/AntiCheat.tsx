@@ -40,8 +40,17 @@ export function AntiCheat({ blockNavigation = false }: { blockNavigation?: boole
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
       }
-      // PrintScreen key
+      // PrintScreen key — also attempt to overwrite clipboard
       if (e.key === 'PrintScreen') {
+        e.preventDefault();
+        try {
+          navigator.clipboard.writeText('').catch(() => {});
+        } catch {
+          // clipboard API may not be available
+        }
+      }
+      // Win+Shift+S (Windows snipping tool) — can't fully block but detect
+      if (e.shiftKey && e.metaKey && e.key === 'S') {
         e.preventDefault();
       }
       // F12 (dev tools)
@@ -80,6 +89,33 @@ export function AntiCheat({ blockNavigation = false }: { blockNavigation?: boole
       document.removeEventListener('copy', handleCopy);
       document.removeEventListener('cut', handleCut);
       document.removeEventListener('dragstart', handleDragStart);
+    };
+  }, []);
+
+  // --- Blur content when page loses focus (deters alt-tab / tab-switch screenshots) ---
+  useEffect(() => {
+    const applyBlur = () => { document.body.style.filter = 'blur(10px)'; };
+    const removeBlur = () => { document.body.style.filter = ''; };
+
+    // Tab switch (e.g. Ctrl+Tab to another browser tab)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') applyBlur();
+      else removeBlur();
+    };
+
+    // Window switch (e.g. Alt+Tab to another app)
+    const handleBlur = () => applyBlur();
+    const handleFocus = () => removeBlur();
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+      document.body.style.filter = '';
     };
   }, []);
 

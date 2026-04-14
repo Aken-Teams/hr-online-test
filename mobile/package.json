@@ -1,0 +1,30 @@
+{
+  "name": "zhikao-exam-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "clean": "cd android && ./gradlew clean && cd .."
+  },
+  "dependencies": {
+    "react": "19.0.0",
+    "react-native": "0.78.2",
+    "react-native-webview": "^13.12.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/runtime": "^7.26.0",
+    "@react-native/babel-preset": "0.78.2",
+    "@react-native/metro-config": "0.78.2",
+    "@react-native/typescript-config": "0.78.2",
+    "@types/react": "^19.0.0",
+    "metro-react-native-babel-preset": "^0.77.0",
+    "typescript": "~5.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

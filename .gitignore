@@ -39,3 +39,13 @@ public/uploads/
 
 # prisma
 prisma/migrations/migration_lock.toml
+
+# mobile app build artifacts
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+mobile/ios/Pods/
+mobile/ios/build/
+*.apk
+*.aab
+*.ipa
