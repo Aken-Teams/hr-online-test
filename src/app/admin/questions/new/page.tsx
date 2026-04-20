@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ImagePlus, X } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useToast } from '@/components/ui/Toast';
@@ -49,7 +49,7 @@ export default function CreateQuestionPage() {
   const [points, setPoints] = useState(2);
 
   // MC options
-  const [options, setOptions] = useState([
+  const [options, setOptions] = useState<{ label: string; content: string; imageUrl?: string | null }[]>([
     { label: 'A', content: '' },
     { label: 'B', content: '' },
     { label: 'C', content: '' },
@@ -102,6 +102,33 @@ export default function CreateQuestionPage() {
     });
   }
 
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+
+  async function handleImageUpload(index: number, file: File) {
+    setUploadingIdx(index);
+    try {
+      const form = new FormData();
+      form.append('image', file);
+      const res = await fetch('/api/upload/question-image', { method: 'POST', body: form });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '上传失败');
+      setOptions((prev) =>
+        prev.map((opt, i) => (i === index ? { ...opt, imageUrl: json.data.imageUrl } : opt))
+      );
+      toast('图片已上传', 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '图片上传失败', 'error');
+    } finally {
+      setUploadingIdx(null);
+    }
+  }
+
+  function removeImage(index: number) {
+    setOptions((prev) =>
+      prev.map((opt, i) => (i === index ? { ...opt, imageUrl: null } : opt))
+    );
+  }
+
   function buildCorrectAnswer(): string | null {
     switch (questionType) {
       case 'SINGLE_CHOICE':
@@ -147,6 +174,7 @@ export default function CreateQuestionPage() {
             ? options.map((opt, idx) => ({
                 label: opt.label,
                 content: opt.content,
+                imageUrl: opt.imageUrl ?? null,
                 sortOrder: idx,
               }))
             : [],
@@ -245,36 +273,77 @@ export default function CreateQuestionPage() {
         <Card title="选项">
           <div className="space-y-3">
             {options.map((opt, idx) => (
-              <div key={opt.label} className="flex items-center gap-3">
-                <label className="flex items-center gap-2 shrink-0">
-                  <input
-                    type={questionType === 'MULTI_CHOICE' ? 'checkbox' : 'radio'}
-                    name="correct-option"
-                    checked={correctOptions.has(opt.label)}
-                    onChange={() => {
-                      if (questionType === 'SINGLE_CHOICE') {
-                        setCorrectOptions(new Set([opt.label]));
-                      } else {
-                        toggleCorrect(opt.label);
-                      }
-                    }}
-                    className="h-4 w-4 text-teal-600 border-stone-300"
+              <div key={opt.label} className="space-y-1.5">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 shrink-0">
+                    <input
+                      type={questionType === 'MULTI_CHOICE' ? 'checkbox' : 'radio'}
+                      name="correct-option"
+                      checked={correctOptions.has(opt.label)}
+                      onChange={() => {
+                        if (questionType === 'SINGLE_CHOICE') {
+                          setCorrectOptions(new Set([opt.label]));
+                        } else {
+                          toggleCorrect(opt.label);
+                        }
+                      }}
+                      className="h-4 w-4 text-teal-600 border-stone-300"
+                    />
+                    <span className="text-sm font-medium text-stone-700 w-4">{opt.label}</span>
+                  </label>
+                  <Input
+                    value={opt.content}
+                    onChange={(e) => updateOption(idx, e.target.value)}
+                    placeholder={`选项 ${opt.label} 内容`}
                   />
-                  <span className="text-sm font-medium text-stone-700 w-4">{opt.label}</span>
-                </label>
-                <Input
-                  value={opt.content}
-                  onChange={(e) => updateOption(idx, e.target.value)}
-                  placeholder={`选项 ${opt.label} 内容`}
-                />
-                {options.length > 2 && (
-                  <button
-                    type="button"
-                    onClick={() => removeOption(idx)}
-                    className="text-sm text-red-500 hover:text-red-700 shrink-0"
-                  >
-                    删除
-                  </button>
+                  <label className="shrink-0 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleImageUpload(idx, f);
+                        e.target.value = '';
+                      }}
+                    />
+                    <span
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-300 px-2 py-1.5 text-xs text-stone-600 hover:bg-stone-50 transition-colors"
+                      title="上传选项图片"
+                    >
+                      {uploadingIdx === idx ? (
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-stone-300 border-t-teal-500" />
+                      ) : (
+                        <ImagePlus className="h-3.5 w-3.5" />
+                      )}
+                    </span>
+                  </label>
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeOption(idx)}
+                      className="text-sm text-red-500 hover:text-red-700 shrink-0"
+                    >
+                      删除
+                    </button>
+                  )}
+                </div>
+                {opt.imageUrl && (
+                  <div className="ml-12 flex items-start gap-2">
+                    <img
+                      src={opt.imageUrl}
+                      alt={`选项 ${opt.label} 图片`}
+                      className="max-h-20 rounded border border-stone-200 bg-white p-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="rounded-full p-0.5 text-stone-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                      title="移除图片"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

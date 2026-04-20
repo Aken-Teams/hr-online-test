@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ImagePlus, X } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -145,6 +145,33 @@ export default function EditQuestionPage() {
       }
       return next;
     });
+  }
+
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+
+  async function handleImageUpload(index: number, file: File) {
+    setUploadingIdx(index);
+    try {
+      const form = new FormData();
+      form.append('image', file);
+      const res = await fetch('/api/upload/question-image', { method: 'POST', body: form });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '上传失败');
+      setOptions((prev) =>
+        prev.map((opt, i) => (i === index ? { ...opt, imageUrl: json.data.imageUrl } : opt))
+      );
+      toast('图片已上传', 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '图片上传失败', 'error');
+    } finally {
+      setUploadingIdx(null);
+    }
+  }
+
+  function removeImage(index: number) {
+    setOptions((prev) =>
+      prev.map((opt, i) => (i === index ? { ...opt, imageUrl: null } : opt))
+    );
   }
 
   function buildCorrectAnswer(): string | null {
@@ -323,6 +350,28 @@ export default function EditQuestionPage() {
                     onChange={(e) => updateOption(idx, e.target.value)}
                     placeholder={`选项 ${opt.label} 内容`}
                   />
+                  <label className="shrink-0 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleImageUpload(idx, f);
+                        e.target.value = '';
+                      }}
+                    />
+                    <span
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-300 px-2 py-1.5 text-xs text-stone-600 hover:bg-stone-50 transition-colors"
+                      title="上传选项图片"
+                    >
+                      {uploadingIdx === idx ? (
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-stone-300 border-t-teal-500" />
+                      ) : (
+                        <ImagePlus className="h-3.5 w-3.5" />
+                      )}
+                    </span>
+                  </label>
                   {options.length > 2 && (
                     <button
                       type="button"
@@ -334,12 +383,20 @@ export default function EditQuestionPage() {
                   )}
                 </div>
                 {opt.imageUrl && (
-                  <div className="ml-12">
+                  <div className="ml-12 flex items-start gap-2">
                     <img
                       src={opt.imageUrl}
                       alt={`选项 ${opt.label} 图片`}
                       className="max-h-20 rounded border border-stone-200 bg-white p-1"
                     />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="rounded-full p-0.5 text-stone-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                      title="移除图片"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
               </div>
