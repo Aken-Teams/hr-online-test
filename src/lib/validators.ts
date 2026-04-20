@@ -95,6 +95,8 @@ export const examCreateSchema = z.object({
   showCorrectAnswers: z.boolean().default(true),
   openAt: z.string().datetime().nullable().optional(),
   closeAt: z.string().datetime().nullable().optional(),
+  resultQueryOpenAt: z.string().datetime().nullable().optional(),
+  resultQueryCloseAt: z.string().datetime().nullable().optional(),
   tabSwitchLimit: z.number().int().min(0).default(3),
   enableFaceAuth: z.boolean().default(false),
   questionRules: z
@@ -111,6 +113,7 @@ export type ExamCreateInput = z.infer<typeof examCreateSchema>;
 const questionOptionSchema = z.object({
   label: z.string().min(1, '选项标签不能为空'),
   content: z.string().min(1, '选项内容不能为空'),
+  imageUrl: z.string().nullable().optional(),
   sortOrder: z.number().int().default(0),
 });
 

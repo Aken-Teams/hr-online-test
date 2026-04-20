@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
 import { DEPARTMENTS, QUESTION_TYPE_LABELS } from '@/lib/constants';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, ImageIcon } from 'lucide-react';
 import type { QuestionData, QuestionType, PaginatedResponse } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
@@ -258,9 +258,16 @@ export default function QuestionListPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-xs">
-                        <span className="text-sm" title={q.content}>
-                          {truncate(q.content, 60)}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm" title={q.content}>
+                            {truncate(q.content, 60)}
+                          </span>
+                          {q.options?.some((o) => o.imageUrl) && (
+                            <span title="含图片选项">
+                              <ImageIcon className="h-3.5 w-3.5 shrink-0 text-teal-500" />
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{q.department}</TableCell>
                       <TableCell>{q.level}</TableCell>

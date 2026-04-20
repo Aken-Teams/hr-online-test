@@ -137,7 +137,7 @@ export default function AdminDashboardPage() {
         <StatCard label="题库总量" value={stats?.totalQuestions ?? 0} />
         <StatCard label="员工数量" value={stats?.totalEmployees ?? 0} />
         <StatCard label="当前在线" value={stats?.activeSessions ?? 0} />
-        <StatCard label="待阅卷" value={stats?.pendingGrading ?? 0} />
+        <StatCard label="已交卷" value={stats?.pendingGrading ?? 0} />
         <StatCard
           label="平均通过率"
           value={stats?.averagePassRate != null ? `${stats.averagePassRate}%` : '--'}

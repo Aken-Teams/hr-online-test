@@ -93,6 +93,10 @@ export default function EditExamPage() {
   const [openAt, setOpenAt] = useState('');
   const [closeAt, setCloseAt] = useState('');
 
+  // Result query window
+  const [resultQueryOpenAt, setResultQueryOpenAt] = useState('');
+  const [resultQueryCloseAt, setResultQueryCloseAt] = useState('');
+
   // Settings
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
   const [showCorrectAnswers, setShowCorrectAnswers] = useState(false);
@@ -142,6 +146,12 @@ export default function EditExamPage() {
       }
       if (exam.closeAt) {
         setCloseAt(toLocalDatetime(exam.closeAt));
+      }
+      if (exam.resultQueryOpenAt) {
+        setResultQueryOpenAt(toLocalDatetime(exam.resultQueryOpenAt));
+      }
+      if (exam.resultQueryCloseAt) {
+        setResultQueryCloseAt(toLocalDatetime(exam.resultQueryCloseAt));
       }
     } catch {
       toast('加载考试数据失败', 'error');
@@ -200,10 +210,12 @@ export default function EditExamPage() {
         totalScore,
         openAt: openAt || null,
         closeAt: closeAt || null,
+        resultQueryOpenAt: resultQueryOpenAt || null,
+        resultQueryCloseAt: resultQueryCloseAt || null,
         shuffleQuestions,
         shuffleOptions: shuffleQuestions,
         showCorrectAnswers,
-        showResultImmediately: showCorrectAnswers,
+        showResultImmediately: true,
         isPracticeMode,
         tabSwitchLimit,
         enableFaceAuth,
@@ -297,23 +309,44 @@ export default function EditExamPage() {
         </div>
       </Card>
 
-      {/* Open window */}
-      <Card title="开放时间">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-          <Input
-            label="开始时间"
-            type="datetime-local"
-            value={openAt}
-            onChange={(e) => setOpenAt(e.target.value)}
-          />
-          <Input
-            label="结束时间"
-            type="datetime-local"
-            value={closeAt}
-            onChange={(e) => setCloseAt(e.target.value)}
-          />
-        </div>
-      </Card>
+      {/* Time windows — side by side */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card title="考试开放时间">
+          <div className="space-y-3">
+            <Input
+              label="开始时间"
+              type="datetime-local"
+              value={openAt}
+              onChange={(e) => setOpenAt(e.target.value)}
+            />
+            <Input
+              label="结束时间"
+              type="datetime-local"
+              value={closeAt}
+              onChange={(e) => setCloseAt(e.target.value)}
+            />
+          </div>
+        </Card>
+        <Card title="成绩查询开放时间">
+          <p className="mb-3 text-xs text-stone-500">
+            设置考生可查看错题解析的时间段。未设置则跟随「显示正确答案」开关。
+          </p>
+          <div className="space-y-3">
+            <Input
+              label="开放时间"
+              type="datetime-local"
+              value={resultQueryOpenAt}
+              onChange={(e) => setResultQueryOpenAt(e.target.value)}
+            />
+            <Input
+              label="截止时间"
+              type="datetime-local"
+              value={resultQueryCloseAt}
+              onChange={(e) => setResultQueryCloseAt(e.target.value)}
+            />
+          </div>
+        </Card>
+      </div>
 
       {/* Settings */}
       <Card title="考试设置">

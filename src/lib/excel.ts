@@ -85,6 +85,8 @@ const COLUMN_MAP: Record<string, string> = {
   '可多选': 'isMultiSelect',
   '参考答案': 'referenceAnswer',
   '评分标准': 'gradingRubric',
+  '题目属性': 'deptRole', // combined "部门--岗位" format
+  '备注': 'note',
 };
 
 function mapColumnName(header: string): string {
@@ -119,7 +121,8 @@ export function parseQuestionExcel(buffer: Buffer): QuestionImportRow[] {
       defval: '',
     });
 
-    for (const raw of rawRows) {
+    for (let rowIdx = 0; rowIdx < rawRows.length; rowIdx++) {
+      const raw = rawRows[rowIdx];
       // Map Chinese column headers to internal names
       const row: Record<string, string> = {};
       for (const [key, value] of Object.entries(raw)) {
@@ -156,9 +159,9 @@ export function parseQuestionExcel(buffer: Buffer): QuestionImportRow[] {
       if (questionType === 'TRUE_FALSE') {
         // 判断题: "正确(是/否)" column -> "是" = "TRUE", "否" = "FALSE"
         const tfValue = row.correctTF || row.correctAnswer || '';
-        if (tfValue === '是' || tfValue === '对' || tfValue === 'true' || tfValue === 'TRUE') {
+        if (tfValue === '是' || tfValue === '对' || tfValue === '√' || tfValue === 'true' || tfValue === 'TRUE') {
           correctAnswer = 'TRUE';
-        } else if (tfValue === '否' || tfValue === '错' || tfValue === 'false' || tfValue === 'FALSE') {
+        } else if (tfValue === '否' || tfValue === '错' || tfValue === 'X' || tfValue === '×' || tfValue === 'false' || tfValue === 'FALSE') {
           correctAnswer = 'FALSE';
         } else if (tfValue) {
           correctAnswer = tfValue;
@@ -167,16 +170,27 @@ export function parseQuestionExcel(buffer: Buffer): QuestionImportRow[] {
         correctAnswer = row.correctAnswer || undefined;
       }
 
+      // Parse combined "部门--岗位" field if individual fields are missing
+      let department = row.department || '';
+      let role = row.role || '';
+      if (!department && !role && row.deptRole) {
+        const parts = row.deptRole.split('--');
+        department = parts[0]?.trim() || '';
+        role = parts[1]?.trim() || department; // fallback to dept if no role
+      }
+
       const importRow: QuestionImportRow = {
         content,
         type: questionType,
         level: row.level || '一级题库',
-        department: row.department || '全公司',
-        role: row.role || '全员',
+        department: department || '全公司',
+        role: role || '全员',
         correctAnswer,
         isMultiSelect: isMulti,
         referenceAnswer: row.referenceAnswer || undefined,
         sourceFile: undefined, // Set by caller
+        _sheetName: sheetName,
+        _rowIndex: rowIdx + 1, // +1 because row 0 is header in openpyxl anchor coords
       };
 
       if (options.length > 0) {
@@ -204,10 +218,11 @@ export function generateResultsExcel(results: ResultExportRow[]): Buffer {
     '部门',
     '岗位',
     '考试名称',
-    '得分',
+    '线上得分',
     '满分',
-    '是否及格',
-    '等级',
+    '简答分',
+    '实操分',
+    '综合成绩',
     '用时(秒)',
     '提交时间',
   ];
@@ -220,8 +235,9 @@ export function generateResultsExcel(results: ResultExportRow[]): Buffer {
     r.examTitle,
     r.totalScore ?? '',
     r.maxPossibleScore,
-    r.isPassed == null ? '' : r.isPassed ? '是' : '否',
-    r.gradeLabel ?? '',
+    r.essayScore ?? '',
+    r.practicalScore ?? '',
+    r.combinedScore ?? '',
     r.timeTakenSeconds,
     r.submittedAt ?? '',
   ]);
@@ -239,6 +255,81 @@ export function generateResultsExcel(results: ResultExportRow[]): Buffer {
 
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   return Buffer.from(buf);
+}
+
+// ============================================================
+// Parse Offline Score Excel
+// ============================================================
+
+export interface OfflineScoreRow {
+  employeeNo: string;
+  name: string;
+  essayScore?: number;
+  practicalScore?: number;
+}
+
+/** Chinese column mapping for offline score import */
+const OFFLINE_SCORE_COLUMN_MAP: Record<string, string> = {
+  '工号': 'employeeNo',
+  '员工编号': 'employeeNo',
+  '编号': 'employeeNo',
+  '姓名': 'name',
+  '名字': 'name',
+  '简答分': 'essayScore',
+  '简答题': 'essayScore',
+  '简答分数': 'essayScore',
+  '简答成绩': 'essayScore',
+  '纸质简答': 'essayScore',
+  '实操分': 'practicalScore',
+  '实操': 'practicalScore',
+  '实操分数': 'practicalScore',
+  '实操成绩': 'practicalScore',
+};
+
+/**
+ * Parse an offline score Excel file and return structured rows.
+ * Expected columns: 工号, 姓名, 简答分, 实操分
+ */
+export function parseOfflineScoreExcel(buffer: Buffer): OfflineScoreRow[] {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const results: OfflineScoreRow[] = [];
+
+  const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return results;
+
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) return results;
+
+  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+    defval: '',
+  });
+
+  for (const raw of rawRows) {
+    const row: Record<string, string> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      const trimmedKey = key.trim();
+      const mapped = OFFLINE_SCORE_COLUMN_MAP[trimmedKey] || trimmedKey;
+      row[mapped] = String(value ?? '').trim();
+    }
+
+    const employeeNo = row.employeeNo;
+    const name = row.name;
+    if (!employeeNo && !name) continue;
+
+    const essayScore = row.essayScore ? parseFloat(row.essayScore) : undefined;
+    const practicalScore = row.practicalScore ? parseFloat(row.practicalScore) : undefined;
+
+    if (essayScore == null && practicalScore == null) continue;
+
+    results.push({
+      employeeNo: employeeNo || '',
+      name: name || '',
+      essayScore: essayScore != null && !isNaN(essayScore) ? essayScore : undefined,
+      practicalScore: practicalScore != null && !isNaN(practicalScore) ? practicalScore : undefined,
+    });
+  }
+
+  return results;
 }
 
 // ============================================================
@@ -316,4 +407,61 @@ export function parseEmployeeExcel(buffer: Buffer): EmployeeImportRow[] {
   }
 
   return results;
+}
+
+// ============================================================
+// Offline Score Import Template
+// ============================================================
+
+interface OfflineScoreTemplateRow {
+  employeeNo: string;
+  name: string;
+  department: string;
+  onlineScore: number;
+  essayScore: string;
+  practicalScore: string;
+}
+
+/**
+ * Generate an Excel template for offline score import.
+ * Pre-fills employee info from existing exam sessions so the admin
+ * only needs to fill in the essay + practical scores.
+ */
+export function generateOfflineScoreTemplate(
+  employees: OfflineScoreTemplateRow[]
+): Buffer {
+  const headers = [
+    '工号',
+    '姓名',
+    '部门',
+    '线上理论分',
+    '简答分',
+    '实操分',
+  ];
+
+  const rows = employees.map((e) => [
+    e.employeeNo,
+    e.name,
+    e.department,
+    e.onlineScore,
+    e.essayScore,
+    e.practicalScore,
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 12 },  // 工号
+    { wch: 10 },  // 姓名
+    { wch: 14 },  // 部门
+    { wch: 12 },  // 线上理论分
+    { wch: 10 },  // 简答分
+    { wch: 10 },  // 实操分
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '线下成绩');
+
+  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
 }

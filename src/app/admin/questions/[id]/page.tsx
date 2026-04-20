@@ -54,7 +54,7 @@ export default function EditQuestionPage() {
   const [points, setPoints] = useState(2);
 
   // MC options
-  const [options, setOptions] = useState<{ label: string; content: string }[]>([]);
+  const [options, setOptions] = useState<{ label: string; content: string; imageUrl?: string | null }[]>([]);
   const [correctOptions, setCorrectOptions] = useState<Set<string>>(new Set());
 
   // TF
@@ -84,7 +84,7 @@ export default function EditQuestionPage() {
 
       // MC options
       if (q.options && q.options.length > 0) {
-        setOptions(q.options.map((o) => ({ label: o.label, content: o.content })));
+        setOptions(q.options.map((o) => ({ label: o.label, content: o.content, imageUrl: o.imageUrl })));
       }
 
       // Correct answer parsing
@@ -192,6 +192,7 @@ export default function EditQuestionPage() {
             ? options.map((opt, idx) => ({
                 label: opt.label,
                 content: opt.content,
+                imageUrl: opt.imageUrl ?? null,
                 sortOrder: idx,
               }))
             : [],
@@ -299,36 +300,47 @@ export default function EditQuestionPage() {
         <Card title="选项">
           <div className="space-y-3">
             {options.map((opt, idx) => (
-              <div key={opt.label} className="flex items-center gap-3">
-                <label className="flex items-center gap-2 shrink-0">
-                  <input
-                    type={questionType === 'MULTI_CHOICE' ? 'checkbox' : 'radio'}
-                    name="correct-option"
-                    checked={correctOptions.has(opt.label)}
-                    onChange={() => {
-                      if (questionType === 'SINGLE_CHOICE') {
-                        setCorrectOptions(new Set([opt.label]));
-                      } else {
-                        toggleCorrect(opt.label);
-                      }
-                    }}
-                    className="h-4 w-4 text-teal-600 border-stone-300"
+              <div key={opt.label} className="space-y-1.5">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 shrink-0">
+                    <input
+                      type={questionType === 'MULTI_CHOICE' ? 'checkbox' : 'radio'}
+                      name="correct-option"
+                      checked={correctOptions.has(opt.label)}
+                      onChange={() => {
+                        if (questionType === 'SINGLE_CHOICE') {
+                          setCorrectOptions(new Set([opt.label]));
+                        } else {
+                          toggleCorrect(opt.label);
+                        }
+                      }}
+                      className="h-4 w-4 text-teal-600 border-stone-300"
+                    />
+                    <span className="text-sm font-medium text-stone-700 w-4">{opt.label}</span>
+                  </label>
+                  <Input
+                    value={opt.content}
+                    onChange={(e) => updateOption(idx, e.target.value)}
+                    placeholder={`选项 ${opt.label} 内容`}
                   />
-                  <span className="text-sm font-medium text-stone-700 w-4">{opt.label}</span>
-                </label>
-                <Input
-                  value={opt.content}
-                  onChange={(e) => updateOption(idx, e.target.value)}
-                  placeholder={`选项 ${opt.label} 内容`}
-                />
-                {options.length > 2 && (
-                  <button
-                    type="button"
-                    onClick={() => removeOption(idx)}
-                    className="text-sm text-red-500 hover:text-red-700 shrink-0"
-                  >
-                    删除
-                  </button>
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeOption(idx)}
+                      className="text-sm text-red-500 hover:text-red-700 shrink-0"
+                    >
+                      删除
+                    </button>
+                  )}
+                </div>
+                {opt.imageUrl && (
+                  <div className="ml-12">
+                    <img
+                      src={opt.imageUrl}
+                      alt={`选项 ${opt.label} 图片`}
+                      className="max-h-20 rounded border border-stone-200 bg-white p-1"
+                    />
+                  </div>
                 )}
               </div>
             ))}

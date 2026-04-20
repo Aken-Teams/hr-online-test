@@ -125,6 +125,8 @@ export async function POST(request: Request) {
           showCorrectAnswers: data.showCorrectAnswers,
           openAt: data.openAt ? new Date(data.openAt) : null,
           closeAt: data.closeAt ? new Date(data.closeAt) : null,
+          resultQueryOpenAt: data.resultQueryOpenAt ? new Date(data.resultQueryOpenAt) : null,
+          resultQueryCloseAt: data.resultQueryCloseAt ? new Date(data.resultQueryCloseAt) : null,
           tabSwitchLimit: data.tabSwitchLimit,
           enableFaceAuth: data.enableFaceAuth,
           status: 'DRAFT',

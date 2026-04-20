@@ -91,11 +91,12 @@ model Question {
 }
 
 model QuestionOption {
-  id         String @id @default(cuid())
-  questionId String @map("question_id")
+  id         String  @id @default(cuid())
+  questionId String  @map("question_id")
   label      String
-  content    String @db.Text
-  sortOrder  Int    @default(0) @map("sort_order")
+  content    String  @db.Text
+  imageUrl   String? @map("image_url") @db.Text
+  sortOrder  Int     @default(0) @map("sort_order")
 
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
@@ -144,6 +145,8 @@ model Exam {
   showCorrectAnswers    Boolean    @default(true) @map("show_correct_answers")
   openAt                DateTime?  @map("open_at")
   closeAt               DateTime?  @map("close_at")
+  resultQueryOpenAt     DateTime?  @map("result_query_open_at")
+  resultQueryCloseAt    DateTime?  @map("result_query_close_at")
   tabSwitchLimit        Int        @default(3) @map("tab_switch_limit")
   enableFaceAuth        Boolean    @default(false) @map("enable_face_auth")
   status                ExamStatus @default(DRAFT)
@@ -299,6 +302,10 @@ model ExamResult {
   categoryScores   Json?     @map("category_scores")
   isFullyGraded    Boolean   @default(false) @map("is_fully_graded")
   finalizedAt      DateTime? @map("finalized_at")
+  // Offline score fields (imported by admin)
+  essayScore       Float?    @map("essay_score")
+  practicalScore   Float?    @map("practical_score")
+  combinedScore    Float?    @map("combined_score")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 

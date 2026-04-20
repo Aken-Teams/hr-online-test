@@ -9,7 +9,7 @@ export interface ExamQuestion {
   id: string;
   type: "choice" | "truefalse" | "essay";
   content: string;
-  options?: { label: string; text: string }[];
+  options?: { label: string; text: string; imageUrl?: string | null }[];
   multiSelect?: boolean;
 }
 

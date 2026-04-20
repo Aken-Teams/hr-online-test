@@ -111,11 +111,17 @@ export default function QuestionImportPage() {
 
       if (!res.ok) throw new Error('导入失败');
       const json = await res.json();
+      const created = json.data?.created ?? json.data?.imported ?? 0;
+      const duplicates = json.data?.duplicates ?? 0;
+      const imagesAttached = json.data?.imagesAttached ?? 0;
       setImportResult({
-        success: json.data?.imported ?? 0,
-        failed: json.data?.failed ?? 0,
+        success: created,
+        failed: json.data?.failed ?? json.data?.skipped ?? 0,
       });
-      toast(`成功导入 ${json.data?.imported ?? 0} 道题目`, 'success');
+      const parts = [`成功导入 ${created} 道题目`];
+      if (imagesAttached > 0) parts.push(`含 ${imagesAttached} 个图片选项`);
+      if (duplicates > 0) parts.push(`${duplicates} 道重复已跳过`);
+      toast(parts.join('，'), 'success');
     } catch {
       toast('导入失败', 'error');
     } finally {

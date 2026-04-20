@@ -112,6 +112,7 @@ export async function PUT(
                 create: data.options.map((opt, idx) => ({
                   label: opt.label,
                   content: opt.content,
+                  imageUrl: opt.imageUrl ?? null,
                   sortOrder: opt.sortOrder ?? idx,
                 })),
               }

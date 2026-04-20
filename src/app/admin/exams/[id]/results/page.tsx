@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -61,6 +61,8 @@ export default function ExamResultsPage() {
   const [results, setResults] = useState<ResultRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchResults = useCallback(async () => {
     try {
@@ -102,6 +104,42 @@ export default function ExamResultsPage() {
     }
   }
 
+  async function handleImportOfflineScores(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`/api/admin/exams/${examId}/offline-scores`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || '导入失败');
+      }
+
+      const { updated, skipped, errors } = json.data;
+      let msg = `成功导入 ${updated} 条`;
+      if (skipped > 0) msg += `，跳过 ${skipped} 条`;
+      if (errors?.length > 0) msg += `\n${errors.join('\n')}`;
+      toast(msg, updated > 0 ? 'success' : 'warning');
+
+      // Refresh results
+      fetchResults();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '导入失败', 'error');
+    } finally {
+      setImporting(false);
+      // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   function formatDuration(seconds: number) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -122,7 +160,30 @@ export default function ExamResultsPage() {
       <PageHeader
         title={summary?.examTitle ? `成绩 - ${summary.examTitle}` : '考试成绩'}
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleImportOfflineScores}
+            />
+            <Button
+              variant="outline"
+              onClick={() => {
+                window.open(`/api/admin/exams/${examId}/offline-scores?action=template`, '_blank');
+              }}
+            >
+              <Download className="h-4 w-4" />
+              下载导入模板
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => fileInputRef.current?.click()}
+              loading={importing}
+            >
+              导入线下成绩
+            </Button>
             <Button variant="secondary" onClick={handleExport} loading={exporting}>
               导出Excel
             </Button>

@@ -76,6 +76,7 @@ export async function GET(request: Request) {
         id: o.id,
         label: o.label,
         content: o.content,
+        imageUrl: o.imageUrl ?? null,
         sortOrder: o.sortOrder,
       })),
       tags: q.tags.map((t) => t.tag),
@@ -143,6 +144,7 @@ export async function POST(request: Request) {
                 create: data.options.map((opt, idx) => ({
                   label: opt.label,
                   content: opt.content,
+                  imageUrl: opt.imageUrl ?? null,
                   sortOrder: opt.sortOrder ?? idx,
                 })),
               }

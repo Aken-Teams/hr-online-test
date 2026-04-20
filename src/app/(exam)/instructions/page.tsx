@@ -47,7 +47,6 @@ function RulesSection({ tabSwitchLimit }: { tabSwitchLimit: number }) {
     '禁止截图、录屏、找人代考，违者成绩作废',
     '答题自动保存，中途退出可恢复',
     '时间到自动交卷，不可延长',
-    '主观题由人工阅卷',
     '考试期间请保持网络畅通',
     '建议电量≥50%，避免中途关机',
     '请使用最新版 Chrome / Edge 浏览器',
@@ -180,7 +179,7 @@ export default function InstructionsPage() {
                         ? 'truefalse'
                         : 'essay',
                   content: q.content,
-                  options: q.options.map((o: { label: string; content: string }) => ({ label: o.label, text: o.content })),
+                  options: q.options.map((o: { label: string; content: string; imageUrl?: string | null }) => ({ label: o.label, text: o.content, imageUrl: o.imageUrl ?? null })),
                   multiSelect: q.isMultiSelect,
                 })),
                 timeRemaining,
@@ -261,7 +260,7 @@ export default function InstructionsPage() {
                 ? 'truefalse'
                 : 'essay',
           content: q.content,
-          options: q.options.map((o) => ({ label: o.label, text: o.content })),
+          options: q.options.map((o) => ({ label: o.label, text: o.content, imageUrl: o.imageUrl ?? null })),
           multiSelect: q.isMultiSelect,
         })),
         timeRemaining,

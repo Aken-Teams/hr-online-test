@@ -102,6 +102,7 @@ export async function POST(
         options: eq.question.options.map((o) => ({
           label: o.label,
           content: o.content,
+          imageUrl: o.imageUrl ?? null,
         })),
         sortOrder: idx,
       }));

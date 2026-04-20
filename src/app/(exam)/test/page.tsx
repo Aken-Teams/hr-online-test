@@ -58,7 +58,7 @@ function SingleChoiceRenderer({ question, answer, onAnswer }: QuestionRendererPr
             type="button"
             onClick={() => onAnswer(opt.label)}
             className={cn(
-              'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors',
+              'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left text-base transition-colors',
               selected
                 ? 'border-teal-500 bg-teal-50 text-teal-900'
                 : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50',
@@ -74,7 +74,16 @@ function SingleChoiceRenderer({ question, answer, onAnswer }: QuestionRendererPr
             >
               {opt.label}
             </span>
-            <span className="flex-1">{opt.content}</span>
+            <span className="flex-1">
+              {opt.content}
+              {opt.imageUrl && (
+                <img
+                  src={opt.imageUrl}
+                  alt={`${opt.label} 选项图片`}
+                  className="mt-2 max-h-40 rounded border border-stone-200"
+                />
+              )}
+            </span>
           </button>
         );
       })}
@@ -113,7 +122,7 @@ function MultiChoiceRenderer({ question, answer, onAnswer }: QuestionRendererPro
             type="button"
             onClick={() => toggle(opt.label)}
             className={cn(
-              'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors',
+              'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left text-base transition-colors',
               checked
                 ? 'border-teal-500 bg-teal-50 text-teal-900'
                 : 'border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50',
@@ -135,7 +144,16 @@ function MultiChoiceRenderer({ question, answer, onAnswer }: QuestionRendererPro
                 opt.label
               )}
             </span>
-            <span className="flex-1">{opt.content}</span>
+            <span className="flex-1">
+              {opt.content}
+              {opt.imageUrl && (
+                <img
+                  src={opt.imageUrl}
+                  alt={`${opt.label} 选项图片`}
+                  className="mt-2 max-h-40 rounded border border-stone-200"
+                />
+              )}
+            </span>
           </button>
         );
       })}
@@ -737,7 +755,7 @@ export default function TestPage() {
             <div className="flex items-start justify-between border-b border-stone-100 px-4 py-3 sm:px-6 sm:py-4">
               <div className="min-w-0 flex-1">
                 <div className="mb-1.5 flex flex-wrap items-center gap-1.5 sm:mb-2 sm:gap-2">
-                  <span className="text-xs font-medium text-stone-500 sm:text-sm">
+                  <span className="text-sm font-medium text-stone-500">
                     第 {currentIndex + 1}/{totalQuestions} 题
                   </span>
                   <Badge variant="info">
@@ -747,7 +765,7 @@ export default function TestPage() {
                     {currentRawQuestion.points} 分
                   </span>
                 </div>
-                <p className="text-sm leading-relaxed text-stone-800 whitespace-pre-wrap sm:text-base">
+                <p className="text-base leading-relaxed text-stone-800 whitespace-pre-wrap">
                   {currentRawQuestion.content}
                 </p>
               </div>
@@ -827,7 +845,7 @@ export default function TestPage() {
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
             </svg>
-            <span className="hidden sm:inline">答题卡</span>
+            <span>答题卡</span>
           </button>
 
           {/* Right: submit */}

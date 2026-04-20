@@ -58,6 +58,9 @@ export async function GET(request: Request) {
       gradeLabel: s.result?.gradeLabel ?? null,
       timeTakenSeconds: s.result?.timeTakenSeconds ?? 0,
       submittedAt: s.submittedAt?.toISOString() ?? null,
+      essayScore: s.result?.essayScore ?? null,
+      practicalScore: s.result?.practicalScore ?? null,
+      combinedScore: s.result?.combinedScore ?? null,
     }));
 
     const buffer = generateResultsExcel(rows);

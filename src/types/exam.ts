@@ -17,6 +17,7 @@ export interface QuestionOptionData {
   id?: string;
   label: string;
   content: string;
+  imageUrl?: string | null;
   sortOrder: number;
 }
 
@@ -47,7 +48,7 @@ export interface ExamQuestionView {
   content: string;
   points: number;
   isMultiSelect: boolean;
-  options: Pick<QuestionOptionData, 'label' | 'content'>[];
+  options: Pick<QuestionOptionData, 'label' | 'content' | 'imageUrl'>[];
   sortOrder: number;
 }
 
@@ -80,6 +81,8 @@ export interface ExamData {
   showCorrectAnswers: boolean;
   openAt?: Date | string | null;
   closeAt?: Date | string | null;
+  resultQueryOpenAt?: Date | string | null;
+  resultQueryCloseAt?: Date | string | null;
   tabSwitchLimit: number;
   enableFaceAuth: boolean;
   status: ExamStatus;
@@ -163,6 +166,10 @@ export interface ExamResultData {
   gradeLabel?: string | null;
   categoryScores?: CategoryScoreMap | null;
   isFullyGraded: boolean;
+  // Offline scores (imported by admin)
+  essayScore?: number | null;
+  practicalScore?: number | null;
+  combinedScore?: number | null;
 }
 
 export interface CategoryScore {
@@ -242,8 +249,12 @@ export interface QuestionImportRow {
   correctAnswer?: string;
   isMultiSelect?: boolean;
   referenceAnswer?: string;
-  options?: { label: string; content: string }[];
+  options?: { label: string; content: string; imageUrl?: string }[];
   sourceFile?: string;
+  /** Internal: sheet name for image matching */
+  _sheetName?: string;
+  /** Internal: 0-based row index in sheet for image matching */
+  _rowIndex?: number;
 }
 
 export interface ResultExportRow {
@@ -258,6 +269,9 @@ export interface ResultExportRow {
   gradeLabel: string | null;
   timeTakenSeconds: number;
   submittedAt: string | null;
+  essayScore?: number | null;
+  practicalScore?: number | null;
+  combinedScore?: number | null;
 }
 
 // ============================================================

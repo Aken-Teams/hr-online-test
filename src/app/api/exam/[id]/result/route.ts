@@ -30,6 +30,8 @@ export async function GET(
           select: {
             showResultImmediately: true,
             showCorrectAnswers: true,
+            resultQueryOpenAt: true,
+            resultQueryCloseAt: true,
             title: true,
             totalScore: true,
             passScore: true,
@@ -53,6 +55,8 @@ export async function GET(
             select: {
               showResultImmediately: true,
               showCorrectAnswers: true,
+              resultQueryOpenAt: true,
+              resultQueryCloseAt: true,
               title: true,
               totalScore: true,
               passScore: true,
@@ -74,6 +78,24 @@ export async function GET(
     // partial result (auto-graded objective scores) so employee can see
     // their objective score with a clear "pending" indicator for subjective parts.
     const isPendingGrading = !session.result?.isFullyGraded;
+
+    // --- Result query time window check ---
+    // Determines whether detailed results (wrong answers, correct answers) are visible.
+    // Basic score info (autoScore, correct count, time) is always returned.
+    const now = new Date();
+    const { resultQueryOpenAt, resultQueryCloseAt } = session.exam;
+    let isResultQueryOpen = true; // default: open if no window is set
+    if (resultQueryOpenAt || resultQueryCloseAt) {
+      if (resultQueryOpenAt && now < new Date(resultQueryOpenAt)) {
+        isResultQueryOpen = false;
+      }
+      if (resultQueryCloseAt && now > new Date(resultQueryCloseAt)) {
+        isResultQueryOpen = false;
+      }
+    }
+
+    // Effective flag: show correct answers only when query is open AND the setting is enabled
+    const effectiveShowCorrectAnswers = session.exam.showCorrectAnswers && isResultQueryOpen;
 
     // Load answers with question details for wrong answer analysis
     const answers = await prisma.answer.findMany({
@@ -124,8 +146,8 @@ export async function GET(
       (a) => a.earnedPoints == null && ['SHORT_ANSWER', 'FILL_BLANK', 'CASE_ANALYSIS', 'PRACTICAL'].includes(a.question.type)
     ).length;
 
-    // Build wrong answer analysis — include wrong answers + unanswered
-    const wrongAnswers = [
+    // Build wrong answer analysis — only when result query is open
+    const wrongAnswers = !isResultQueryOpen ? [] : [
       ...answers
         .filter((a) => a.isCorrect === false || (a.isCorrect == null && a.earnedPoints == null))
         .map((a) => ({
@@ -133,15 +155,16 @@ export async function GET(
           questionType: a.question.type,
           questionContent: a.question.content,
           yourAnswer: a.answerContent,
-          correctAnswer: session.exam.showCorrectAnswers
+          correctAnswer: effectiveShowCorrectAnswers
             ? a.question.correctAnswer
             : null,
           earnedPoints: a.earnedPoints ?? 0,
           maxPoints: a.question.points,
-          options: session.exam.showCorrectAnswers
+          options: effectiveShowCorrectAnswers
             ? a.question.options.map((o) => ({
                 label: o.label,
                 content: o.content,
+                imageUrl: o.imageUrl ?? null,
               }))
             : undefined,
         })),
@@ -151,15 +174,16 @@ export async function GET(
         questionType: eq.question.type,
         questionContent: eq.question.content,
         yourAnswer: null as string | null,
-        correctAnswer: session.exam.showCorrectAnswers
+        correctAnswer: effectiveShowCorrectAnswers
           ? eq.question.correctAnswer
           : null,
         earnedPoints: 0,
         maxPoints: eq.points,
-        options: session.exam.showCorrectAnswers
+        options: effectiveShowCorrectAnswers
           ? eq.question.options.map((o) => ({
               label: o.label,
               content: o.content,
+              imageUrl: o.imageUrl ?? null,
             }))
           : undefined,
       })),
@@ -211,6 +235,9 @@ export async function GET(
         passScore: session.exam.passScore,
         isPending: false,
         isPendingGrading,
+        isResultQueryOpen,
+        resultQueryOpenAt: resultQueryOpenAt?.toISOString() ?? null,
+        resultQueryCloseAt: resultQueryCloseAt?.toISOString() ?? null,
         result: session.result
           ? {
               totalScore: session.result.totalScore,
@@ -225,6 +252,10 @@ export async function GET(
               gradeLabel: session.result.gradeLabel,
               categoryScores: session.result.categoryScores,
               isFullyGraded: session.result.isFullyGraded,
+              // Offline scores (only visible when result query is open)
+              essayScore: isResultQueryOpen ? session.result.essayScore : null,
+              practicalScore: isResultQueryOpen ? session.result.practicalScore : null,
+              combinedScore: isResultQueryOpen ? session.result.combinedScore : null,
             }
           : null,
         ranking: {
