@@ -103,6 +103,7 @@ export interface ExamListItem {
   passScore: number;
   totalScore: number;
   status: ExamStatus;
+  displayStatus?: string;
   openAt?: Date | string | null;
   closeAt?: Date | string | null;
   questionCount: number;

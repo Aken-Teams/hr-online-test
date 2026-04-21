@@ -18,20 +18,31 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
-import { EXAM_STATUS_LABELS } from '@/lib/constants';
-import { Pencil, Send, Eye, ClipboardCheck, BarChart3 } from 'lucide-react';
-import type { ExamListItem, ExamStatus } from '@/types/exam';
+import { Pencil, Send, Eye, ClipboardCheck, BarChart3, Square, Play, Archive } from 'lucide-react';
+import type { ExamListItem } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
-// Status badge variant mapping
+// Status badge variant mapping (includes display-only statuses)
 // ---------------------------------------------------------------------------
 
-const STATUS_BADGE_VARIANT: Record<ExamStatus, 'default' | 'info' | 'success' | 'danger' | 'warning' | 'purple'> = {
+const STATUS_BADGE_VARIANT: Record<string, 'default' | 'info' | 'success' | 'danger' | 'warning' | 'purple'> = {
   DRAFT: 'default',
   PUBLISHED: 'info',
   ACTIVE: 'success',
+  NOT_STARTED: 'warning',
+  EXPIRED: 'danger',
   CLOSED: 'danger',
   ARCHIVED: 'default',
+};
+
+const DISPLAY_STATUS_LABELS: Record<string, string> = {
+  DRAFT: '草稿',
+  PUBLISHED: '已发布',
+  ACTIVE: '进行中',
+  NOT_STARTED: '未开始',
+  EXPIRED: '已过期',
+  CLOSED: '已结束',
+  ARCHIVED: '已归档',
 };
 
 // ---------------------------------------------------------------------------
@@ -48,6 +59,8 @@ export default function ExamListPage() {
   const [loading, setLoading] = useState(true);
   const [publishId, setPublishId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [statusAction, setStatusAction] = useState<{ id: string; status: string; label: string } | null>(null);
+  const [changingStatus, setChangingStatus] = useState(false);
 
   const fetchExams = useCallback(async () => {
     setLoading(true);
@@ -91,6 +104,27 @@ export default function ExamListPage() {
       setPublishing(false);
     }
   }, [publishId, toast, fetchExams]);
+
+  const handleStatusChange = useCallback(async () => {
+    if (!statusAction) return;
+    setChangingStatus(true);
+    try {
+      const res = await fetch(`/api/admin/exams/${statusAction.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: statusAction.status }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '操作失败');
+      toast(`考试已${statusAction.label}`, 'success');
+      setStatusAction(null);
+      fetchExams();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '操作失败', 'error');
+    } finally {
+      setChangingStatus(false);
+    }
+  }, [statusAction, toast, fetchExams]);
 
   function formatDateTime(dateStr: string | Date | null | undefined) {
     if (!dateStr) return '--';
@@ -142,8 +176,8 @@ export default function ExamListPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-stone-800">{exam.title}</span>
-                    <Badge variant={STATUS_BADGE_VARIANT[exam.status] ?? 'default'}>
-                      {EXAM_STATUS_LABELS[exam.status] ?? exam.status}
+                    <Badge variant={STATUS_BADGE_VARIANT[exam.displayStatus ?? exam.status] ?? 'default'}>
+                      {DISPLAY_STATUS_LABELS[exam.displayStatus ?? exam.status] ?? exam.status}
                     </Badge>
                   </div>
                   <p className="mt-1 text-xs text-stone-500">
@@ -194,6 +228,42 @@ export default function ExamListPage() {
                       <BarChart3 className="h-3 w-3" />
                       成绩
                     </button>
+                    {exam.status === 'PUBLISHED' && (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                        onClick={() => setStatusAction({ id: exam.id, status: 'ACTIVE', label: '开放' })}
+                      >
+                        <Play className="h-3 w-3" />
+                        开放考试
+                      </button>
+                    )}
+                    {exam.status === 'ACTIVE' && (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => setStatusAction({ id: exam.id, status: 'CLOSED', label: '结束' })}
+                      >
+                        <Square className="h-3 w-3" />
+                        结束考试
+                      </button>
+                    )}
+                    {exam.status === 'CLOSED' && (
+                      <>
+                        <button
+                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                          onClick={() => setStatusAction({ id: exam.id, status: 'ACTIVE', label: '重新开放' })}
+                        >
+                          <Play className="h-3 w-3" />
+                          重新开放
+                        </button>
+                        <button
+                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-100 hover:text-stone-700"
+                          onClick={() => setStatusAction({ id: exam.id, status: 'ARCHIVED', label: '归档' })}
+                        >
+                          <Archive className="h-3 w-3" />
+                          归档
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -218,8 +288,8 @@ export default function ExamListPage() {
                     <TableRow key={exam.id}>
                       <TableCell className="font-medium">{exam.title}</TableCell>
                       <TableCell>
-                        <Badge variant={STATUS_BADGE_VARIANT[exam.status] ?? 'default'}>
-                          {EXAM_STATUS_LABELS[exam.status] ?? exam.status}
+                        <Badge variant={STATUS_BADGE_VARIANT[exam.displayStatus ?? exam.status] ?? 'default'}>
+                          {DISPLAY_STATUS_LABELS[exam.displayStatus ?? exam.status] ?? exam.status}
                         </Badge>
                       </TableCell>
                       <TableCell>{exam.questionCount ?? '--'}</TableCell>
@@ -271,6 +341,42 @@ export default function ExamListPage() {
                             <BarChart3 className="h-3 w-3" />
                             成绩
                           </button>
+                          {exam.status === 'PUBLISHED' && (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                              onClick={() => setStatusAction({ id: exam.id, status: 'ACTIVE', label: '开放' })}
+                            >
+                              <Play className="h-3 w-3" />
+                              开放考试
+                            </button>
+                          )}
+                          {exam.status === 'ACTIVE' && (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => setStatusAction({ id: exam.id, status: 'CLOSED', label: '结束' })}
+                            >
+                              <Square className="h-3 w-3" />
+                              结束考试
+                            </button>
+                          )}
+                          {exam.status === 'CLOSED' && (
+                            <>
+                              <button
+                                className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
+                                onClick={() => setStatusAction({ id: exam.id, status: 'ACTIVE', label: '重新开放' })}
+                              >
+                                <Play className="h-3 w-3" />
+                                重新开放
+                              </button>
+                              <button
+                                className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-100 hover:text-stone-700"
+                                onClick={() => setStatusAction({ id: exam.id, status: 'ARCHIVED', label: '归档' })}
+                              >
+                                <Archive className="h-3 w-3" />
+                                归档
+                              </button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -316,6 +422,24 @@ export default function ExamListPage() {
         message="发布后考试将对指定员工可见。确认发布此考试？"
         confirmText="确认发布"
         loading={publishing}
+      />
+
+      <ConfirmDialog
+        open={statusAction !== null}
+        onClose={() => setStatusAction(null)}
+        onConfirm={handleStatusChange}
+        title={`${statusAction?.label ?? '变更'}考试`}
+        message={
+          statusAction?.status === 'CLOSED'
+            ? '结束后考生将无法继续作答。确认结束此考试？'
+            : statusAction?.status === 'ARCHIVED'
+              ? '归档后考试将不再显示在活跃列表中。确认归档？'
+              : statusAction?.status === 'ACTIVE' && statusAction?.label === '重新开放'
+                ? '重新开放后考生可继续作答。确认重新开放？'
+                : '确认执行此操作？'
+        }
+        confirmText={`确认${statusAction?.label ?? '执行'}`}
+        loading={changingStatus}
       />
     </div>
   );

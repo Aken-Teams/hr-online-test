@@ -213,6 +213,9 @@ export default function CreateExamPage() {
       {/* Time windows — side by side */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card title="考试开放时间">
+          <p className="mb-3 text-xs text-stone-500">
+            设置考试的开放和关闭时间。未设置则不限制考试时间窗口。
+          </p>
           <div className="space-y-3">
             <Input
               label="开始时间"

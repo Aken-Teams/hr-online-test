@@ -47,17 +47,14 @@ export async function GET() {
       );
     }
 
-    // Check if the exam is still open
+    // Check time window
     const now = new Date();
-    if (exam.openAt && exam.openAt > now) {
+    const isBeforeOpen = exam.openAt && exam.openAt > now;
+    const isAfterClose = exam.closeAt && exam.closeAt < now;
+
+    if (isBeforeOpen) {
       return NextResponse.json(
         { success: false, error: '考试尚未开始' },
-        { status: 403 }
-      );
-    }
-    if (exam.closeAt && exam.closeAt < now) {
-      return NextResponse.json(
-        { success: false, error: '考试已关闭' },
         { status: 403 }
       );
     }
@@ -74,7 +71,19 @@ export async function GET() {
 
     // Check attempt count
     const attemptCount = exam._count.sessions;
-    const canStart = attemptCount < exam.maxAttempts || !!existingSession;
+
+    // If exam is closed, only allow access if user has completed sessions (to view results)
+    if (isAfterClose) {
+      if (attemptCount === 0) {
+        return NextResponse.json(
+          { success: false, error: '考试已关闭' },
+          { status: 403 }
+        );
+      }
+      // User has sessions — let them view results
+    }
+
+    const canStart = !isAfterClose && (attemptCount < exam.maxAttempts || !!existingSession);
 
     return NextResponse.json({
       success: true,

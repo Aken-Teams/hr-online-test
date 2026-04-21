@@ -85,13 +85,7 @@ export async function PUT(
       );
     }
 
-    // Only DRAFT exams can be fully edited
-    if (!['DRAFT', 'PUBLISHED'].includes(existing.status)) {
-      return NextResponse.json(
-        { success: false, error: '当前考试状态不允许编辑' },
-        { status: 403 }
-      );
-    }
+    const isFullyEditable = ['DRAFT', 'PUBLISHED'].includes(existing.status);
 
     const body = await request.json();
     const parsed = examCreateSchema.safeParse(body);
@@ -108,10 +102,60 @@ export async function PUT(
       body.assignments || [];
 
     const exam = await prisma.$transaction(async (tx) => {
-      // Delete old question rules
-      await tx.examQuestionRule.deleteMany({ where: { examId: id } });
+      if (isFullyEditable) {
+        // DRAFT / PUBLISHED — full edit including question rules & assignments
+        await tx.examQuestionRule.deleteMany({ where: { examId: id } });
 
-      // Update exam
+        const updated = await tx.exam.update({
+          where: { id },
+          data: {
+            title: data.title,
+            description: data.description ?? null,
+            timeLimitMinutes: data.timeLimitMinutes,
+            passScore: data.passScore,
+            totalScore: data.totalScore,
+            isPracticeMode: data.isPracticeMode,
+            shuffleQuestions: data.shuffleQuestions,
+            shuffleOptions: data.shuffleOptions,
+            maxAttempts: data.maxAttempts,
+            showResultImmediately: data.showResultImmediately,
+            showCorrectAnswers: data.showCorrectAnswers,
+            openAt: data.openAt ? new Date(data.openAt) : null,
+            closeAt: data.closeAt ? new Date(data.closeAt) : null,
+            resultQueryOpenAt: data.resultQueryOpenAt ? new Date(data.resultQueryOpenAt) : null,
+            resultQueryCloseAt: data.resultQueryCloseAt ? new Date(data.resultQueryCloseAt) : null,
+            tabSwitchLimit: data.tabSwitchLimit,
+            enableFaceAuth: data.enableFaceAuth,
+            questionRules: {
+              create: data.questionRules.map((rule) => ({
+                questionType: rule.questionType,
+                count: rule.count,
+                pointsPerQuestion: rule.pointsPerQuestion,
+                department: rule.department ?? null,
+                level: rule.level ?? null,
+                commonRatio: rule.commonRatio,
+              })),
+            },
+          },
+          include: { questionRules: true },
+        });
+
+        if (assignments.length > 0) {
+          await tx.examAssignment.deleteMany({ where: { examId: id } });
+          await tx.examAssignment.createMany({
+            data: assignments.map((a) => ({
+              examId: id,
+              userId: a.userId ?? null,
+              department: a.department ?? null,
+              role: a.role ?? null,
+            })),
+          });
+        }
+
+        return updated;
+      }
+
+      // ACTIVE / COMPLETED / ARCHIVED — all fields except question rules & assignments
       const updated = await tx.exam.update({
         where: { id },
         data: {
@@ -132,32 +176,9 @@ export async function PUT(
           resultQueryCloseAt: data.resultQueryCloseAt ? new Date(data.resultQueryCloseAt) : null,
           tabSwitchLimit: data.tabSwitchLimit,
           enableFaceAuth: data.enableFaceAuth,
-          questionRules: {
-            create: data.questionRules.map((rule) => ({
-              questionType: rule.questionType,
-              count: rule.count,
-              pointsPerQuestion: rule.pointsPerQuestion,
-              department: rule.department ?? null,
-              level: rule.level ?? null,
-              commonRatio: rule.commonRatio,
-            })),
-          },
         },
         include: { questionRules: true },
       });
-
-      // Recreate assignments if provided
-      if (assignments.length > 0) {
-        await tx.examAssignment.deleteMany({ where: { examId: id } });
-        await tx.examAssignment.createMany({
-          data: assignments.map((a) => ({
-            examId: id,
-            userId: a.userId ?? null,
-            department: a.department ?? null,
-            role: a.role ?? null,
-          })),
-        });
-      }
 
       return updated;
     });

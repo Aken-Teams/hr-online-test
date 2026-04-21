@@ -698,11 +698,9 @@ export default function TestPage() {
   // Timer color
   const timerSeconds = timeRemaining;
   const timerColor =
-    timerSeconds <= 60
+    timerSeconds <= 300
       ? 'text-red-600'
-      : timerSeconds <= 300
-        ? 'text-yellow-600'
-        : 'text-stone-800';
+      : 'text-stone-800';
 
   return (
     <div className="flex min-h-screen flex-col">

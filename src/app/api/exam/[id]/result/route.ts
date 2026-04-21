@@ -84,11 +84,10 @@ export async function GET(
     // Basic score info (autoScore, correct count, time) is always returned.
     const now = new Date();
     const { resultQueryOpenAt, resultQueryCloseAt } = session.exam;
-    let isResultQueryOpen = true; // default: open if no window is set
-    if (resultQueryOpenAt || resultQueryCloseAt) {
-      if (resultQueryOpenAt && now < new Date(resultQueryOpenAt)) {
-        isResultQueryOpen = false;
-      }
+    let isResultQueryOpen = false; // default: closed until admin explicitly opens
+    if (resultQueryOpenAt) {
+      // Admin has set an open time — check if we're within the window
+      isResultQueryOpen = now >= new Date(resultQueryOpenAt);
       if (resultQueryCloseAt && now > new Date(resultQueryCloseAt)) {
         isResultQueryOpen = false;
       }

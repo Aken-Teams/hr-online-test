@@ -3,6 +3,16 @@ import { prisma } from '@/lib/prisma';
 import { getEmployeeFromCookie } from '@/lib/auth';
 import { generateQuestionSet } from '@/lib/question-generator';
 
+/** Fisher-Yates shuffle (returns a new array) */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -22,6 +32,8 @@ export async function POST(
     const exam = await prisma.exam.findUnique({
       where: { id: examId },
     });
+
+    const shouldShuffleOptions = exam?.shuffleOptions ?? true;
 
     if (!exam || !['PUBLISHED', 'ACTIVE'].includes(exam.status)) {
       return NextResponse.json(
@@ -93,19 +105,22 @@ export async function POST(
         });
       }
 
-      const questions = orderedQuestions.map((eq, idx) => ({
-        id: eq.question.id,
-        type: eq.question.type,
-        content: eq.question.content,
-        points: eq.points,
-        isMultiSelect: eq.question.isMultiSelect,
-        options: eq.question.options.map((o) => ({
+      const questions = orderedQuestions.map((eq, idx) => {
+        const opts = eq.question.options.map((o) => ({
           label: o.label,
           content: o.content,
           imageUrl: o.imageUrl ?? null,
-        })),
-        sortOrder: idx,
-      }));
+        }));
+        return {
+          id: eq.question.id,
+          type: eq.question.type,
+          content: eq.question.content,
+          points: eq.points,
+          isMultiSelect: eq.question.isMultiSelect,
+          options: shouldShuffleOptions ? shuffle(opts) : opts,
+          sortOrder: idx,
+        };
+      });
 
       // Calculate remaining time
       const startTime = existingSession.startedAt ?? now;
@@ -232,18 +247,22 @@ export async function POST(
       return aIdx - bIdx;
     });
 
-    const questions = sortedEqs.map((eq, idx) => ({
-      id: eq.question.id,
-      type: eq.question.type,
-      content: eq.question.content,
-      points: eq.points,
-      isMultiSelect: eq.question.isMultiSelect,
-      options: eq.question.options.map((o) => ({
+    const questions = sortedEqs.map((eq, idx) => {
+      const opts = eq.question.options.map((o) => ({
         label: o.label,
         content: o.content,
-      })),
-      sortOrder: idx,
-    }));
+        imageUrl: o.imageUrl ?? null,
+      }));
+      return {
+        id: eq.question.id,
+        type: eq.question.type,
+        content: eq.question.content,
+        points: eq.points,
+        isMultiSelect: eq.question.isMultiSelect,
+        options: shouldShuffleOptions ? shuffle(opts) : opts,
+        sortOrder: idx,
+      };
+    });
 
     return NextResponse.json({
       success: true,

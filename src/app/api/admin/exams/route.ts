@@ -48,21 +48,37 @@ export async function GET(request: Request) {
       prisma.exam.count({ where }),
     ]);
 
-    const exams = items.map((exam) => ({
-      id: exam.id,
-      title: exam.title,
-      description: exam.description,
-      timeLimitMinutes: exam.timeLimitMinutes,
-      passScore: exam.passScore,
-      totalScore: exam.totalScore,
-      status: exam.status,
-      openAt: exam.openAt,
-      closeAt: exam.closeAt,
-      maxAttempts: exam.maxAttempts,
-      questionCount: exam.questionRules.length,
-      sessionCount: exam._count.sessions,
-      createdAt: exam.createdAt,
-    }));
+    const now = new Date();
+    const exams = items.map((exam) => {
+      // Compute display status based on time window for PUBLISHED/ACTIVE exams
+      let displayStatus = exam.status as string;
+      if (exam.status === 'PUBLISHED' || exam.status === 'ACTIVE') {
+        if (exam.openAt && now < exam.openAt) {
+          displayStatus = 'NOT_STARTED';
+        } else if (exam.closeAt && now > exam.closeAt) {
+          displayStatus = 'EXPIRED';
+        } else {
+          displayStatus = 'ACTIVE';
+        }
+      }
+
+      return {
+        id: exam.id,
+        title: exam.title,
+        description: exam.description,
+        timeLimitMinutes: exam.timeLimitMinutes,
+        passScore: exam.passScore,
+        totalScore: exam.totalScore,
+        status: exam.status,
+        displayStatus,
+        openAt: exam.openAt,
+        closeAt: exam.closeAt,
+        maxAttempts: exam.maxAttempts,
+        questionCount: exam.questionRules.length,
+        sessionCount: exam._count.sessions,
+        createdAt: exam.createdAt,
+      };
+    });
 
     return NextResponse.json({
       success: true,

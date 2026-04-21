@@ -413,12 +413,18 @@ export default function InstructionsPage() {
             </div>
           )}
 
-          {/* Already completed warning */}
+          {/* Already completed / exam closed warning */}
           {!canStart && (
             <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
-              <p className="text-sm font-medium text-stone-700">您已完成本次考试</p>
+              <p className="text-sm font-medium text-stone-700">
+                {exam.closeAt && new Date(exam.closeAt) < new Date()
+                  ? '考试已结束'
+                  : '您已完成本次考试'}
+              </p>
               <p className="mt-1 text-xs text-stone-600">
-                已达最大作答次数 ({exam.maxAttempts} 次)，无法再次参加。
+                {exam.closeAt && new Date(exam.closeAt) < new Date()
+                  ? '考试时间已截止，您可以查看考试成绩。'
+                  : `已达最大作答次数 (${exam.maxAttempts} 次)，无法再次参加。`}
               </p>
             </div>
           )}
