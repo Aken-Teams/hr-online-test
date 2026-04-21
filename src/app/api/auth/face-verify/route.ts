@@ -52,7 +52,9 @@ export async function POST(request: Request) {
 
     // Find assigned exam
     const now = new Date();
-    const assignment = await prisma.examAssignment.findFirst({
+
+    // 1. Try to find an active exam within time window (for taking the exam)
+    const activeAssignment = await prisma.examAssignment.findFirst({
       where: {
         exam: {
           status: { in: ['PUBLISHED', 'ACTIVE'] },
@@ -83,7 +85,44 @@ export async function POST(request: Request) {
       },
     });
 
-    const examId = assignment?.examId ?? undefined;
+    let examId = activeAssignment?.examId;
+    let assignment = activeAssignment;
+
+    // 2. Fallback: find a closed/expired exam where user has sessions (for result query)
+    if (!examId) {
+      const sessionWithExam = await prisma.examSession.findFirst({
+        where: {
+          userId: user.id,
+          exam: {
+            status: { in: ['PUBLISHED', 'ACTIVE', 'CLOSED'] },
+          },
+        },
+        include: {
+          exam: {
+            include: {
+              assignments: {
+                where: {
+                  OR: [
+                    { userId: user.id },
+                    { department: user.department, role: user.role },
+                    { department: user.department, role: null },
+                  ],
+                },
+                take: 1,
+              },
+            },
+          },
+        },
+        orderBy: { exam: { createdAt: 'desc' } },
+      });
+
+      if (sessionWithExam) {
+        examId = sessionWithExam.examId;
+        assignment = sessionWithExam.exam.assignments[0]
+          ? { ...sessionWithExam.exam.assignments[0], exam: sessionWithExam.exam }
+          : null;
+      }
+    }
 
     // Create JWT token and set cookie
     const token = await createEmployeeToken({

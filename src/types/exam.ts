@@ -66,6 +66,14 @@ export interface QuestionRuleData {
   commonRatio: number;
 }
 
+export interface ExamAssignmentData {
+  id?: string;
+  userId?: string | null;
+  department?: string | null;
+  role?: string | null;
+  user?: { id: string; name: string; employeeNo: string; department: string; role: string } | null;
+}
+
 export interface ExamData {
   id: string;
   title: string;
@@ -87,6 +95,7 @@ export interface ExamData {
   enableFaceAuth: boolean;
   status: ExamStatus;
   questionRules: QuestionRuleData[];
+  assignments?: ExamAssignmentData[];
   /** Whether the employee can still start/resume this exam */
   canStart?: boolean;
   /** How many attempts the employee has already made */

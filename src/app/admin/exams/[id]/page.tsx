@@ -137,9 +137,18 @@ export default function EditExamPage() {
           questionType: r.questionType,
           count: r.count,
           pointsPerQuestion: r.pointsPerQuestion,
-          commonRatio: r.commonRatio,
+          commonRatio: Math.round(r.commonRatio * 100),
         }))
       );
+
+      // Load department assignments
+      if (exam.assignments && Array.isArray(exam.assignments)) {
+        const depts: string[] = [];
+        for (const a of exam.assignments) {
+          if (a.department) depts.push(a.department);
+        }
+        setSelectedDepartments([...new Set(depts)]);
+      }
 
       if (exam.openAt) {
         setOpenAt(toLocalDatetime(exam.openAt));
@@ -220,8 +229,11 @@ export default function EditExamPage() {
         tabSwitchLimit,
         enableFaceAuth,
         maxAttempts: 1,
-        questionRules: rules,
-        departments: selectedDepartments,
+        questionRules: rules.map((r) => ({
+          ...r,
+          commonRatio: r.commonRatio / 100,
+        })),
+        assignments: selectedDepartments.map((d) => ({ department: d })),
       };
 
       const res = await fetch(`/api/admin/exams/${examId}`, {

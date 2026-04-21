@@ -125,6 +125,9 @@ export async function POST(request: Request) {
     const assignments: { userId?: string; department?: string; role?: string }[] =
       body.assignments || [];
 
+    // Allow caller to specify initial status (DRAFT or PUBLISHED)
+    const initialStatus = body.status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT';
+
     const exam = await prisma.$transaction(async (tx) => {
       const newExam = await tx.exam.create({
         data: {
@@ -145,7 +148,7 @@ export async function POST(request: Request) {
           resultQueryCloseAt: data.resultQueryCloseAt ? new Date(data.resultQueryCloseAt) : null,
           tabSwitchLimit: data.tabSwitchLimit,
           enableFaceAuth: data.enableFaceAuth,
-          status: 'DRAFT',
+          status: initialStatus,
           questionRules: {
             create: data.questionRules.map((rule) => ({
               questionType: rule.questionType,

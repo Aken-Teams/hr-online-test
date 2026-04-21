@@ -129,8 +129,11 @@ export default function CreateExamPage() {
         tabSwitchLimit,
         enableFaceAuth,
         maxAttempts: 1,
-        questionRules: rules,
-        departments: selectedDepartments,
+        questionRules: rules.map((r) => ({
+          ...r,
+          commonRatio: r.commonRatio / 100,
+        })),
+        assignments: selectedDepartments.map((d) => ({ department: d })),
         status: publish ? 'PUBLISHED' : 'DRAFT',
       };
 

@@ -140,16 +140,19 @@ export async function PUT(
           include: { questionRules: true },
         });
 
-        if (assignments.length > 0) {
+        // Always sync assignments when the key is present in the request body
+        if ('assignments' in body) {
           await tx.examAssignment.deleteMany({ where: { examId: id } });
-          await tx.examAssignment.createMany({
-            data: assignments.map((a) => ({
-              examId: id,
-              userId: a.userId ?? null,
-              department: a.department ?? null,
-              role: a.role ?? null,
-            })),
-          });
+          if (assignments.length > 0) {
+            await tx.examAssignment.createMany({
+              data: assignments.map((a) => ({
+                examId: id,
+                userId: a.userId ?? null,
+                department: a.department ?? null,
+                role: a.role ?? null,
+              })),
+            });
+          }
         }
 
         return updated;
