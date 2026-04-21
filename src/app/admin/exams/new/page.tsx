@@ -9,7 +9,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useToast } from '@/components/ui/Toast';
-import { DEPARTMENTS, QUESTION_TYPE_LABELS } from '@/lib/constants';
+import { DEPARTMENTS, QUESTION_TYPE_LABELS, EXAM_QUESTION_TYPES } from '@/lib/constants';
 import type { QuestionType } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
@@ -30,9 +30,9 @@ const EMPTY_RULE: QuestionRule = {
   commonRatio: 100,
 };
 
-const QUESTION_TYPE_OPTIONS = Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => ({
-  value,
-  label,
+const QUESTION_TYPE_OPTIONS = EXAM_QUESTION_TYPES.map((type) => ({
+  value: type,
+  label: QUESTION_TYPE_LABELS[type],
 }));
 
 const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d, label: d }));

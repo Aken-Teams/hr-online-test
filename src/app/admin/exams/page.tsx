@@ -18,7 +18,7 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
-import { Pencil, Send, Eye, ClipboardCheck, BarChart3, Square, Play, Archive } from 'lucide-react';
+import { Pencil, Send, Eye, ClipboardCheck, BarChart3, Square, Play, Archive, Trash2 } from 'lucide-react';
 import type { ExamListItem } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
@@ -61,6 +61,8 @@ export default function ExamListPage() {
   const [publishing, setPublishing] = useState(false);
   const [statusAction, setStatusAction] = useState<{ id: string; status: string; label: string } | null>(null);
   const [changingStatus, setChangingStatus] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchExams = useCallback(async () => {
     setLoading(true);
@@ -125,6 +127,23 @@ export default function ExamListPage() {
       setChangingStatus(false);
     }
   }, [statusAction, toast, fetchExams]);
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/exams/${deleteId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '删除失败');
+      toast('考试已删除', 'success');
+      setDeleteId(null);
+      fetchExams();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '删除失败', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteId, toast, fetchExams]);
 
   function formatDateTime(dateStr: string | Date | null | undefined) {
     if (!dateStr) return '--';
@@ -212,6 +231,7 @@ export default function ExamListPage() {
                         监控
                       </button>
                     )}
+                    {/* 阅卷 button hidden — manual-grade types not used in online exams
                     {(exam.status === 'ACTIVE' || exam.status === 'CLOSED') && (
                       <button
                         className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
@@ -221,6 +241,7 @@ export default function ExamListPage() {
                         阅卷
                       </button>
                     )}
+                    */}
                     <button
                       className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
                       onClick={() => router.push(`/admin/exams/${exam.id}/results`)}
@@ -263,6 +284,15 @@ export default function ExamListPage() {
                           归档
                         </button>
                       </>
+                    )}
+                    {(['DRAFT', 'PUBLISHED'] as string[]).includes(exam.status) && (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => setDeleteId(exam.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        删除
+                      </button>
                     )}
                   </div>
                 </div>
@@ -325,6 +355,7 @@ export default function ExamListPage() {
                               监控
                             </button>
                           )}
+                          {/* 阅卷 button hidden — manual-grade types not used in online exams
                           {(exam.status === 'ACTIVE' || exam.status === 'CLOSED') && (
                             <button
                               className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
@@ -334,6 +365,7 @@ export default function ExamListPage() {
                               阅卷
                             </button>
                           )}
+                          */}
                           <button
                             className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
                             onClick={() => router.push(`/admin/exams/${exam.id}/results`)}
@@ -376,6 +408,15 @@ export default function ExamListPage() {
                                 归档
                               </button>
                             </>
+                          )}
+                          {(['DRAFT', 'PUBLISHED'] as string[]).includes(exam.status) && (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => setDeleteId(exam.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              删除
+                            </button>
                           )}
                         </div>
                       </TableCell>
@@ -440,6 +481,16 @@ export default function ExamListPage() {
         }
         confirmText={`确认${statusAction?.label ?? '执行'}`}
         loading={changingStatus}
+      />
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        title="删除考试"
+        message="删除后数据将无法恢复。确认删除此考试？"
+        confirmText="确认删除"
+        loading={deleting}
       />
     </div>
   );

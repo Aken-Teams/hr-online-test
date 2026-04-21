@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { useToast } from '@/components/ui/Toast';
-import { DEPARTMENTS, QUESTION_TYPE_LABELS } from '@/lib/constants';
+import { DEPARTMENTS, QUESTION_TYPE_LABELS, EXAM_QUESTION_TYPES } from '@/lib/constants';
 import type { QuestionType, ExamData } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
@@ -25,9 +25,9 @@ interface QuestionRule {
   commonRatio: number;
 }
 
-const QUESTION_TYPE_OPTIONS = Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => ({
-  value,
-  label,
+const QUESTION_TYPE_OPTIONS = EXAM_QUESTION_TYPES.map((type) => ({
+  value: type,
+  label: QUESTION_TYPE_LABELS[type],
 }));
 
 // ---------------------------------------------------------------------------

@@ -226,15 +226,30 @@ export async function DELETE(
       );
     }
 
-    // Prevent deleting exams with sessions
-    if (existing._count.sessions > 0) {
+    // Only DRAFT and PUBLISHED exams can be deleted
+    if (!['DRAFT', 'PUBLISHED'].includes(existing.status)) {
       return NextResponse.json(
-        { success: false, error: '该考试已有考生作答记录，无法删除' },
+        { success: false, error: '仅草稿或已发布（未开放）的考试可以删除' },
         { status: 403 }
       );
     }
 
-    await prisma.exam.delete({ where: { id } });
+    // Cascade delete: sessions (and their answers/results) first, then exam
+    if (existing._count.sessions > 0) {
+      const sessions = await prisma.examSession.findMany({
+        where: { examId: id },
+        select: { id: true },
+      });
+      const sessionIds = sessions.map((s) => s.id);
+
+      await prisma.$transaction([
+        prisma.auditLog.deleteMany({ where: { sessionId: { in: sessionIds } } }),
+        prisma.examSession.deleteMany({ where: { examId: id } }),
+        prisma.exam.delete({ where: { id } }),
+      ]);
+    } else {
+      await prisma.exam.delete({ where: { id } });
+    }
 
     return NextResponse.json({
       success: true,
