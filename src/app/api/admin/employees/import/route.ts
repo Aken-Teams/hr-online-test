@@ -51,12 +51,30 @@ export async function POST(request: Request) {
       );
     }
 
+    // Preview mode: return parsed rows without writing to DB
+    const isPreview = formData.get('preview') === 'true';
+    if (isPreview) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          employees: rows.map((r) => ({
+            employeeNo: r.employeeNo,
+            name: r.name,
+            department: r.department,
+            subDepartment: r.subDepartment ?? null,
+            role: r.role,
+            idCardLast6: r.idCardLast6 ? '******' : undefined,
+          })),
+        },
+      });
+    }
+
     let created = 0;
     let updated = 0;
     let skipped = 0;
     const errors: string[] = [];
 
-    // Process in batches to avoid overwhelming the database
+    // Process rows
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       try {
@@ -127,6 +145,8 @@ export async function POST(request: Request) {
         created,
         updated,
         skipped,
+        imported: created + updated,
+        failed: skipped,
         errors: errors.length > 0 ? errors.slice(0, 20) : undefined,
       },
     });
