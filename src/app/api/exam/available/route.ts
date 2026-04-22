@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getEmployeeFromCookie } from '@/lib/auth';
 
-export async function GET() {
+/**
+ * GET /api/exam/available?assignmentId=xxx
+ *
+ * New flow: look up exam via assignmentId.
+ * Legacy flow: fall back to employee.examId if no assignmentId.
+ */
+export async function GET(request: Request) {
   try {
     const employee = await getEmployeeFromCookie();
     if (!employee) {
@@ -12,15 +18,66 @@ export async function GET() {
       );
     }
 
-    if (!employee.examId) {
-      return NextResponse.json(
-        { success: false, error: '当前没有可参加的考试' },
-        { status: 404 }
-      );
+    const { searchParams } = new URL(request.url);
+    const assignmentId = searchParams.get('assignmentId');
+
+    let examId: string | null = null;
+    let assignmentProcess: string | null = null;
+    let assignmentLevel: string | null = null;
+
+    if (assignmentId) {
+      // New flow: look up assignment → get examId
+      const assignment = await prisma.examAssignment.findUnique({
+        where: { id: assignmentId },
+        select: { examId: true, userId: true, process: true, level: true },
+      });
+
+      if (!assignment) {
+        return NextResponse.json(
+          { success: false, error: '考试指派不存在' },
+          { status: 404 }
+        );
+      }
+
+      // Verify the assignment belongs to this user
+      if (assignment.userId && assignment.userId !== employee.userId) {
+        return NextResponse.json(
+          { success: false, error: '无权限访问此考试' },
+          { status: 403 }
+        );
+      }
+
+      examId = assignment.examId;
+      assignmentProcess = assignment.process;
+      assignmentLevel = assignment.level;
+    } else if (employee.examId) {
+      // Legacy flow: examId from JWT (backwards compatibility)
+      examId = employee.examId;
+    } else {
+      // Try to find any assignment for this user with an active exam
+      const assignment = await prisma.examAssignment.findFirst({
+        where: {
+          userId: employee.userId,
+          exam: { status: { in: ['PUBLISHED', 'ACTIVE'] } },
+        },
+        include: { exam: { select: { id: true } } },
+        orderBy: { exam: { createdAt: 'desc' } },
+      });
+
+      if (!assignment) {
+        return NextResponse.json(
+          { success: false, error: '当前没有可参加的考试' },
+          { status: 404 }
+        );
+      }
+
+      examId = assignment.examId;
+      assignmentProcess = assignment.process;
+      assignmentLevel = assignment.level;
     }
 
     const exam = await prisma.exam.findUnique({
-      where: { id: employee.examId },
+      where: { id: examId },
       include: {
         questionRules: {
           select: {
@@ -59,20 +116,23 @@ export async function GET() {
       );
     }
 
-    // Check if the employee has an existing in-progress session
+    // Check existing in-progress session (scoped to assignment if available)
+    const sessionWhere: Record<string, unknown> = {
+      examId: exam.id,
+      userId: employee.userId,
+      status: 'IN_PROGRESS',
+    };
+    if (assignmentId) {
+      sessionWhere.assignmentId = assignmentId;
+    }
+
     const existingSession = await prisma.examSession.findFirst({
-      where: {
-        examId: exam.id,
-        userId: employee.userId,
-        status: 'IN_PROGRESS',
-      },
+      where: sessionWhere,
       select: { id: true, startedAt: true, attemptNumber: true },
     });
 
-    // Check attempt count
     const attemptCount = exam._count.sessions;
 
-    // If exam is closed, only allow access if user has completed sessions (to view results)
     if (isAfterClose) {
       if (attemptCount === 0) {
         return NextResponse.json(
@@ -80,7 +140,6 @@ export async function GET() {
           { status: 403 }
         );
       }
-      // User has sessions — let them view results
     }
 
     const canStart = !isAfterClose && (attemptCount < exam.maxAttempts || !!existingSession);
@@ -104,6 +163,8 @@ export async function GET() {
         questionRules: exam.questionRules,
         attemptCount,
         canStart,
+        assignmentProcess,
+        assignmentLevel,
         existingSession: existingSession
           ? {
               id: existingSession.id,

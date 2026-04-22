@@ -20,7 +20,7 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
-import { DEPARTMENTS, QUESTION_TYPE_LABELS } from '@/lib/constants';
+import { DEPARTMENTS, QUESTION_TYPE_LABELS, QUESTION_CATEGORY_LABELS } from '@/lib/constants';
 import { Pencil, Trash2, ImageIcon } from 'lucide-react';
 import type { QuestionData, QuestionType, PaginatedResponse } from '@/types/exam';
 
@@ -43,6 +43,11 @@ const LEVEL_OPTIONS = [
   { value: '一级题库', label: '一级题库' },
   { value: '二级题库', label: '二级题库' },
   { value: '三级题库', label: '三级题库' },
+];
+
+const CATEGORY_OPTIONS = [
+  { value: '', label: '全部分类' },
+  ...Object.entries(QUESTION_CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
 // ---------------------------------------------------------------------------
@@ -73,15 +78,39 @@ export default function QuestionListPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  // Exam list for filter
+  const [examOptions, setExamOptions] = useState<{ value: string; label: string }[]>([{ value: '', label: '全部考试' }]);
+
   // Filters
   const [typeFilter, setTypeFilter] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [processFilter, setProcessFilter] = useState('');
+  const [examFilter, setExamFilter] = useState('');
   const [search, setSearch] = useState('');
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Fetch exam list for filter dropdown
+  useEffect(() => {
+    async function loadExams() {
+      try {
+        const res = await fetch('/api/admin/exams?pageSize=100');
+        const json = await res.json();
+        if (json.success && json.data?.items) {
+          const opts = json.data.items.map((e: { id: string; title: string }) => ({
+            value: e.id,
+            label: e.title,
+          }));
+          setExamOptions([{ value: '', label: '全部考试' }, ...opts]);
+        }
+      } catch { /* ignore */ }
+    }
+    loadExams();
+  }, []);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -92,6 +121,9 @@ export default function QuestionListPage() {
       if (typeFilter) params.set('type', typeFilter);
       if (deptFilter) params.set('department', deptFilter);
       if (levelFilter) params.set('level', levelFilter);
+      if (categoryFilter) params.set('category', categoryFilter);
+      if (processFilter) params.set('process', processFilter);
+      if (examFilter) params.set('examSourceId', examFilter);
       if (search.trim()) params.set('search', search.trim());
 
       const res = await fetch(`/api/admin/questions?${params.toString()}`);
@@ -106,7 +138,7 @@ export default function QuestionListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, typeFilter, deptFilter, levelFilter, search, toast]);
+  }, [page, typeFilter, deptFilter, levelFilter, categoryFilter, processFilter, examFilter, search, toast]);
 
   useEffect(() => {
     fetchQuestions();
@@ -115,7 +147,7 @@ export default function QuestionListPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [typeFilter, deptFilter, levelFilter, search]);
+  }, [typeFilter, deptFilter, levelFilter, categoryFilter, processFilter, examFilter, search]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteId) return;
@@ -154,12 +186,24 @@ export default function QuestionListPage() {
 
       {/* Filter bar */}
       <Card className="overflow-visible">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
+          <CustomSelect
+            label="关联考试"
+            options={examOptions}
+            value={examFilter}
+            onChange={(val) => setExamFilter(val)}
+          />
           <CustomSelect
             label="题型"
             options={TYPE_OPTIONS}
             value={typeFilter}
             onChange={(val) => setTypeFilter(val)}
+          />
+          <CustomSelect
+            label="分类"
+            options={CATEGORY_OPTIONS}
+            value={categoryFilter}
+            onChange={(val) => setCategoryFilter(val)}
           />
           <CustomSelect
             label="部门"
@@ -172,6 +216,12 @@ export default function QuestionListPage() {
             options={LEVEL_OPTIONS}
             value={levelFilter}
             onChange={(val) => setLevelFilter(val)}
+          />
+          <Input
+            label="工序"
+            value={processFilter}
+            onChange={(e) => setProcessFilter(e.target.value)}
+            placeholder="如 SAW, DB..."
           />
           <Input
             label="搜索"
@@ -213,7 +263,7 @@ export default function QuestionListPage() {
                     {truncate(q.content, 80)}
                   </p>
                   <p className="mt-1 text-xs text-stone-400">
-                    {q.department} · {q.level} · {q.sourceFile ? '导入' : '手动'}
+                    {q.examSourceTitle ? `${q.examSourceTitle} · ` : ''}{q.department} · {q.level} · {q.category === 'BASIC' ? '基本题' : '专业题'}{q.process ? ` · ${q.process}` : ''}
                   </p>
                   <div className="mt-2 flex items-center gap-1.5">
                     <button
@@ -242,10 +292,12 @@ export default function QuestionListPage() {
                   <TableRow>
                     <TableHead>题型</TableHead>
                     <TableHead>题目</TableHead>
+                    <TableHead>关联考试</TableHead>
+                    <TableHead>分类</TableHead>
+                    <TableHead>工序</TableHead>
                     <TableHead>部门</TableHead>
                     <TableHead>级别</TableHead>
                     <TableHead>分值</TableHead>
-                    <TableHead>来源</TableHead>
                     <TableHead>操作</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -269,12 +321,18 @@ export default function QuestionListPage() {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell className="text-xs text-stone-500 max-w-[120px] truncate" title={q.examSourceTitle ?? ''}>
+                        {q.examSourceTitle || <span className="text-stone-300">—</span>}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${q.category === 'BASIC' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                          {q.category === 'BASIC' ? '基本题' : '专业题'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-stone-500">{q.process || '-'}</TableCell>
                       <TableCell>{q.department}</TableCell>
                       <TableCell>{q.level}</TableCell>
                       <TableCell>{q.points}</TableCell>
-                      <TableCell className="text-sm text-stone-500">
-                        {q.sourceFile ? '导入' : '手动'}
-                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <button

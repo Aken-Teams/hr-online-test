@@ -57,11 +57,38 @@ export async function POST(
       );
     }
 
+    // Get assignmentId from request body (if provided)
+    let assignmentId: string | null = null;
+    let assignmentProcess: string | null = null;
+    let assignmentLevel: string | null = null;
+    try {
+      const body = await request.json();
+      assignmentId = body.assignmentId || null;
+    } catch {
+      // No body or invalid JSON — that's OK for backward compatibility
+    }
+
+    // If assignmentId provided, load assignment details
+    if (assignmentId) {
+      const assignment = await prisma.examAssignment.findFirst({
+        where: { id: assignmentId, examId },
+      });
+      if (!assignment) {
+        return NextResponse.json(
+          { success: false, error: '考试指派不存在' },
+          { status: 404 }
+        );
+      }
+      assignmentProcess = assignment.process;
+      assignmentLevel = assignment.level;
+    }
+
     // Check if there's already an in-progress session - resume it
     const existingSession = await prisma.examSession.findFirst({
       where: {
         examId,
         userId: employee.userId,
+        ...(assignmentId ? { assignmentId } : {}),
         status: 'IN_PROGRESS',
       },
       include: {
@@ -142,9 +169,13 @@ export async function POST(
       });
     }
 
-    // Check attempt limit
+    // Check attempt limit (scoped to assignment if provided)
     const attemptCount = await prisma.examSession.count({
-      where: { examId, userId: employee.userId },
+      where: {
+        examId,
+        userId: employee.userId,
+        ...(assignmentId ? { assignmentId } : {}),
+      },
     });
 
     if (attemptCount >= exam.maxAttempts) {
@@ -166,11 +197,12 @@ export async function POST(
       );
     }
 
-    // Generate question set
+    // Generate question set (using assignment's process + level if available)
     const { questions: generatedQuestions, warnings } = await generateQuestionSet(
       examId,
       user.department,
-      user.role
+      assignmentProcess,
+      assignmentLevel
     );
 
     // Create ExamQuestion records + ExamSession in a transaction
@@ -201,6 +233,7 @@ export async function POST(
         data: {
           examId,
           userId: employee.userId,
+          assignmentId,
           status: 'IN_PROGRESS',
           attemptNumber: attemptCount + 1,
           startedAt: now,

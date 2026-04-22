@@ -147,6 +147,10 @@ export async function POST(request: Request) {
           resultQueryCloseAt: data.resultQueryCloseAt ? new Date(data.resultQueryCloseAt) : null,
           tabSwitchLimit: data.tabSwitchLimit,
           enableFaceAuth: data.enableFaceAuth,
+          theoryWeight: data.theoryWeight,
+          practicalWeight: data.practicalWeight,
+          compositePassScore: data.compositePassScore,
+          basicQuestionRatio: data.basicQuestionRatio,
           status: initialStatus,
           questionRules: {
             create: data.questionRules.map((rule) => ({

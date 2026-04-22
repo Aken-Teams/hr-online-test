@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Logo } from '@/components/shared/Logo';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -126,8 +126,18 @@ function BatteryWarning() {
 // Instructions page
 // ---------------------------------------------------------------------------
 
-export default function InstructionsPage() {
+export default function InstructionsPageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><LoadingSpinner size="lg" /></div>}>
+      <InstructionsPage />
+    </Suspense>
+  );
+}
+
+function InstructionsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const assignmentId = searchParams.get('assignmentId');
   const { toast } = useToast();
   const setSession = useExamStore((s) => s.setSession);
 
@@ -143,13 +153,17 @@ export default function InstructionsPage() {
   useEffect(() => {
     const token = localStorage.getItem('exam-token');
     if (!token) {
-      router.replace('/verify');
+      router.replace('/');
       return;
     }
 
     async function fetchExam() {
       try {
-        const res = await fetch('/api/exam/available');
+        // Use the available API; pass assignmentId if present
+        const url = assignmentId
+          ? `/api/exam/available?assignmentId=${assignmentId}`
+          : '/api/exam/available';
+        const res = await fetch(url);
         const data: ApiResponse<ExamData> = await res.json();
 
         if (!res.ok || !data.success || !data.data) {
@@ -157,13 +171,13 @@ export default function InstructionsPage() {
           return;
         }
 
-        // If there's an active IN_PROGRESS session, auto-resume and redirect
-        // to the test page — prevents re-login exploit during exam.
+        // If there's an active IN_PROGRESS session, auto-resume
         if (data.data.existingSession) {
           try {
             const startRes = await fetch(`/api/exam/${data.data.id}/start`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ assignmentId: assignmentId || undefined }),
             });
             const startData = await startRes.json();
             if (startRes.ok && startData.success && startData.data) {
@@ -203,7 +217,7 @@ export default function InstructionsPage() {
     }
 
     fetchExam();
-  }, [router, setSession]);
+  }, [router, setSession, assignmentId]);
 
   // ---------------------------------------------------------------------------
   // Time window check
@@ -234,6 +248,7 @@ export default function InstructionsPage() {
       const res = await fetch(`/api/exam/${exam.id}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignmentId: assignmentId || undefined }),
       });
 
       const data: ApiResponse<{
@@ -276,7 +291,7 @@ export default function InstructionsPage() {
     } finally {
       setStarting(false);
     }
-  }, [exam, router, setSession, toast]);
+  }, [exam, router, setSession, toast, assignmentId]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -313,9 +328,9 @@ export default function InstructionsPage() {
           <Button
             variant="secondary"
             className="mt-6"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/my-exams')}
           >
-            返回首页
+            返回我的考试
           </Button>
         </div>
       </div>
@@ -447,7 +462,7 @@ export default function InstructionsPage() {
           <Button
             size="lg"
             className="w-full"
-            onClick={canStart ? handleStart : () => router.push('/result')}
+            onClick={canStart ? handleStart : () => router.push(`/result?examId=${exam.id}`)}
             loading={starting}
             disabled={canStart && !windowOpen}
             variant={canStart ? 'primary' : 'secondary'}

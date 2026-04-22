@@ -98,7 +98,7 @@ function PasswordTab() {
         }
 
         toast('身份验证成功', 'success');
-        router.push('/instructions');
+        router.push('/dashboard');
       } catch {
         setError('网络错误，请稍后重试');
       } finally {
@@ -384,15 +384,8 @@ export default function WelcomePage() {
     const token = localStorage.getItem('exam-token');
     if (!token) return;
 
-    fetch('/api/exam/available')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data?.existingSession) {
-          // Active session exists — send them to instructions which will auto-resume
-          router.replace('/instructions');
-        }
-      })
-      .catch(() => {});
+    // Already logged in — redirect to dashboard
+    router.replace('/dashboard');
   }, [router]);
 
   return (

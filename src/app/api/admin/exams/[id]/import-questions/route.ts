@@ -1,0 +1,190 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getAdminFromCookie } from '@/lib/auth';
+import { parseQuestionExcel, parseQuestionFilename } from '@/lib/excel';
+import { MAX_UPLOAD_SIZE } from '@/lib/constants';
+
+/**
+ * POST /api/admin/exams/[id]/import-questions
+ * Import question bank files bound to a specific exam.
+ * Parses filename format: "部門--工序--級別--人名.xls"
+ * Sets examSourceId + process + category on imported questions.
+ */
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const admin = await getAdminFromCookie();
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: '未登录或��权限' },
+        { status: 401 }
+      );
+    }
+
+    const { id: examId } = await params;
+
+    // Verify exam exists
+    const exam = await prisma.exam.findUnique({ where: { id: examId } });
+    if (!exam) {
+      return NextResponse.json(
+        { success: false, error: '考试不存在' },
+        { status: 404 }
+      );
+    }
+
+    const formData = await request.formData();
+    const files = formData.getAll('files') as File[];
+
+    if (files.length === 0) {
+      return NextResponse.json(
+        { success: false, error: '请上��文件' },
+        { status: 400 }
+      );
+    }
+
+    const totalResults = {
+      totalFiles: files.length,
+      totalRows: 0,
+      created: 0,
+      duplicates: 0,
+      skipped: 0,
+      fileResults: [] as Array<{
+        filename: string;
+        parsed: ReturnType<typeof parseQuestionFilename>;
+        rows: number;
+        created: number;
+        duplicates: number;
+        error?: string;
+      }>,
+    };
+
+    // Build existing question fingerprint set for dedup
+    const existingQuestions = await prisma.question.findMany({
+      where: { examSourceId: examId },
+      select: { content: true, type: true },
+    });
+    const existingSet = new Set(
+      existingQuestions.map((q) => `${q.type}||${q.content.trim()}`)
+    );
+
+    for (const file of files) {
+      if (file.size > MAX_UPLOAD_SIZE) {
+        totalResults.fileResults.push({
+          filename: file.name,
+          parsed: null,
+          rows: 0,
+          created: 0,
+          duplicates: 0,
+          error: '文件大小超过10MB',
+        });
+        continue;
+      }
+
+      // Parse filename for metadata
+      const parsed = parseQuestionFilename(file.name);
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const rows = parseQuestionExcel(buffer);
+
+      let fileCreated = 0;
+      let fileDuplicates = 0;
+
+      if (rows.length === 0) {
+        totalResults.fileResults.push({
+          filename: file.name,
+          parsed,
+          rows: 0,
+          created: 0,
+          duplicates: 0,
+          error: '未解析到有效题目',
+        });
+        continue;
+      }
+
+      // Determine category: if filename contains "基本" -> BASIC, else PROFESSIONAL
+      const isBasic = file.name.includes('基本') || file.name.toLowerCase().includes('basic');
+      const category = isBasic ? 'BASIC' : 'PROFESSIONAL';
+
+      await prisma.$transaction(async (tx) => {
+        for (const row of rows) {
+          const fingerprint = `${row.type}||${row.content.trim()}`;
+          if (existingSet.has(fingerprint)) {
+            fileDuplicates++;
+            continue;
+          }
+
+          try {
+            await tx.question.create({
+              data: {
+                type: row.type,
+                content: row.content,
+                level: parsed?.level || row.level,
+                department: parsed?.department || row.department,
+                role: row.role,
+                correctAnswer: row.correctAnswer ?? null,
+                isMultiSelect: row.isMultiSelect ?? false,
+                referenceAnswer: row.referenceAnswer ?? null,
+                sourceFile: file.name,
+                process: parsed?.process || null,
+                category,
+                examSourceId: examId,
+                options: row.options
+                  ? {
+                      create: row.options.map((opt, idx) => ({
+                        label: opt.label,
+                        content: opt.content,
+                        imageUrl: opt.imageUrl ?? null,
+                        sortOrder: idx,
+                      })),
+                    }
+                  : undefined,
+              },
+            });
+            fileCreated++;
+            existingSet.add(fingerprint);
+          } catch {
+            totalResults.skipped++;
+          }
+        }
+      });
+
+      totalResults.totalRows += rows.length;
+      totalResults.created += fileCreated;
+      totalResults.duplicates += fileDuplicates;
+      totalResults.fileResults.push({
+        filename: file.name,
+        parsed,
+        rows: rows.length,
+        created: fileCreated,
+        duplicates: fileDuplicates,
+      });
+    }
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        adminId: admin.adminId,
+        action: 'QUESTION_IMPORTED',
+        details: {
+          examId,
+          totalFiles: totalResults.totalFiles,
+          totalRows: totalResults.totalRows,
+          created: totalResults.created,
+          duplicates: totalResults.duplicates,
+        },
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: totalResults,
+    });
+  } catch (error) {
+    console.error('Import exam questions error:', error);
+    return NextResponse.json(
+      { success: false, error: '服务器内部错误' },
+      { status: 500 }
+    );
+  }
+}

@@ -36,6 +36,10 @@ export interface QuestionData {
   referenceAnswer?: string | null;
   gradingRubric?: string | null;
   sourceFile?: string | null;
+  process?: string | null;
+  category?: string;
+  examSourceId?: string | null;
+  examSourceTitle?: string | null;
   isActive: boolean;
   options: QuestionOptionData[];
   tags?: string[];
@@ -71,6 +75,8 @@ export interface ExamAssignmentData {
   userId?: string | null;
   department?: string | null;
   role?: string | null;
+  process?: string | null;
+  level?: string | null;
   user?: { id: string; name: string; employeeNo: string; department: string; role: string } | null;
 }
 
@@ -93,6 +99,10 @@ export interface ExamData {
   resultQueryCloseAt?: Date | string | null;
   tabSwitchLimit: number;
   enableFaceAuth: boolean;
+  theoryWeight: number;
+  practicalWeight: number;
+  compositePassScore: number;
+  basicQuestionRatio: number;
   status: ExamStatus;
   questionRules: QuestionRuleData[];
   assignments?: ExamAssignmentData[];
@@ -127,6 +137,7 @@ export interface ExamSessionData {
   id: string;
   examId: string;
   userId: string;
+  assignmentId?: string | null;
   status: SessionStatus;
   attemptNumber: number;
   startedAt?: Date | string | null;
@@ -222,6 +233,56 @@ export interface EmployeeData {
   hasFaceDescriptor?: boolean;
   hireDate?: Date | string | null;
   isActive: boolean;
+}
+
+// ============================================================
+// Multi-exam frontend types
+// ============================================================
+
+/** An exam assignment card shown in the employee "My Exams" page */
+export interface MyExamItem {
+  examId: string;
+  assignmentId: string;
+  title: string;
+  process: string | null;
+  level: string | null;
+  timeLimitMinutes: number;
+  openAt: string | null;
+  closeAt: string | null;
+  /** Overall exam status */
+  examStatus: ExamStatus;
+  /** Employee's session status for this assignment */
+  sessionStatus: SessionStatus | 'NOT_STARTED';
+  sessionId: string | null;
+  attemptNumber: number;
+  canStart: boolean;
+}
+
+/** A result row shown in the employee "My Results" page */
+export interface MyResultItem {
+  examId: string;
+  examTitle: string;
+  process: string | null;
+  level: string | null;
+  sessionId: string;
+  autoScore: number;
+  maxPossibleScore: number;
+  practicalScore: number | null;
+  combinedScore: number | null;
+  isPassed: boolean | null;
+  submittedAt: string | null;
+  /** Whether the result query window is currently open */
+  isResultQueryOpen: boolean;
+  resultQueryOpenAt: string | null;
+  resultQueryCloseAt: string | null;
+}
+
+/** Row structure for participant Excel import */
+export interface ParticipantImportRow {
+  employeeNo: string;
+  name: string;
+  process: string;
+  level: string;
 }
 
 export interface EmployeeImportRow {

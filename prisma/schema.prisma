@@ -75,6 +75,9 @@ model Question {
   referenceAnswer String?      @map("reference_answer") @db.Text
   gradingRubric   String?      @map("grading_rubric") @db.Text
   sourceFile      String?      @map("source_file")
+  process         String?                                           // 工序 (SAW, DB, WB, FA...)
+  category        String       @default("PROFESSIONAL")             // BASIC or PROFESSIONAL
+  examSourceId    String?      @map("exam_source_id")               // imported for which exam
   isActive        Boolean      @default(true) @map("is_active")
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
@@ -83,10 +86,13 @@ model Question {
   examQuestions ExamQuestion[]
   answers       Answer[]
   tags          QuestionTag[]
+  examSource    Exam?          @relation("ImportedQuestions", fields: [examSourceId], references: [id])
 
   @@index([type, department, role, level])
   @@index([department, role])
   @@index([type, isActive])
+  @@index([category, process])
+  @@index([examSourceId])
   @@map("questions")
 }
 
@@ -153,10 +159,17 @@ model Exam {
   createdAt             DateTime   @default(now()) @map("created_at")
   updatedAt             DateTime   @updatedAt @map("updated_at")
 
-  questionRules ExamQuestionRule[]
-  examQuestions ExamQuestion[]
-  sessions      ExamSession[]
-  assignments   ExamAssignment[]
+  // Scoring weights
+  theoryWeight        Float      @default(0.4) @map("theory_weight")
+  practicalWeight     Float      @default(0.6) @map("practical_weight")
+  compositePassScore  Int        @default(90)  @map("composite_pass_score")
+  basicQuestionRatio  Float      @default(0.1) @map("basic_question_ratio")
+
+  questionRules      ExamQuestionRule[]
+  examQuestions      ExamQuestion[]
+  sessions           ExamSession[]
+  assignments        ExamAssignment[]
+  importedQuestions  Question[]         @relation("ImportedQuestions")
 
   @@index([status, openAt, closeAt])
   @@map("exams")
@@ -199,13 +212,17 @@ model ExamAssignment {
   userId     String? @map("user_id")
   department String?
   role       String?
+  process    String?               // 報考工序 (SAW, DB, WB...)
+  level      String?               // 報考等級 (Ⅰ级, Ⅱ级)
 
-  exam Exam  @relation(fields: [examId], references: [id], onDelete: Cascade)
-  user User? @relation(fields: [userId], references: [id])
+  exam     Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user     User?         @relation(fields: [userId], references: [id])
+  sessions ExamSession[]
 
   @@index([examId])
   @@index([userId])
   @@index([department, role])
+  @@index([examId, process, level])
   @@map("exam_assignments")
 }
 
@@ -236,16 +253,19 @@ model ExamSession {
   isAutoSubmitted  Boolean       @default(false) @map("is_auto_submitted")
   autoSubmitReason String?       @map("auto_submit_reason")
   questionOrder    Json?         @map("question_order")
+  assignmentId     String?       @map("assignment_id")
 
-  exam      Exam         @relation(fields: [examId], references: [id])
-  user      User         @relation(fields: [userId], references: [id])
-  answers   Answer[]
-  result    ExamResult?
-  auditLogs AuditLog[]
+  exam       Exam            @relation(fields: [examId], references: [id])
+  user       User            @relation(fields: [userId], references: [id])
+  assignment ExamAssignment? @relation(fields: [assignmentId], references: [id])
+  answers    Answer[]
+  result     ExamResult?
+  auditLogs  AuditLog[]
 
   @@unique([examId, userId, attemptNumber])
   @@index([examId, status])
   @@index([userId])
+  @@index([assignmentId])
   @@index([status, startedAt])
   @@map("exam_sessions")
 }

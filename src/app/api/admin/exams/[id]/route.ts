@@ -126,6 +126,10 @@ export async function PUT(
             resultQueryCloseAt: data.resultQueryCloseAt ? new Date(data.resultQueryCloseAt) : null,
             tabSwitchLimit: data.tabSwitchLimit,
             enableFaceAuth: data.enableFaceAuth,
+            theoryWeight: data.theoryWeight,
+            practicalWeight: data.practicalWeight,
+            compositePassScore: data.compositePassScore,
+            basicQuestionRatio: data.basicQuestionRatio,
             questionRules: {
               create: data.questionRules.map((rule) => ({
                 questionType: rule.questionType,
@@ -140,7 +144,8 @@ export async function PUT(
           include: { questionRules: true },
         });
 
-        // Always sync assignments when the key is present in the request body
+        // Note: assignments are now managed via the participants API,
+        // but we still sync if explicitly provided in the request body
         if ('assignments' in body) {
           await tx.examAssignment.deleteMany({ where: { examId: id } });
           if (assignments.length > 0) {
@@ -179,6 +184,10 @@ export async function PUT(
           resultQueryCloseAt: data.resultQueryCloseAt ? new Date(data.resultQueryCloseAt) : null,
           tabSwitchLimit: data.tabSwitchLimit,
           enableFaceAuth: data.enableFaceAuth,
+          theoryWeight: data.theoryWeight,
+          practicalWeight: data.practicalWeight,
+          compositePassScore: data.compositePassScore,
+          basicQuestionRatio: data.basicQuestionRatio,
         },
         include: { questionRules: true },
       });

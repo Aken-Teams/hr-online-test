@@ -4,6 +4,7 @@ import type {
   QuestionImportRow,
   ResultExportRow,
   EmployeeImportRow,
+  ParticipantImportRow,
 } from '@/types/exam';
 
 // ============================================================
@@ -264,6 +265,7 @@ export function generateResultsExcel(results: ResultExportRow[]): Buffer {
 export interface OfflineScoreRow {
   employeeNo: string;
   name: string;
+  process?: string;
   essayScore?: number;
   practicalScore?: number;
 }
@@ -275,6 +277,8 @@ const OFFLINE_SCORE_COLUMN_MAP: Record<string, string> = {
   '编号': 'employeeNo',
   '姓名': 'name',
   '名字': 'name',
+  '工序': 'process',
+  '报考工序': 'process',
   '简答分': 'essayScore',
   '简答题': 'essayScore',
   '简答分数': 'essayScore',
@@ -324,6 +328,7 @@ export function parseOfflineScoreExcel(buffer: Buffer): OfflineScoreRow[] {
     results.push({
       employeeNo: employeeNo || '',
       name: name || '',
+      process: row.process || undefined,
       essayScore: essayScore != null && !isNaN(essayScore) ? essayScore : undefined,
       practicalScore: practicalScore != null && !isNaN(practicalScore) ? practicalScore : undefined,
     });
@@ -417,15 +422,15 @@ interface OfflineScoreTemplateRow {
   employeeNo: string;
   name: string;
   department: string;
+  process: string;
   onlineScore: number;
-  essayScore: string;
   practicalScore: string;
 }
 
 /**
  * Generate an Excel template for offline score import.
  * Pre-fills employee info from existing exam sessions so the admin
- * only needs to fill in the essay + practical scores.
+ * only needs to fill in the practical scores.
  */
 export function generateOfflineScoreTemplate(
   employees: OfflineScoreTemplateRow[]
@@ -434,8 +439,8 @@ export function generateOfflineScoreTemplate(
     '工号',
     '姓名',
     '部门',
+    '工序',
     '线上理论分',
-    '简答分',
     '实操分',
   ];
 
@@ -443,8 +448,8 @@ export function generateOfflineScoreTemplate(
     e.employeeNo,
     e.name,
     e.department,
+    e.process,
     e.onlineScore,
-    e.essayScore,
     e.practicalScore,
   ]);
 
@@ -455,8 +460,8 @@ export function generateOfflineScoreTemplate(
     { wch: 12 },  // 工号
     { wch: 10 },  // 姓名
     { wch: 14 },  // 部门
+    { wch: 14 },  // 工序
     { wch: 12 },  // 线上理论分
-    { wch: 10 },  // 简答分
     { wch: 10 },  // 实操分
   ];
 
@@ -464,4 +469,145 @@ export function generateOfflineScoreTemplate(
   XLSX.utils.book_append_sheet(wb, ws, '线下成绩');
 
   return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
+}
+
+// ============================================================
+// Parse Participant Excel (應考名單)
+// ============================================================
+
+/** Chinese column mapping for participant import */
+const PARTICIPANT_COLUMN_MAP: Record<string, string> = {
+  '工号': 'employeeNo',
+  '员工编号': 'employeeNo',
+  '编号': 'employeeNo',
+  '姓名': 'name',
+  '名字': 'name',
+  '报考工序': 'process',
+  '工序': 'process',
+  '报考等级': 'level',
+  '等级': 'level',
+  '级别': 'level',
+  '身份证后6位': 'idCardLast6',
+  '身份证後6位': 'idCardLast6',
+  '部门': 'department',
+  '部門': 'department',
+};
+
+/**
+ * Parse a participant roster Excel file and return structured rows.
+ * Expected columns: 工号, 姓名, 报考工序, 报考等级
+ */
+export function parseParticipantExcel(buffer: Buffer): ParticipantImportRow[] {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const results: ParticipantImportRow[] = [];
+
+  const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return results;
+
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) return results;
+
+  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+    defval: '',
+  });
+
+  for (const raw of rawRows) {
+    const row: Record<string, string> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      const trimmedKey = key.trim();
+      const mapped = PARTICIPANT_COLUMN_MAP[trimmedKey] || trimmedKey;
+      row[mapped] = String(value ?? '').trim();
+    }
+
+    const employeeNo = row.employeeNo;
+    const name = row.name;
+    const process = row.process;
+    const level = row.level;
+
+    if (!employeeNo || !name || !process || !level) continue;
+
+    results.push({ employeeNo, name, process, level });
+  }
+
+  return results;
+}
+
+// ============================================================
+// Parse Question Filename
+// ============================================================
+
+export interface ParsedQuestionFilename {
+  department: string;
+  process: string;
+  level: string;
+  author: string;
+}
+
+/**
+ * Parse a question bank filename to extract metadata.
+ * Expected format: "部門--工序--級別--人名.xls"
+ * e.g. "生产部--SAW--Ⅰ级--张三.xls"
+ */
+export function parseQuestionFilename(filename: string): ParsedQuestionFilename | null {
+  // Remove extension
+  const name = filename.replace(/\.(xls|xlsx)$/i, '');
+  const parts = name.split('--');
+
+  if (parts.length < 4) return null;
+
+  return {
+    department: parts[0].trim(),
+    process: parts[1].trim(),
+    level: parts[2].trim(),
+    author: parts[3].trim(),
+  };
+}
+
+// ============================================================
+// Generate Results Excel (updated with process column)
+// ============================================================
+
+export function generateResultsExcelV2(results: (ResultExportRow & { process?: string | null })[]): Buffer {
+  const headers = [
+    '工号',
+    '姓名',
+    '部门',
+    '岗位',
+    '工序',
+    '考试名称',
+    '线上得分',
+    '满分',
+    '实操分',
+    '综合成绩',
+    '用时(秒)',
+    '提交时间',
+  ];
+
+  const rows = results.map((r) => [
+    r.employeeNo,
+    r.employeeName,
+    r.department,
+    r.role,
+    r.process ?? '',
+    r.examTitle,
+    r.totalScore ?? '',
+    r.maxPossibleScore,
+    r.practicalScore ?? '',
+    r.combinedScore ?? '',
+    r.timeTakenSeconds,
+    r.submittedAt ?? '',
+  ]);
+
+  const wsData = [headers, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  ws['!cols'] = headers.map((h) => ({
+    wch: Math.max(h.length * 2, 12),
+  }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '考试成绩');
+
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  return Buffer.from(buf);
 }

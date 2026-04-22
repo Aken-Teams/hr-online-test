@@ -23,6 +23,9 @@ export async function GET(request: Request) {
     const level = searchParams.get('level');
     const search = searchParams.get('search') || '';
     const isActive = searchParams.get('isActive');
+    const examSourceId = searchParams.get('examSourceId');
+    const process = searchParams.get('process');
+    const category = searchParams.get('category');
 
     const where: Record<string, unknown> = {};
 
@@ -41,6 +44,15 @@ export async function GET(request: Request) {
     if (search) {
       where.content = { contains: search };
     }
+    if (examSourceId) {
+      where.examSourceId = examSourceId;
+    }
+    if (process) {
+      where.process = process;
+    }
+    if (category) {
+      where.category = category;
+    }
 
     const [items, total] = await Promise.all([
       prisma.question.findMany({
@@ -48,6 +60,7 @@ export async function GET(request: Request) {
         include: {
           options: { orderBy: { sortOrder: 'asc' } },
           tags: { select: { tag: true } },
+          examSource: { select: { id: true, title: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
@@ -80,6 +93,8 @@ export async function GET(request: Request) {
         sortOrder: o.sortOrder,
       })),
       tags: q.tags.map((t) => t.tag),
+      examSourceId: q.examSourceId,
+      examSourceTitle: q.examSource?.title ?? null,
       createdAt: q.createdAt,
     }));
 

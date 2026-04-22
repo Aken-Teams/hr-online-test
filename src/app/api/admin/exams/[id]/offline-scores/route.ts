@@ -24,10 +24,10 @@ export async function POST(
 
     const { id: examId } = await params;
 
-    // Verify exam exists
+    // Verify exam exists (include weights for score calculation)
     const exam = await prisma.exam.findUnique({
       where: { id: examId },
-      select: { id: true, title: true },
+      select: { id: true, title: true, theoryWeight: true, practicalWeight: true, compositePassScore: true },
     });
 
     if (!exam) {
@@ -58,7 +58,7 @@ export async function POST(
       );
     }
 
-    // Get all sessions with results for this exam
+    // Get all sessions with results for this exam (include assignment for process matching)
     const sessions = await prisma.examSession.findMany({
       where: {
         examId,
@@ -66,32 +66,46 @@ export async function POST(
       },
       include: {
         user: { select: { employeeNo: true, name: true } },
+        assignment: { select: { process: true, level: true } },
         result: true,
       },
     });
 
-    // Build lookup maps
-    const sessionByEmployeeNo = new Map(
-      sessions
-        .filter((s) => s.user.employeeNo)
-        .map((s) => [s.user.employeeNo, s])
-    );
-    const sessionByName = new Map(
-      sessions.map((s) => [s.user.name, s])
-    );
+    // Build lookup maps (key: employeeNo or employeeNo+process for multi-process)
+    const sessionByKey = new Map<string, typeof sessions[0]>();
+    for (const s of sessions) {
+      const empNo = s.user.employeeNo;
+      const process = s.assignment?.process || '';
+      // Store with process for precise matching
+      if (empNo && process) {
+        sessionByKey.set(`${empNo}__${process}`, s);
+      }
+      // Also store by employeeNo only (fallback)
+      if (empNo && !sessionByKey.has(empNo)) {
+        sessionByKey.set(empNo, s);
+      }
+      // Also by name
+      if (!sessionByKey.has(s.user.name)) {
+        sessionByKey.set(s.user.name, s);
+      }
+    }
 
     let updated = 0;
     let skipped = 0;
     const errors: string[] = [];
 
+    const theoryWeight = exam.theoryWeight ?? 0.4;
+    const practicalWeight = exam.practicalWeight ?? 0.6;
+
     for (const row of rows) {
-      // Match by employeeNo first, then by name
-      const session = (row.employeeNo && sessionByEmployeeNo.get(row.employeeNo))
-        || sessionByName.get(row.name);
+      // Match by employeeNo+process first (precise), then employeeNo, then name
+      const session = (row.employeeNo && row.process && sessionByKey.get(`${row.employeeNo}__${row.process}`))
+        || (row.employeeNo && sessionByKey.get(row.employeeNo))
+        || sessionByKey.get(row.name);
 
       if (!session) {
         skipped++;
-        errors.push(`未找到匹配: ${row.employeeNo || ''} ${row.name}`);
+        errors.push(`未找到匹配: ${row.employeeNo || ''} ${row.name}${row.process ? ` (${row.process})` : ''}`);
         continue;
       }
 
@@ -101,20 +115,18 @@ export async function POST(
         continue;
       }
 
-      const essayScore = row.essayScore ?? session.result.essayScore ?? null;
       const practicalScore = row.practicalScore ?? session.result.practicalScore ?? null;
 
-      // Calculate combined score: (online + essay) * 40% + practical * 60%
+      // Calculate combined score: onlineScore × theoryWeight + practicalScore × practicalWeight
       const onlineScore = session.result.totalScore ?? session.result.autoScore;
       let combinedScore: number | null = null;
-      if (essayScore != null && practicalScore != null) {
-        combinedScore = Math.round(((onlineScore + essayScore) * 0.4 + practicalScore * 0.6) * 10) / 10;
+      if (practicalScore != null) {
+        combinedScore = Math.round((onlineScore * theoryWeight + practicalScore * practicalWeight) * 10) / 10;
       }
 
       await prisma.examResult.update({
         where: { id: session.result.id },
         data: {
-          essayScore,
           practicalScore,
           combinedScore,
         },
@@ -178,13 +190,14 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
 
-    const sessions = await prisma.examSession.findMany({
+    const sessionsForTemplate = await prisma.examSession.findMany({
       where: {
         examId,
         status: { in: ['SUBMITTED', 'COMPLETED', 'AUTO_SUBMITTED', 'GRADING'] },
       },
       include: {
         user: { select: { employeeNo: true, name: true, department: true } },
+        assignment: { select: { process: true, level: true } },
         result: {
           select: {
             autoScore: true,
@@ -200,12 +213,12 @@ export async function GET(
 
     // Download template
     if (action === 'template') {
-      const employees = sessions.map((s) => ({
+      const employees = sessionsForTemplate.map((s) => ({
         employeeNo: s.user.employeeNo || '',
         name: s.user.name,
         department: s.user.department || '',
+        process: s.assignment?.process || '',
         onlineScore: s.result?.totalScore ?? s.result?.autoScore ?? 0,
-        essayScore: '',
         practicalScore: '',
       }));
 
@@ -220,13 +233,14 @@ export async function GET(
     }
 
     // Default: return JSON status
-    const data = sessions.map((s) => ({
+    const data = sessionsForTemplate.map((s) => ({
       sessionId: s.id,
       employeeNo: s.user.employeeNo,
       name: s.user.name,
       department: s.user.department,
+      process: s.assignment?.process ?? null,
+      level: s.assignment?.level ?? null,
       onlineScore: s.result?.totalScore ?? s.result?.autoScore ?? 0,
-      essayScore: s.result?.essayScore ?? null,
       practicalScore: s.result?.practicalScore ?? null,
       combinedScore: s.result?.combinedScore ?? null,
     }));

@@ -99,6 +99,26 @@ export const examCreateSchema = z.object({
   resultQueryCloseAt: z.string().nullable().optional(),
   tabSwitchLimit: z.number().int().min(0).default(3),
   enableFaceAuth: z.boolean().default(false),
+  theoryWeight: z
+    .number()
+    .min(0, '理论权重不能小于0')
+    .max(1, '理论权重不能大于1')
+    .default(0.4),
+  practicalWeight: z
+    .number()
+    .min(0, '实操权重不能小于0')
+    .max(1, '实操权重不能大于1')
+    .default(0.6),
+  compositePassScore: z
+    .number()
+    .int()
+    .min(0, '综合合格分不能为负数')
+    .default(90),
+  basicQuestionRatio: z
+    .number()
+    .min(0, '基本题比例不能小于0')
+    .max(1, '基本题比例不能大于1')
+    .default(0.1),
   questionRules: z
     .array(questionRuleSchema)
     .min(1, '至少需要一条出题规则'),
@@ -166,6 +186,29 @@ export type EmployeeImportInput = z.infer<typeof employeeImportSchema>;
 
 /** Validate an array of employee rows */
 export const employeeImportBatchSchema = z.array(employeeImportSchema);
+
+// ============================================================
+// Participant import schema
+// ============================================================
+
+export const participantImportSchema = z.object({
+  employeeNo: z
+    .string()
+    .min(1, '工号不能为空'),
+  name: z
+    .string()
+    .min(1, '姓名不能为空'),
+  process: z
+    .string()
+    .min(1, '工序不能为空'),
+  level: z
+    .string()
+    .min(1, '等级不能为空'),
+});
+
+export type ParticipantImportInput = z.infer<typeof participantImportSchema>;
+
+export const participantImportBatchSchema = z.array(participantImportSchema);
 
 // ============================================================
 // Grading schema

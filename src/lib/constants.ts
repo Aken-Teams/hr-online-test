@@ -161,6 +161,22 @@ export const MANUAL_GRADE_TYPES: QuestionType[] = [
   'PRACTICAL',
 ];
 
+// ============================================================
+// Question category labels (BASIC / PROFESSIONAL)
+// ============================================================
+
+export const QUESTION_CATEGORY_LABELS: Record<string, string> = {
+  BASIC: '基本题',
+  PROFESSIONAL: '专业题',
+};
+
+// ============================================================
+// Exam levels (報考等級)
+// ============================================================
+
+export const EXAM_LEVELS = ['Ⅰ级', 'Ⅱ级', 'Ⅲ级'] as const;
+export type ExamLevel = (typeof EXAM_LEVELS)[number];
+
 /** Default pagination page size */
 export const DEFAULT_PAGE_SIZE = 10;
 

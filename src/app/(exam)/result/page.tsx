@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Logo } from '@/components/shared/Logo';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -276,8 +276,19 @@ function WrongAnswerItem({
 // Result page
 // ---------------------------------------------------------------------------
 
-export default function ResultPage() {
+function ResultPageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><LoadingSpinner size="lg" /></div>}>
+      <ResultPage />
+    </Suspense>
+  );
+}
+
+export default ResultPageWrapper;
+
+function ResultPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [result, setResult] = useState<ExamResultData | null>(null);
   const [wrongAnswers, setWrongAnswers] = useState<WrongAnswerFromAPI[]>([]);
@@ -329,14 +340,25 @@ export default function ResultPage() {
     async function fetchResult() {
       try {
         // 1) Try stored session ID first (set after manual submit)
-        const sessionId = localStorage.getItem('exam-result-session');
-        if (sessionId) {
-          await loadResult(sessionId);
+        const storedSessionId = localStorage.getItem('exam-result-session');
+        if (storedSessionId) {
+          await loadResult(storedSessionId);
           return;
         }
 
-        // 2) Fallback: resolve examId from the available exam API
-        //    (covers "查看考试结果" from instructions page)
+        // 2) Try query params (from instructions page or my-exams navigation)
+        const qSessionId = searchParams.get('sessionId');
+        const qExamId = searchParams.get('examId');
+        if (qSessionId) {
+          await loadResult(qSessionId);
+          return;
+        }
+        if (qExamId) {
+          await loadResult(qExamId);
+          return;
+        }
+
+        // 3) Last resort: resolve via available exam API
         const availRes = await fetch('/api/exam/available');
         const availData = await availRes.json();
         if (availRes.ok && availData.success && availData.data?.id) {
@@ -353,7 +375,7 @@ export default function ResultPage() {
     }
 
     fetchResult();
-  }, []);
+  }, [searchParams]);
 
   // ---- Derived data --------------------------------------------------------
 
@@ -405,9 +427,9 @@ export default function ResultPage() {
           <Button
             variant="secondary"
             className="mt-6"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/my-exams')}
           >
-            返回首页
+            返回我的考试
           </Button>
         </div>
       </div>
@@ -425,9 +447,9 @@ export default function ResultPage() {
           <Button
             variant="secondary"
             className="mt-6"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/my-exams')}
           >
-            返回首页
+            返回我的考试
           </Button>
         </div>
       </div>
@@ -595,10 +617,10 @@ export default function ResultPage() {
               localStorage.removeItem('exam-result-session');
               localStorage.removeItem('exam-questions-raw');
               localStorage.removeItem('exam-session-id');
-              router.push('/');
+              router.push('/my-exams');
             }}
           >
-            返回首页
+            返回我的考试
           </Button>
         </div>
 

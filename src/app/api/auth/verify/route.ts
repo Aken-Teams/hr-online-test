@@ -46,82 +46,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Find assigned exam for this user
-    const now = new Date();
-
-    // 1. Try to find an active exam within time window (for taking the exam)
-    const activeAssignment = await prisma.examAssignment.findFirst({
-      where: {
-        exam: {
-          status: { in: ['PUBLISHED', 'ACTIVE'] },
-          OR: [
-            { openAt: null },
-            { openAt: { lte: now } },
-          ],
-          AND: [
-            {
-              OR: [
-                { closeAt: null },
-                { closeAt: { gte: now } },
-              ],
-            },
-          ],
-        },
-        OR: [
-          { userId: user.id },
-          { department: user.department, role: user.role },
-          { department: user.department, role: null },
-        ],
-      },
-      include: { exam: true },
-      orderBy: { exam: { createdAt: 'desc' } },
-    });
-
-    let examId = activeAssignment?.examId;
-    let assignment = activeAssignment;
-
-    // 2. Fallback: find a closed/expired exam where user has sessions (for result query)
-    if (!examId) {
-      const sessionWithExam = await prisma.examSession.findFirst({
-        where: {
-          userId: user.id,
-          exam: {
-            status: { in: ['PUBLISHED', 'ACTIVE', 'CLOSED'] },
-          },
-        },
-        include: {
-          exam: {
-            include: {
-              assignments: {
-                where: {
-                  OR: [
-                    { userId: user.id },
-                    { department: user.department, role: user.role },
-                    { department: user.department, role: null },
-                  ],
-                },
-                take: 1,
-              },
-            },
-          },
-        },
-        orderBy: { exam: { createdAt: 'desc' } },
-      });
-
-      if (sessionWithExam) {
-        examId = sessionWithExam.examId;
-        assignment = sessionWithExam.exam.assignments[0]
-          ? { ...sessionWithExam.exam.assignments[0], exam: sessionWithExam.exam }
-          : null;
-      }
-    }
-
-    // Create JWT token and set cookie
+    // Create JWT token and set cookie (no examId — employee picks from dashboard)
     const token = await createEmployeeToken({
       userId: user.id,
       name: user.name,
       department: user.department,
-      examId,
     });
 
     const cookieStore = await cookies();
@@ -144,8 +73,6 @@ export async function POST(request: Request) {
           department: user.department,
           role: user.role,
           photoUrl: user.photoUrl,
-          examId,
-          enableFaceAuth: assignment?.exam?.enableFaceAuth ?? false,
         },
       },
     });
