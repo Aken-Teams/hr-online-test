@@ -8,6 +8,154 @@ const updateEmployeeSchema = z.object({
 });
 
 /**
+ * GET /api/admin/employees/[id]
+ * Return employee detail with exam assignments and historical scores.
+ */
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const admin = await getAdminFromCookie();
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: '未登录或无权限' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        employeeNo: true,
+        name: true,
+        department: true,
+        subDepartment: true,
+        role: true,
+        photoUrl: true,
+        hireDate: true,
+        isActive: true,
+        createdAt: true,
+        examAssignments: {
+          select: {
+            id: true,
+            process: true,
+            level: true,
+            exam: {
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                theoryWeight: true,
+                practicalWeight: true,
+                compositePassScore: true,
+              },
+            },
+          },
+          orderBy: { exam: { createdAt: 'desc' } },
+        },
+        examSessions: {
+          where: { status: { in: ['SUBMITTED', 'COMPLETED'] } },
+          select: {
+            id: true,
+            examId: true,
+            assignmentId: true,
+            attemptNumber: true,
+            status: true,
+            submittedAt: true,
+            exam: { select: { id: true, title: true } },
+            assignment: { select: { process: true, level: true } },
+            result: {
+              select: {
+                autoScore: true,
+                maxPossibleScore: true,
+                practicalScore: true,
+                combinedScore: true,
+                isPassed: true,
+                totalScore: true,
+              },
+            },
+          },
+          orderBy: { submittedAt: 'desc' },
+        },
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: '员工不存在' },
+        { status: 404 }
+      );
+    }
+
+    // Build a map of examId -> exam info from assignments
+    const examMap = new Map<string, { title: string; process: string | null; level: string | null }>();
+    for (const a of user.examAssignments) {
+      examMap.set(a.exam.id, {
+        title: a.exam.title,
+        process: a.process,
+        level: a.level,
+      });
+    }
+
+    const assignments = user.examAssignments.map((a) => ({
+      id: a.id,
+      examId: a.exam.id,
+      examTitle: a.exam.title,
+      examStatus: a.exam.status,
+      process: a.process,
+      level: a.level,
+    }));
+
+    const sessions = user.examSessions.map((s) => {
+      const info = examMap.get(s.examId);
+      return {
+        sessionId: s.id,
+        examId: s.examId,
+        examTitle: s.exam.title ?? info?.title ?? '—',
+        process: s.assignment?.process ?? info?.process ?? null,
+        level: s.assignment?.level ?? info?.level ?? null,
+        attemptNumber: s.attemptNumber,
+        status: s.status,
+        submittedAt: s.submittedAt,
+        autoScore: s.result?.autoScore ?? 0,
+        maxPossibleScore: s.result?.maxPossibleScore ?? 0,
+        practicalScore: s.result?.practicalScore ?? null,
+        combinedScore: s.result?.combinedScore ?? null,
+        isPassed: s.result?.isPassed ?? null,
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: user.id,
+        employeeNo: user.employeeNo,
+        name: user.name,
+        department: user.department,
+        subDepartment: user.subDepartment,
+        role: user.role,
+        photoUrl: user.photoUrl,
+        hireDate: user.hireDate,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        assignments,
+        sessions,
+      },
+    });
+  } catch (error) {
+    console.error('Get employee detail error:', error);
+    return NextResponse.json(
+      { success: false, error: '服务器内部错误' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * PATCH /api/admin/employees/[id]
  * Update employee fields (currently supports faceDescriptor).
  */
