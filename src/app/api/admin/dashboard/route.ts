@@ -73,7 +73,7 @@ export async function GET() {
       include: {
         user: { select: { name: true, department: true } },
         exam: { select: { title: true } },
-        result: { select: { totalScore: true } },
+        result: { select: { totalScore: true, autoScore: true } },
       },
     });
 
@@ -95,7 +95,7 @@ export async function GET() {
           department: s.user.department,
           examTitle: s.exam.title,
           status: s.status,
-          score: s.result?.totalScore ?? null,
+          score: s.result?.totalScore ?? s.result?.autoScore ?? null,
           submittedAt: s.submittedAt?.toISOString() ?? null,
         })),
       },

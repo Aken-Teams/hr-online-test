@@ -4,7 +4,7 @@ import { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface CardProps {
-  title?: string;
+  title?: ReactNode;
   description?: string;
   className?: string;
   children: ReactNode;

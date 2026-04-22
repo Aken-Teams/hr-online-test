@@ -294,12 +294,12 @@ async function main() {
     await prisma.admin.create({
       data: {
         username: 'admin',
-        passwordHash: await bcrypt.hash('admin123', 10),
+        passwordHash: await bcrypt.hash('pjws123', 10),
         displayName: '系统管理员',
         role: 'SUPER_ADMIN',
       },
     });
-    console.log('Created admin user: admin / admin123');
+    console.log('Created admin user: admin / pjws123');
   }
 
   // 2. Import questions from existing questions.json

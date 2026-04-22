@@ -103,7 +103,7 @@ export const SESSION_STATUS_LABELS: Record<SessionStatus, string> = {
 
 export const EXAM_STATUS_LABELS: Record<ExamStatus, string> = {
   DRAFT: '草稿',
-  PUBLISHED: '已发布',
+  PUBLISHED: '待开放',
   ACTIVE: '进行中',
   CLOSED: '已关闭',
   ARCHIVED: '已归档',

@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -104,6 +104,12 @@ export default function EditExamPage() {
   const [tabSwitchLimit, setTabSwitchLimit] = useState(3);
   const [enableFaceAuth, setEnableFaceAuth] = useState(false);
 
+  // Exam status (to determine what's editable)
+  const [examStatus, setExamStatus] = useState<string>('DRAFT');
+
+  // Whether the exam is fully editable (DRAFT/PUBLISHED) or restricted (ACTIVE+)
+  const isFullyEditable = ['DRAFT', 'PUBLISHED'].includes(examStatus);
+
   // Question rules
   const [rules, setRules] = useState<QuestionRule[]>([]);
 
@@ -122,6 +128,7 @@ export default function EditExamPage() {
       const json = await res.json();
       const exam: ExamData = json.data;
 
+      setExamStatus(exam.status);
       setTitle(exam.title);
       setDescription(exam.description || '');
       setTimeLimitMinutes(exam.timeLimitMinutes);
@@ -242,12 +249,12 @@ export default function EditExamPage() {
         body: JSON.stringify(payload),
       });
 
+      const result = await res.json();
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || '保存失败');
+        throw new Error(result.error || '保存失败');
       }
 
-      toast('考试已保存', 'success');
+      toast(result.message || '考试已保存', result.restricted ? 'warning' : 'success');
       router.push('/admin/exams');
     } catch (err) {
       toast(err instanceof Error ? err.message : '保存失败', 'error');
@@ -276,6 +283,21 @@ export default function EditExamPage() {
           </Button>
         }
       />
+
+      {/* Restriction warning for non-editable exams */}
+      {!isFullyEditable && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">
+              考试已开放，部分设置不可修改
+            </p>
+            <p className="mt-0.5 text-xs text-amber-600">
+              题目规则和指派范围已锁定，仅可修改基本信息、时间窗口和考试设置。
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Basic info */}
       <Card title="基本信息">
@@ -407,8 +429,13 @@ export default function EditExamPage() {
       </Card>
 
       {/* Question rules */}
-      <Card title="题目规则" className="overflow-visible">
-        <div className="space-y-4">
+      <Card title={isFullyEditable ? '题目规则' : '题目规则（已锁定）'} className="overflow-visible">
+        {!isFullyEditable && (
+          <p className="mb-3 text-xs text-amber-600">
+            考试已开放，题目规则不可修改。如需调整请先结束考试。
+          </p>
+        )}
+        <div className={`space-y-4 ${!isFullyEditable ? 'pointer-events-none opacity-60' : ''}`}>
           {rules.map((rule, idx) => (
             <div key={idx} className="rounded-lg border border-stone-100 bg-stone-50/50 p-3 sm:p-4">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
@@ -464,8 +491,13 @@ export default function EditExamPage() {
       </Card>
 
       {/* Department assignment */}
-      <Card title="指派范围">
-        <div className="space-y-3">
+      <Card title={isFullyEditable ? '指派范围' : '指派范围（已锁定）'}>
+        {!isFullyEditable && (
+          <p className="mb-3 text-xs text-amber-600">
+            考试已开放，指派范围不可修改。如需调整请先结束考试。
+          </p>
+        )}
+        <div className={`space-y-3 ${!isFullyEditable ? 'pointer-events-none opacity-60' : ''}`}>
           <p className="text-sm text-stone-500">选择参加考试的部门（不选则全部可参加）</p>
           <div className="flex flex-wrap gap-2">
             {DEPARTMENTS.map((dept) => {

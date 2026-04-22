@@ -24,6 +24,7 @@ interface RankingItem {
   employeeNo: string;
   department: string;
   totalScore: number | null;
+  autoScore?: number | null;
   timeTakenSeconds: number;
   isPassed: boolean | null;
   status?: string;
@@ -314,15 +315,15 @@ export default function ReportsPage() {
                         </span>
                         <span className="text-sm font-medium text-stone-800">{r.employeeName}</span>
                       </div>
-                      {r.totalScore == null || r.status === 'GRADING' ? (
-                        <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700">
-                          待阅卷
-                        </span>
-                      ) : (
+                      {r.isPassed != null ? (
                         <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                           r.isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                         }`}>
                           {r.isPassed ? '合格' : '不合格'}
+                        </span>
+                      ) : (
+                        <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-stone-100 text-stone-600">
+                          待定
                         </span>
                       )}
                     </div>
@@ -333,7 +334,7 @@ export default function ReportsPage() {
                       <span className="text-stone-500">
                         得分：{' '}
                         <span className="font-semibold text-stone-800">
-                          {r.totalScore != null ? r.totalScore : '待阅卷'}
+                          {r.totalScore != null ? r.totalScore : r.autoScore ?? '--'}
                         </span>
                       </span>
                       <span className="text-stone-400">
@@ -374,23 +375,21 @@ export default function ReportsPage() {
                         <td className="py-2.5 pr-4 text-stone-500">{r.employeeNo}</td>
                         <td className="py-2.5 pr-4 text-stone-500">{r.department}</td>
                         <td className="py-2.5 pr-4 text-right font-medium text-stone-800">
-                          {r.totalScore != null ? r.totalScore : (
-                            <span className="text-amber-600 font-normal">待阅卷</span>
-                          )}
+                          {r.totalScore != null ? r.totalScore : r.autoScore ?? '--'}
                         </td>
                         <td className="py-2.5 pr-4 text-right text-stone-500">
                           {Math.floor(r.timeTakenSeconds / 60)}分{r.timeTakenSeconds % 60}秒
                         </td>
                         <td className="py-2.5 text-center">
-                          {r.totalScore == null || r.status === 'GRADING' ? (
-                            <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700">
-                              待阅卷
-                            </span>
-                          ) : (
+                          {r.isPassed != null ? (
                             <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                               r.isPassed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                             }`}>
                               {r.isPassed ? '合格' : '不合格'}
+                            </span>
+                          ) : (
+                            <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-stone-100 text-stone-600">
+                              待定
                             </span>
                           )}
                         </td>

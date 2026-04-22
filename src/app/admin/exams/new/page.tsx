@@ -104,9 +104,21 @@ export default function CreateExamPage() {
       return;
     }
 
-    if (rules.length === 0) {
-      toast('请至少添加一条题目规则', 'warning');
-      return;
+    if (publish) {
+      // 待开放：必须完整填写
+      const missing: string[] = [];
+      if (rules.length === 0) missing.push('题目规则');
+      if (selectedDepartments.length === 0) missing.push('指派部门');
+      if (!openAt) missing.push('开放开始时间');
+      if (!closeAt) missing.push('开放结束时间');
+      if (missing.length > 0) {
+        toast(`请完善以下必填项：${missing.join('、')}`, 'warning');
+        return;
+      }
+      if (new Date(closeAt) <= new Date(openAt)) {
+        toast('开放结束时间必须晚于开始时间', 'warning');
+        return;
+      }
     }
 
     setSaving(true);
@@ -148,7 +160,7 @@ export default function CreateExamPage() {
         throw new Error(err.error || '保存失败');
       }
 
-      toast(publish ? '考试已创建并发布' : '考试草稿已保存', 'success');
+      toast(publish ? '考试已创建，待开放' : '考试草稿已保存', 'success');
       router.push('/admin/exams');
     } catch (err) {
       toast(err instanceof Error ? err.message : '保存失败', 'error');
@@ -174,6 +186,7 @@ export default function CreateExamPage() {
         <div className="space-y-4">
           <Input
             label="考试标题"
+            required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="例如：2024年第一季度新员工入职考试"
@@ -191,6 +204,7 @@ export default function CreateExamPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             <Input
               label="时长（分钟）"
+              required
               type="number"
               value={timeLimitMinutes}
               onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
@@ -198,6 +212,7 @@ export default function CreateExamPage() {
             />
             <Input
               label="及格分"
+              required
               type="number"
               value={passScore}
               onChange={(e) => setPassScore(Number(e.target.value))}
@@ -215,19 +230,21 @@ export default function CreateExamPage() {
 
       {/* Time windows — side by side */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card title="考试开放时间">
+        <Card title={<>考试开放时间<span className="ml-0.5 text-red-500">*</span></>}>
           <p className="mb-3 text-xs text-stone-500">
-            设置考试的开放和关闭时间。未设置则不限制考试时间窗口。
+            设置考试的开放和关闭时间。
           </p>
           <div className="space-y-3">
             <Input
               label="开始时间"
+              required
               type="datetime-local"
               value={openAt}
               onChange={(e) => setOpenAt(e.target.value)}
             />
             <Input
               label="结束时间"
+              required
               type="datetime-local"
               value={closeAt}
               onChange={(e) => setCloseAt(e.target.value)}
@@ -299,7 +316,7 @@ export default function CreateExamPage() {
       </Card>
 
       {/* Question rules */}
-      <Card title="题目规则" className="overflow-visible">
+      <Card title={<>题目规则<span className="ml-0.5 text-red-500">*</span></>} className="overflow-visible">
         <div className="space-y-4">
           {rules.map((rule, idx) => (
             <div key={idx} className="rounded-lg border border-stone-100 bg-stone-50/50 p-3 sm:p-4">
@@ -356,9 +373,9 @@ export default function CreateExamPage() {
       </Card>
 
       {/* Department assignment */}
-      <Card title="指派范围">
+      <Card title={<>指派范围<span className="ml-0.5 text-red-500">*</span></>}>
         <div className="space-y-3">
-          <p className="text-sm text-stone-500">选择参加考试的部门（不选则全部可参加）</p>
+          <p className="text-sm text-stone-500">选择参加考试的部门</p>
           <div className="flex flex-wrap gap-2">
             {DEPARTMENTS.map((dept) => {
               const selected = selectedDepartments.includes(dept);
@@ -387,7 +404,7 @@ export default function CreateExamPage() {
           保存草稿
         </Button>
         <Button onClick={() => handleSave(true)} loading={saving}>
-          保存并发布
+          保存待开放
         </Button>
       </div>
     </div>

@@ -62,6 +62,23 @@ export async function POST(
       );
     }
 
+    // Only one exam can be ACTIVE at a time
+    if (newStatus === 'ACTIVE') {
+      const activeExam = await prisma.exam.findFirst({
+        where: { status: 'ACTIVE', id: { not: id } },
+        select: { id: true, title: true },
+      });
+      if (activeExam) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `已有考试「${activeExam.title}」正在进行中，请先结束该考试后再开放新考试`,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       const result = await tx.exam.update({
         where: { id },

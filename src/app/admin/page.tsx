@@ -70,7 +70,7 @@ const STATUS_BADGE_VARIANT: Record<string, 'default' | 'info' | 'success' | 'war
   IN_PROGRESS: 'info',
   SUBMITTED: 'success',
   AUTO_SUBMITTED: 'warning',
-  GRADING: 'purple',
+  GRADING: 'success',
   COMPLETED: 'success',
 };
 
@@ -79,7 +79,7 @@ const SESSION_STATUS_LABELS: Record<string, string> = {
   IN_PROGRESS: '进行中',
   SUBMITTED: '已提交',
   AUTO_SUBMITTED: '自动提交',
-  GRADING: '待阅卷',
+  GRADING: '已完成',
   COMPLETED: '已完成',
 };
 

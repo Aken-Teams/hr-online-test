@@ -242,11 +242,9 @@ export default function ExamResultsPage() {
                     </span>
                     <span className="text-sm font-medium text-stone-800">{row.employeeName}</span>
                   </div>
-                  {row.status === 'GRADING' ? (
-                    <Badge variant="warning">待阅卷</Badge>
-                  ) : row.isPassed != null ? (
+                  {row.isPassed != null ? (
                     <Badge variant={row.isPassed ? 'success' : 'danger'}>
-                      {row.isPassed ? '通过' : '未通过'}
+                      {row.isPassed ? '合格' : '不合格'}
                     </Badge>
                   ) : (
                     <Badge variant="default">待定</Badge>
@@ -255,12 +253,9 @@ export default function ExamResultsPage() {
                 <p className="mt-1 text-xs text-stone-500">{row.department}</p>
                 <div className="mt-1.5 flex items-center justify-between text-xs">
                   <span className="text-stone-500">
-                    总分:{' '}
+                    得分:{' '}
                     <span className="font-semibold text-stone-800">
-                      {row.totalScore != null ? row.totalScore : (row.status === 'GRADING' ? '待阅卷' : '--')}
-                    </span>
-                    <span className="text-stone-400 ml-1.5">
-                      (客观 {row.autoScore} / 主观 {row.manualScore != null ? row.manualScore : '--'})
+                      {row.totalScore != null ? row.totalScore : row.autoScore ?? '--'}
                     </span>
                   </span>
                 </div>
@@ -314,16 +309,14 @@ export default function ExamResultsPage() {
                     <TableCell className="font-medium">{row.employeeName}</TableCell>
                     <TableCell>{row.department}</TableCell>
                     <TableCell className="font-semibold">
-                      {row.totalScore != null ? row.totalScore : (row.status === 'GRADING' ? '待阅卷' : '--')}
+                      {row.totalScore != null ? row.totalScore : row.autoScore ?? '--'}
                     </TableCell>
                     <TableCell>{row.autoScore}</TableCell>
                     <TableCell>{row.manualScore != null ? row.manualScore : '--'}</TableCell>
                     <TableCell>
-                      {row.status === 'GRADING' ? (
-                        <Badge variant="warning">待阅卷</Badge>
-                      ) : row.isPassed != null ? (
+                      {row.isPassed != null ? (
                         <Badge variant={row.isPassed ? 'success' : 'danger'}>
-                          {row.isPassed ? '通过' : '未通过'}
+                          {row.isPassed ? '合格' : '不合格'}
                         </Badge>
                       ) : (
                         <Badge variant="default">待定</Badge>

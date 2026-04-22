@@ -50,17 +50,16 @@ export async function GET(request: Request) {
 
     const now = new Date();
     const exams = items.map((exam) => {
-      // Compute display status based on time window for PUBLISHED/ACTIVE exams
+      // Compute display status based on time window
       let displayStatus = exam.status as string;
-      if (exam.status === 'PUBLISHED' || exam.status === 'ACTIVE') {
+      if (exam.status === 'ACTIVE') {
         if (exam.openAt && now < exam.openAt) {
           displayStatus = 'NOT_STARTED';
         } else if (exam.closeAt && now > exam.closeAt) {
           displayStatus = 'EXPIRED';
-        } else {
-          displayStatus = 'ACTIVE';
         }
       }
+      // PUBLISHED stays as PUBLISHED (待开放)
 
       return {
         id: exam.id,

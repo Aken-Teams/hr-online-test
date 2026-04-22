@@ -37,7 +37,7 @@ const STATUS_BADGE_VARIANT: Record<string, 'default' | 'info' | 'success' | 'dan
 
 const DISPLAY_STATUS_LABELS: Record<string, string> = {
   DRAFT: '草稿',
-  PUBLISHED: '已发布',
+  PUBLISHED: '待开放',
   ACTIVE: '进行中',
   NOT_STARTED: '未开始',
   EXPIRED: '已过期',
@@ -97,7 +97,7 @@ export default function ExamListPage() {
         method: 'POST',
       });
       if (!res.ok) throw new Error('发布失败');
-      toast('考试已发布', 'success');
+      toast('考试已保存，待开放', 'success');
       setPublishId(null);
       fetchExams();
     } catch {

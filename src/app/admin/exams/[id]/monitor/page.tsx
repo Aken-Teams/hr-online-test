@@ -46,7 +46,7 @@ const STATUS_LABELS: Record<string, string> = {
   IN_PROGRESS: '进行中',
   SUBMITTED: '已交卷',
   AUTO_SUBMITTED: '自动提交',
-  GRADING: '待阅卷',
+  GRADING: '已完成',
   COMPLETED: '已完成',
 };
 
@@ -55,6 +55,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' 
   IN_PROGRESS: 'info',
   SUBMITTED: 'success',
   AUTO_SUBMITTED: 'warning',
+  GRADING: 'success',
   COMPLETED: 'success',
 };
 

@@ -465,7 +465,7 @@ export default function WelcomePage() {
               </p>
             </div>
 
-            {/* Tabs */}
+            {/* Face auth tabs hidden — only password verification used for now
             <div className="px-6 pt-4">
               <Tabs
                 tabs={VERIFY_TABS as unknown as { key: string; label: string }[]}
@@ -473,10 +473,11 @@ export default function WelcomePage() {
                 onChange={setActiveTab}
               />
             </div>
+            */}
 
             {/* Tab content */}
             <div className="px-6 py-6">
-              {activeTab === 'password' ? <PasswordTab /> : <FaceTab />}
+              <PasswordTab />
             </div>
           </div>
 

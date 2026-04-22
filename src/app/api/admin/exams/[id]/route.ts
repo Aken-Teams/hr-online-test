@@ -155,10 +155,10 @@ export async function PUT(
           }
         }
 
-        return updated;
+        return { exam: updated, restricted: false };
       }
 
-      // ACTIVE / COMPLETED / ARCHIVED — all fields except question rules & assignments
+      // ACTIVE / CLOSED / ARCHIVED — only basic info, NOT question rules & assignments
       const updated = await tx.exam.update({
         where: { id },
         data: {
@@ -183,12 +183,18 @@ export async function PUT(
         include: { questionRules: true },
       });
 
-      return updated;
+      return { exam: updated, restricted: true };
     });
+
+    const message = exam.restricted
+      ? '已保存基本信息（题目规则和指派范围已锁定，未修改）'
+      : '考试已保存';
 
     return NextResponse.json({
       success: true,
-      data: exam,
+      data: exam.exam,
+      restricted: exam.restricted,
+      message,
     });
   } catch (error) {
     console.error('Update exam error:', error);
@@ -229,7 +235,7 @@ export async function DELETE(
     // Only DRAFT and PUBLISHED exams can be deleted
     if (!['DRAFT', 'PUBLISHED'].includes(existing.status)) {
       return NextResponse.json(
-        { success: false, error: '仅草稿或已发布（未开放）的考试可以删除' },
+        { success: false, error: '仅草稿或待开放的考试可以删除' },
         { status: 403 }
       );
     }
