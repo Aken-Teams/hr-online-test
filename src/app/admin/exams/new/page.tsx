@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo, type FormEvent } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useToast } from '@/components/ui/Toast';
@@ -35,8 +35,6 @@ const QUESTION_TYPE_OPTIONS = EXAM_QUESTION_TYPES.map((type) => ({
   label: QUESTION_TYPE_LABELS[type],
 }));
 
-const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d, label: d }));
-
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
@@ -45,6 +43,7 @@ export default function CreateExamPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Basic info
   const [title, setTitle] = useState('');
@@ -95,6 +94,12 @@ export default function CreateExamPage() {
   function toggleDepartment(dept: string) {
     setSelectedDepartments((prev) =>
       prev.includes(dept) ? prev.filter((d) => d !== dept) : [...prev, dept]
+    );
+  }
+
+  function selectAllDepartments() {
+    setSelectedDepartments((prev) =>
+      prev.length === DEPARTMENTS.length ? [] : [...DEPARTMENTS]
     );
   }
 
@@ -181,201 +186,179 @@ export default function CreateExamPage() {
         }
       />
 
-      {/* Basic info */}
-      <Card title="基本信息">
+      {/* ================================================================= */}
+      {/* Section 1: 基本信息 + 时间 (merged into one card, 2-col grid)     */}
+      {/* ================================================================= */}
+      <Card title={<>基本信息</>}>
         <div className="space-y-4">
-          <Input
-            label="考试标题"
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="例如：2024年第一季度新员工入职考试"
-          />
+          {/* Row: title + description */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <Input
+                label="考试标题"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="例如：2026年4月技能考核"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <Input
+                label="时长(分钟)"
+                required
+                type="number"
+                value={timeLimitMinutes}
+                onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
+                min={1}
+              />
+              <Input
+                label="及格分"
+                required
+                type="number"
+                value={passScore}
+                onChange={(e) => setPassScore(Number(e.target.value))}
+                min={0}
+              />
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1.5">总分</label>
+                <div className="flex h-[38px] items-center rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm font-semibold text-stone-800">
+                  {totalScore}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Row: description */}
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1.5">考试描述</label>
             <textarea
               className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
-              rows={3}
+              rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="考试说明（可选）"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-            <Input
-              label="时长（分钟）"
-              required
-              type="number"
-              value={timeLimitMinutes}
-              onChange={(e) => setTimeLimitMinutes(Number(e.target.value))}
-              min={1}
-            />
-            <Input
-              label="及格分"
-              required
-              type="number"
-              value={passScore}
-              onChange={(e) => setPassScore(Number(e.target.value))}
-              min={0}
-            />
-            <div className="col-span-2 sm:col-span-1">
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">总分（自动计算）</label>
-              <div className="flex h-[38px] items-center rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm font-semibold text-stone-800">
-                {totalScore}
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
 
-      {/* Time windows — side by side */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card title={<>考试开放时间<span className="ml-0.5 text-red-500">*</span></>}>
-          <p className="mb-3 text-xs text-stone-500">
-            设置考试的开放和关闭时间。
-          </p>
-          <div className="space-y-3">
+          {/* Row: open time */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Input
-              label="开始时间"
+              label="考试开放时间"
               required
               type="datetime-local"
               value={openAt}
               onChange={(e) => setOpenAt(e.target.value)}
             />
             <Input
-              label="结束时间"
+              label="考试截止时间"
               required
               type="datetime-local"
               value={closeAt}
               onChange={(e) => setCloseAt(e.target.value)}
             />
-          </div>
-        </Card>
-        <Card title="成绩查询开放时间">
-          <p className="mb-3 text-xs text-stone-500">
-            设置考生可查看错题解析的时间段。未设置则跟随「显示正确答案」开关。
-          </p>
-          <div className="space-y-3">
             <Input
-              label="开放时间"
+              label="成绩开放时间"
               type="datetime-local"
               value={resultQueryOpenAt}
               onChange={(e) => setResultQueryOpenAt(e.target.value)}
             />
             <Input
-              label="截止时间"
+              label="成绩截止时间"
               type="datetime-local"
               value={resultQueryCloseAt}
               onChange={(e) => setResultQueryCloseAt(e.target.value)}
             />
           </div>
-        </Card>
-      </div>
-
-      {/* Settings */}
-      <Card title="考试设置">
-        <div className="space-y-4">
-          <ToggleRow
-            label="随机出题"
-            description="每位考生的题目顺序随机打乱"
-            checked={shuffleQuestions}
-            onChange={setShuffleQuestions}
-          />
-          <ToggleRow
-            label="显示正确答案"
-            description="提交后向考生展示正确答案"
-            checked={showCorrectAnswers}
-            onChange={setShowCorrectAnswers}
-          />
-          <ToggleRow
-            label="练习模式"
-            description="不计入正式成绩，可多次作答"
-            checked={isPracticeMode}
-            onChange={setIsPracticeMode}
-          />
-          <ToggleRow
-            label="人脸验证"
-            description="考试前进行人脸识别验证身份"
-            checked={enableFaceAuth}
-            onChange={setEnableFaceAuth}
-          />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-stone-700">切屏限制</p>
-              <p className="text-xs text-stone-500">允许的最大切屏次数，0 表示不限制</p>
-            </div>
-            <input
-              type="number"
-              className="w-20 rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-center focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
-              value={tabSwitchLimit}
-              onChange={(e) => setTabSwitchLimit(Number(e.target.value))}
-              min={0}
-            />
-          </div>
         </div>
       </Card>
 
-      {/* Question rules */}
+      {/* ================================================================= */}
+      {/* Section 2: 题目规则                                                */}
+      {/* ================================================================= */}
       <Card title={<>题目规则<span className="ml-0.5 text-red-500">*</span></>} className="overflow-visible">
-        <div className="space-y-4">
+        <div className="space-y-3">
+          {/* Header row */}
+          <div className="hidden sm:grid sm:grid-cols-[1fr_80px_80px_100px_40px] sm:gap-3 sm:px-1">
+            <span className="text-xs font-medium text-stone-400">题型</span>
+            <span className="text-xs font-medium text-stone-400">数量</span>
+            <span className="text-xs font-medium text-stone-400">每题分值</span>
+            <span className="text-xs font-medium text-stone-400">通用题(%)</span>
+            <span />
+          </div>
           {rules.map((rule, idx) => (
-            <div key={idx} className="rounded-lg border border-stone-100 bg-stone-50/50 p-3 sm:p-4">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
+            <div key={idx} className="rounded-lg border border-stone-100 bg-stone-50/50 p-3 sm:p-0 sm:border-0 sm:bg-transparent">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_80px_80px_100px_40px] sm:gap-3">
                 <div className="col-span-2 sm:col-span-1">
                   <CustomSelect
-                    label="题型"
+                    label={idx === 0 && rules.length === 1 ? undefined : undefined}
                     options={QUESTION_TYPE_OPTIONS}
                     value={rule.questionType}
                     onChange={(val) => updateRule(idx, 'questionType', val as QuestionType)}
                   />
                 </div>
                 <Input
-                  label="数量"
                   type="number"
                   value={rule.count}
                   onChange={(e) => updateRule(idx, 'count', Number(e.target.value))}
                   min={1}
                 />
                 <Input
-                  label="每题分值"
                   type="number"
                   value={rule.pointsPerQuestion}
                   onChange={(e) => updateRule(idx, 'pointsPerQuestion', Number(e.target.value))}
                   min={1}
                 />
                 <Input
-                  label="通用题占比(%)"
                   type="number"
                   value={rule.commonRatio}
                   onChange={(e) => updateRule(idx, 'commonRatio', Number(e.target.value))}
                   min={0}
                   max={100}
                 />
-              </div>
-              <div className="mt-3 flex justify-end">
-                <Button
-                  variant="danger"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => removeRule(idx)}
+                  className="flex h-[38px] items-center justify-center rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  title="删除"
                 >
-                  删除
-                </Button>
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
           ))}
-          <Button variant="secondary" size="sm" onClick={addRule}>
-            添加规则
-          </Button>
-          <div className="text-sm text-stone-500">
-            总分：<span className="font-semibold text-stone-800">{totalScore}</span> 分
+          <div className="flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={addRule}
+              className="flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700"
+            >
+              <Plus className="h-4 w-4" />
+              添加规则
+            </button>
+            <span className="text-sm text-stone-500">
+              总分：<span className="font-semibold text-stone-800">{totalScore}</span> 分
+            </span>
           </div>
         </div>
       </Card>
 
-      {/* Department assignment */}
-      <Card title={<>指派范围<span className="ml-0.5 text-red-500">*</span></>}>
+      {/* ================================================================= */}
+      {/* Section 3: 指派范围                                                */}
+      {/* ================================================================= */}
+      <Card title={<>指派部门<span className="ml-0.5 text-red-500">*</span></>}>
         <div className="space-y-3">
-          <p className="text-sm text-stone-500">选择参加考试的部门</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-stone-500">
+              已选 {selectedDepartments.length}/{DEPARTMENTS.length} 个部门
+            </p>
+            <button
+              type="button"
+              onClick={selectAllDepartments}
+              className="text-xs font-medium text-teal-600 hover:text-teal-700"
+            >
+              {selectedDepartments.length === DEPARTMENTS.length ? '取消全选' : '全选'}
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {DEPARTMENTS.map((dept) => {
               const selected = selectedDepartments.includes(dept);
@@ -398,7 +381,50 @@ export default function CreateExamPage() {
         </div>
       </Card>
 
-      {/* Actions */}
+      {/* ================================================================= */}
+      {/* Section 4: 高级设置 (collapsible)                                  */}
+      {/* ================================================================= */}
+      <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex w-full items-center justify-between px-4 py-3 sm:px-6 sm:py-4"
+        >
+          <h3 className="text-base font-semibold text-stone-800">高级设置</h3>
+          <ChevronDown className={`h-5 w-5 text-stone-400 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+        </button>
+        {showAdvanced && (
+          <div className="border-t border-stone-100 px-4 py-3 sm:px-6 sm:py-4 space-y-5">
+            {/* Toggles - compact 2-col grid */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <ToggleRow label="随机出题" description="题目顺序随机打乱" checked={shuffleQuestions} onChange={setShuffleQuestions} />
+              <ToggleRow label="显示正确答案" description="提交后展示正确答案" checked={showCorrectAnswers} onChange={setShowCorrectAnswers} />
+              <ToggleRow label="练习模式" description="不计入正式成绩" checked={isPracticeMode} onChange={setIsPracticeMode} />
+              <ToggleRow label="人脸验证" description="考前人脸识别" checked={enableFaceAuth} onChange={setEnableFaceAuth} />
+            </div>
+
+            {/* Tab switch limit */}
+            <div className="flex items-center justify-between rounded-lg border border-stone-100 bg-stone-50/50 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-stone-700">切屏限制</p>
+                <p className="text-xs text-stone-500">最大切屏次数，0 = 不限制</p>
+              </div>
+              <input
+                type="number"
+                className="w-20 rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-center focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                value={tabSwitchLimit}
+                onChange={(e) => setTabSwitchLimit(Number(e.target.value))}
+                min={0}
+              />
+            </div>
+
+          </div>
+        )}
+      </div>
+
+      {/* ================================================================= */}
+      {/* Actions                                                            */}
+      {/* ================================================================= */}
       <div className="flex items-center justify-end gap-2 pb-6 sm:gap-3">
         <Button variant="secondary" onClick={() => handleSave(false)} loading={saving}>
           保存草稿
@@ -427,7 +453,7 @@ function ToggleRow({
   onChange: (val: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between rounded-lg border border-stone-100 bg-stone-50/50 px-4 py-3">
       <div>
         <p className="text-sm font-medium text-stone-700">{label}</p>
         <p className="text-xs text-stone-500">{description}</p>

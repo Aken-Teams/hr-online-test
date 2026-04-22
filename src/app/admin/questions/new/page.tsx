@@ -144,8 +144,14 @@ export default function CreateQuestionPage() {
   }
 
   async function handleSave() {
-    if (!content.trim()) {
-      toast('请输入题目内容', 'warning');
+    const missing: string[] = [];
+    if (!content.trim()) missing.push('题目内容');
+    if (isMC) {
+      if (options.some((o) => !o.content.trim())) missing.push('选项内容');
+      if (correctOptions.size === 0) missing.push('正确答案');
+    }
+    if (missing.length > 0) {
+      toast(`请完善以下必填项：${missing.join('、')}`, 'warning');
       return;
     }
 
@@ -222,13 +228,14 @@ export default function CreateQuestionPage() {
         <div className="space-y-4">
           <CustomSelect
             label="题型"
+            required
             options={QUESTION_TYPE_OPTIONS}
             value={questionType}
             onChange={(val) => setQuestionType(val as QuestionType)}
           />
 
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">题目内容</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">题目内容<span className="ml-0.5 text-red-500">*</span></label>
             <textarea
               className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
               rows={4}
@@ -241,12 +248,14 @@ export default function CreateQuestionPage() {
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <CustomSelect
               label="部门"
+              required
               options={DEPARTMENT_OPTIONS}
               value={department}
               onChange={(val) => setDepartment(val)}
             />
             <CustomSelect
               label="级别"
+              required
               options={LEVEL_OPTIONS}
               value={level}
               onChange={(val) => setLevel(val)}
@@ -259,6 +268,7 @@ export default function CreateQuestionPage() {
             />
             <Input
               label="分值"
+              required
               type="number"
               value={points}
               onChange={(e) => setPoints(Number(e.target.value))}
@@ -270,7 +280,7 @@ export default function CreateQuestionPage() {
 
       {/* MC options */}
       {isMC && (
-        <Card title="选项">
+        <Card title={<>选项<span className="ml-0.5 text-red-500">*</span></>}>
           <div className="space-y-3">
             {options.map((opt, idx) => (
               <div key={opt.label} className="space-y-1.5">

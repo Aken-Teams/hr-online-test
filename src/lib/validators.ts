@@ -126,7 +126,7 @@ export const questionCreateSchema = z.object({
   level: z.string().min(1, '请选择题目级别'),
   department: z.string().min(1, '请选择所属部门'),
   subDepartment: z.string().nullable().optional(),
-  role: z.string().min(1, '请选择人员范围'),
+  role: z.string().default(''),
   points: z.number().int().min(1, '分值至少为1').default(2),
   difficulty: z.number().int().min(1).max(5).default(1),
   correctAnswer: z.string().nullable().optional(),

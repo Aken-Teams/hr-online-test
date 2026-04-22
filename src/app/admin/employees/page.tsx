@@ -96,8 +96,14 @@ export default function EmployeeListPage() {
   }, [search]);
 
   async function handleAddEmployee() {
-    if (!newEmployee.name.trim() || !newEmployee.employeeNo.trim()) {
-      toast('请填写姓名和工号', 'warning');
+    const missing: string[] = [];
+    if (!newEmployee.name.trim()) missing.push('姓名');
+    if (!newEmployee.employeeNo.trim()) missing.push('工号');
+    if (!newEmployee.role.trim()) missing.push('岗位');
+    if (!newEmployee.idCardLast6.trim()) missing.push('身份证后6位');
+    if (newEmployee.idCardLast6.trim() && newEmployee.idCardLast6.trim().length !== 6) missing.push('身份证后6位必须为6位');
+    if (missing.length > 0) {
+      toast(`请完善以下必填项：${missing.join('、')}`, 'warning');
       return;
     }
 
@@ -432,6 +438,7 @@ export default function EmployeeListPage() {
         <div className="space-y-4">
           <Input
             label="姓名"
+            required
             value={newEmployee.name}
             onChange={(e) =>
               setNewEmployee((prev) => ({ ...prev, name: e.target.value }))
@@ -440,6 +447,7 @@ export default function EmployeeListPage() {
           />
           <Input
             label="工号"
+            required
             value={newEmployee.employeeNo}
             onChange={(e) =>
               setNewEmployee((prev) => ({ ...prev, employeeNo: e.target.value }))
@@ -448,6 +456,7 @@ export default function EmployeeListPage() {
           />
           <CustomSelect
             label="部门"
+            required
             options={DEPARTMENT_OPTIONS}
             value={newEmployee.department}
             onChange={(val) =>
@@ -456,6 +465,7 @@ export default function EmployeeListPage() {
           />
           <Input
             label="岗位"
+            required
             value={newEmployee.role}
             onChange={(e) =>
               setNewEmployee((prev) => ({ ...prev, role: e.target.value }))
@@ -464,11 +474,12 @@ export default function EmployeeListPage() {
           />
           <Input
             label="身份证后6位"
+            required
             value={newEmployee.idCardLast6}
             onChange={(e) =>
               setNewEmployee((prev) => ({ ...prev, idCardLast6: e.target.value }))
             }
-            placeholder="用于登录验证（可选）"
+            placeholder="用于登录验证"
             maxLength={6}
           />
         </div>

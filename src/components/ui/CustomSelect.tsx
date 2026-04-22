@@ -18,6 +18,7 @@ export interface CustomSelectProps {
   onChange: (value: string) => void;
   className?: string;
   disabled?: boolean;
+  required?: boolean;
 }
 
 export function CustomSelect({
@@ -29,6 +30,7 @@ export function CustomSelect({
   onChange,
   className,
   disabled,
+  required,
 }: CustomSelectProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,6 +66,7 @@ export function CustomSelect({
       {label && (
         <label className="block text-sm font-medium text-stone-700 mb-1.5">
           {label}
+          {required && <span className="ml-0.5 text-red-500">*</span>}
         </label>
       )}
 
