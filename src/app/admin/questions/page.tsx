@@ -20,35 +20,20 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
-import { DEPARTMENTS, QUESTION_TYPE_LABELS, QUESTION_CATEGORY_LABELS } from '@/lib/constants';
+import { QUESTION_TYPE_LABELS, QUESTION_CATEGORY_LABELS } from '@/lib/constants';
 import { Pencil, Trash2, ImageIcon } from 'lucide-react';
 import type { QuestionData, QuestionType, PaginatedResponse } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
-// Filter options
+// Helpers
 // ---------------------------------------------------------------------------
 
-const TYPE_OPTIONS = [
-  { value: '', label: '全部题型' },
-  ...Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => ({ value, label })),
-];
-
-const DEPT_OPTIONS = [
-  { value: '', label: '全部部门' },
-  ...DEPARTMENTS.map((d) => ({ value: d, label: d })),
-];
-
-const LEVEL_OPTIONS = [
-  { value: '', label: '全部级别' },
-  { value: '一级题库', label: '一级题库' },
-  { value: '二级题库', label: '二级题库' },
-  { value: '三级题库', label: '三级题库' },
-];
-
-const CATEGORY_OPTIONS = [
-  { value: '', label: '全部分类' },
-  ...Object.entries(QUESTION_CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
-];
+function toSelectOptions(values: string[], allLabel: string, labelMap?: Record<string, string>) {
+  return [
+    { value: '', label: allLabel },
+    ...values.map((v) => ({ value: v, label: labelMap?.[v] ?? v })),
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // Badge variant for question type
@@ -90,6 +75,11 @@ export default function QuestionListPage() {
   const [examFilter, setExamFilter] = useState('');
   const [search, setSearch] = useState('');
 
+  // Dynamic filter options from DB
+  const [filterOpts, setFilterOpts] = useState<{
+    types: string[]; departments: string[]; levels: string[]; categories: string[]; processes: string[];
+  }>({ types: [], departments: [], levels: [], categories: [], processes: [] });
+
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -111,6 +101,21 @@ export default function QuestionListPage() {
     }
     loadExams();
   }, []);
+
+  // Fetch dynamic filter options (scoped by exam if selected)
+  useEffect(() => {
+    async function loadFilterOptions() {
+      try {
+        const params = examFilter ? `?examSourceId=${examFilter}` : '';
+        const res = await fetch(`/api/admin/questions/filter-options${params}`);
+        const json = await res.json();
+        if (json.success) {
+          setFilterOpts(json.data);
+        }
+      } catch { /* ignore */ }
+    }
+    loadFilterOptions();
+  }, [examFilter]);
 
   const fetchQuestions = useCallback(async () => {
     setLoading(true);
@@ -191,38 +196,47 @@ export default function QuestionListPage() {
             label="关联考试"
             options={examOptions}
             value={examFilter}
-            onChange={(val) => setExamFilter(val)}
+            onChange={(val) => {
+              setExamFilter(val);
+              setTypeFilter('');
+              setCategoryFilter('');
+              setDeptFilter('');
+              setLevelFilter('');
+              setProcessFilter('');
+            }}
           />
           <CustomSelect
             label="题型"
-            options={TYPE_OPTIONS}
+            options={toSelectOptions(filterOpts.types, '全部题型', QUESTION_TYPE_LABELS as Record<string, string>)}
             value={typeFilter}
             onChange={(val) => setTypeFilter(val)}
           />
           <CustomSelect
             label="分类"
-            options={CATEGORY_OPTIONS}
+            options={toSelectOptions(filterOpts.categories, '全部分类', QUESTION_CATEGORY_LABELS)}
             value={categoryFilter}
             onChange={(val) => setCategoryFilter(val)}
           />
           <CustomSelect
             label="部门"
-            options={DEPT_OPTIONS}
+            options={toSelectOptions(filterOpts.departments, '全部部门')}
             value={deptFilter}
             onChange={(val) => setDeptFilter(val)}
           />
           <CustomSelect
             label="级别"
-            options={LEVEL_OPTIONS}
+            options={toSelectOptions(filterOpts.levels, '全部级别')}
             value={levelFilter}
             onChange={(val) => setLevelFilter(val)}
           />
-          <Input
-            label="工序"
-            value={processFilter}
-            onChange={(e) => setProcessFilter(e.target.value)}
-            placeholder="如 SAW, DB..."
-          />
+          {filterOpts.processes.length > 0 && (
+            <CustomSelect
+              label="工序"
+              options={toSelectOptions(filterOpts.processes, '全部工序')}
+              value={processFilter}
+              onChange={(val) => setProcessFilter(val)}
+            />
+          )}
           <Input
             label="搜索"
             value={search}

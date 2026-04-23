@@ -49,6 +49,7 @@ export async function GET(
                 id: true,
                 title: true,
                 status: true,
+                createdAt: true,
                 theoryWeight: true,
                 practicalWeight: true,
                 compositePassScore: true,
@@ -108,6 +109,7 @@ export async function GET(
       examStatus: a.exam.status,
       process: a.process,
       level: a.level,
+      examCreatedAt: a.exam.createdAt,
     }));
 
     const sessions = user.examSessions.map((s) => {

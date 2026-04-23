@@ -26,6 +26,7 @@ interface Assignment {
   examStatus: string;
   process: string | null;
   level: string | null;
+  examCreatedAt: string;
 }
 
 interface SessionRecord {
@@ -111,7 +112,7 @@ export default function EmployeeDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={employee.name}
-        description={`${employee.employeeNo} · ${employee.department}${employee.role ? ` · ${employee.role}` : ''}`}
+        description={`${employee.employeeNo?.startsWith('AUTO_') ? '待分配工号' : employee.employeeNo} · ${employee.department}${employee.role && employee.role !== '未分配' ? ` · ${employee.role}` : ''}`}
         actions={
           <Button variant="outline" onClick={() => router.push('/admin/employees')}>
             <ArrowLeft className="h-4 w-4" />
@@ -124,7 +125,7 @@ export default function EmployeeDetailPage() {
       <Card title="基本信息">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <InfoItem label="姓名" value={employee.name} />
-          <InfoItem label="工号" value={employee.employeeNo} />
+          <InfoItem label="工号" value={employee.employeeNo?.startsWith('AUTO_') ? <span className="text-stone-400 italic">待分配</span> : employee.employeeNo} />
           <InfoItem label="部门" value={employee.department} />
           <InfoItem label="岗位" value={employee.role || '—'} />
           {employee.subDepartment && (
@@ -162,7 +163,7 @@ export default function EmployeeDetailPage() {
                     </Badge>
                   </div>
                   <p className="mt-1 text-xs text-stone-500">
-                    {a.process ?? '—'} · {a.level ?? '—'}
+                    {a.process ?? '—'} · {a.level ?? '—'} · {new Date(a.examCreatedAt).toLocaleDateString('zh-CN')}
                   </p>
                 </div>
               ))}
@@ -176,6 +177,7 @@ export default function EmployeeDetailPage() {
                     <TableHead>工序</TableHead>
                     <TableHead>级别</TableHead>
                     <TableHead>考试状态</TableHead>
+                    <TableHead>指派时间</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -188,6 +190,9 @@ export default function EmployeeDetailPage() {
                         <Badge variant={a.examStatus === 'ACTIVE' ? 'success' : 'default'}>
                           {STATUS_LABELS[a.examStatus] ?? a.examStatus}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-stone-400 whitespace-nowrap">
+                        {new Date(a.examCreatedAt).toLocaleDateString('zh-CN')}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -27,7 +27,10 @@ import type { EmployeeData } from '@/types/exam';
 // Page component
 // ---------------------------------------------------------------------------
 
-const DEPARTMENT_OPTIONS = DEPARTMENTS.map((d) => ({ value: d, label: d }));
+const DEPARTMENT_OPTIONS = [
+  { value: '', label: '全部部门' },
+  ...DEPARTMENTS.map((d) => ({ value: d, label: d })),
+];
 
 export default function EmployeeListPage() {
   const router = useRouter();
@@ -38,6 +41,10 @@ export default function EmployeeListPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [deptFilter, setDeptFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [examFilter, setExamFilter] = useState('');
+  const [examOptions, setExamOptions] = useState<{ value: string; label: string }[]>([{ value: '', label: '全部考试' }]);
 
   // Add employee dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -50,6 +57,24 @@ export default function EmployeeListPage() {
     idCardLast6: '',
   });
 
+  // Load exam list for filter
+  useEffect(() => {
+    async function loadExams() {
+      try {
+        const res = await fetch('/api/admin/exams?pageSize=100');
+        const json = await res.json();
+        if (json.success && json.data?.items) {
+          const opts = json.data.items.map((e: { id: string; title: string }) => ({
+            value: e.id,
+            label: e.title,
+          }));
+          setExamOptions([{ value: '', label: '全部考试' }, ...opts]);
+        }
+      } catch { /* ignore */ }
+    }
+    loadExams();
+  }, []);
+
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
     try {
@@ -57,6 +82,9 @@ export default function EmployeeListPage() {
       params.set('page', String(page));
       params.set('pageSize', '10');
       if (search.trim()) params.set('search', search.trim());
+      if (deptFilter) params.set('department', deptFilter);
+      if (roleFilter) params.set('role', roleFilter);
+      if (examFilter) params.set('examId', examFilter);
 
       const res = await fetch(`/api/admin/employees?${params.toString()}`);
       if (!res.ok) throw new Error('加载失败');
@@ -70,16 +98,16 @@ export default function EmployeeListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, toast]);
+  }, [page, search, deptFilter, roleFilter, examFilter, toast]);
 
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
 
-  // Reset page when search changes
+  // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search]);
+  }, [search, deptFilter, roleFilter, examFilter]);
 
   async function handleAddEmployee() {
     const missing: string[] = [];
@@ -140,11 +168,30 @@ export default function EmployeeListPage() {
         }
       />
 
-      {/* Search */}
-      <Card>
-        <div className="max-w-md">
+      {/* Filters */}
+      <Card className="overflow-visible">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <CustomSelect
+            label="关联考试"
+            options={examOptions}
+            value={examFilter}
+            onChange={(val) => setExamFilter(val)}
+          />
+          <CustomSelect
+            label="部门"
+            options={DEPARTMENT_OPTIONS}
+            value={deptFilter}
+            onChange={(val) => setDeptFilter(val)}
+          />
           <Input
-            placeholder="搜索姓名或工号..."
+            label="岗位"
+            placeholder="如 SAW, 仓管..."
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+          />
+          <Input
+            label="搜索"
+            placeholder="搜索姓名..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -182,7 +229,7 @@ export default function EmployeeListPage() {
                         </Badge>
                       </div>
                       <p className="mt-0.5 text-xs text-stone-500">
-                        {emp.employeeNo} · {emp.department}{emp.role ? ` · ${emp.role}` : ''}
+                        {emp.department}{emp.role ? ` · ${emp.role}` : ''}
                       </p>
                     </div>
                   </div>
@@ -196,7 +243,6 @@ export default function EmployeeListPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>姓名</TableHead>
-                    <TableHead>工号</TableHead>
                     <TableHead>部门</TableHead>
                     <TableHead>岗位</TableHead>
                     <TableHead>状态</TableHead>
@@ -210,7 +256,6 @@ export default function EmployeeListPage() {
                       onClick={() => router.push(`/admin/employees/${emp.id}`)}
                     >
                       <TableCell className="font-medium">{emp.name}</TableCell>
-                      <TableCell>{emp.employeeNo}</TableCell>
                       <TableCell>{emp.department}</TableCell>
                       <TableCell>{emp.role}</TableCell>
                       <TableCell>

@@ -21,6 +21,7 @@ export async function GET(request: Request) {
     const role = searchParams.get('role');
     const search = searchParams.get('search') || '';
     const isActive = searchParams.get('isActive');
+    const examId = searchParams.get('examId');
 
     const where: Record<string, unknown> = {};
 
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
       where.department = department;
     }
     if (role) {
-      where.role = role;
+      where.role = { contains: role };
     }
     if (isActive !== null && isActive !== '') {
       where.isActive = isActive === 'true';
@@ -38,6 +39,9 @@ export async function GET(request: Request) {
         { name: { contains: search } },
         { employeeNo: { contains: search } },
       ];
+    }
+    if (examId) {
+      where.examAssignments = { some: { examId } };
     }
 
     const [items, total] = await Promise.all([

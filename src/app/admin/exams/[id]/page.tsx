@@ -24,7 +24,13 @@ interface QuestionRule {
   commonRatio: number;
 }
 
-const TABS = [
+const TABS_DRAFT = [
+  { key: 'basic', label: '基本信息' },
+  { key: 'questions', label: '题库管理' },
+  { key: 'participants', label: '应考人员' },
+];
+
+const TABS_FULL = [
   { key: 'basic', label: '基本信息' },
   { key: 'questions', label: '题库管理' },
   { key: 'participants', label: '应考人员' },
@@ -283,7 +289,7 @@ export default function EditExamPage() {
         </div>
       )}
 
-      <Tabs tabs={TABS} activeKey={activeTab} onChange={setActiveTab} />
+      <Tabs tabs={examStatus === 'DRAFT' ? TABS_DRAFT : TABS_FULL} activeKey={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'basic' && (
         <TabBasicInfo

@@ -84,6 +84,8 @@ export async function GET(request: Request) {
       referenceAnswer: q.referenceAnswer,
       gradingRubric: q.gradingRubric,
       sourceFile: q.sourceFile,
+      process: q.process,
+      category: q.category,
       isActive: q.isActive,
       options: q.options.map((o) => ({
         id: o.id,

@@ -169,8 +169,8 @@ export async function POST(
           ? await hashPassword(row.verificationCode)
           : null;
 
-        // Auto-generate employeeNo if not provided
-        const employeeNo = row.employeeNo || `AUTO_${row.name}_${Date.now()}`;
+        // Auto-generate employeeNo if not provided (use short random suffix)
+        const employeeNo = row.employeeNo || `AUTO_${Date.now().toString(36)}`;
 
         try {
           user = await prisma.user.create({
@@ -178,7 +178,7 @@ export async function POST(
               employeeNo,
               name: row.name,
               department: row.department || '未分配',
-              role: '未分配',
+              role: row.process || '未分配',
               idCardLast6: hashedPassword,
             },
           });
@@ -187,13 +187,21 @@ export async function POST(
           results.errors.push(`${row.name} 创建用户失败`);
           continue;
         }
-      } else if (row.verificationCode && !user.idCardLast6) {
-        // Update verification code if user exists but has no password
-        const hashedPassword = await hashPassword(row.verificationCode);
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { idCardLast6: hashedPassword },
-        });
+      } else {
+        // Update user fields if needed
+        const updateData: Record<string, string> = {};
+        if (row.verificationCode && !user.idCardLast6) {
+          updateData.idCardLast6 = await hashPassword(row.verificationCode);
+        }
+        if (user.role === '未分配' && row.process) {
+          updateData.role = row.process;
+        }
+        if (Object.keys(updateData).length > 0) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          });
+        }
       }
 
       // Check if assignment already exists
