@@ -13,7 +13,7 @@ import type {
   CategoryScore,
 } from '@/types/exam';
 
-interface WrongAnswerFromAPI {
+interface QuestionFromAPI {
   questionId: string;
   questionType: string;
   questionContent: string;
@@ -21,6 +21,7 @@ interface WrongAnswerFromAPI {
   correctAnswer: string | null;
   earnedPoints: number;
   maxPoints: number;
+  isCorrect: boolean | null;
   options?: { label: string; content: string; imageUrl?: string | null }[];
 }
 
@@ -47,7 +48,8 @@ interface ResultAPIResponse {
   ranking?: RankingData;
   unansweredCount?: number;
   pendingGradingCount?: number;
-  wrongAnswers?: WrongAnswerFromAPI[];
+  wrongAnswers?: QuestionFromAPI[];
+  allQuestions?: QuestionFromAPI[];
 }
 
 // ---------------------------------------------------------------------------
@@ -78,40 +80,36 @@ function ScoreRing({
   isPassed: boolean;
 }) {
   const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-  const radius = 54;
+  // Responsive sizes: smaller on mobile
+  const svgSize = 120; // mobile
+  const smSvgSize = 136; // desktop
+  const radius = 48;
+  const smRadius = 54;
   const circumference = 2 * Math.PI * radius;
+  const smCircumference = 2 * Math.PI * smRadius;
   const offset = circumference - (percentage / 100) * circumference;
+  const smOffset = smCircumference - (percentage / 100) * smCircumference;
 
-  const strokeColor = '#0d9488'; // neutral teal — no pass/fail indication
+  const strokeColor = '#0d9488';
   const bgStrokeColor = '#e7e5e4';
 
   return (
     <div className="relative flex flex-col items-center">
-      <svg width="136" height="136" className="-rotate-90">
-        <circle
-          cx="68"
-          cy="68"
-          r={radius}
-          fill="none"
-          stroke={bgStrokeColor}
-          strokeWidth="10"
-        />
-        <circle
-          cx="68"
-          cy="68"
-          r={radius}
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth="10"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-[stroke-dashoffset] duration-1000 ease-out"
-        />
+      {/* Mobile ring */}
+      <svg width={svgSize} height={svgSize} className="-rotate-90 sm:hidden">
+        <circle cx={svgSize / 2} cy={svgSize / 2} r={radius} fill="none" stroke={bgStrokeColor} strokeWidth="9" />
+        <circle cx={svgSize / 2} cy={svgSize / 2} r={radius} fill="none" stroke={strokeColor} strokeWidth="9" strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={offset} className="transition-[stroke-dashoffset] duration-1000 ease-out" />
+      </svg>
+      {/* Desktop ring */}
+      <svg width={smSvgSize} height={smSvgSize} className="-rotate-90 hidden sm:block">
+        <circle cx={smSvgSize / 2} cy={smSvgSize / 2} r={smRadius} fill="none" stroke={bgStrokeColor} strokeWidth="10" />
+        <circle cx={smSvgSize / 2} cy={smSvgSize / 2} r={smRadius} fill="none" stroke={strokeColor} strokeWidth="10" strokeLinecap="round"
+          strokeDasharray={smCircumference} strokeDashoffset={smOffset} className="transition-[stroke-dashoffset] duration-1000 ease-out" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-stone-800">{score}</span>
-        <span className="text-xs text-stone-400">/ {maxScore} 分</span>
+        <span className="text-2xl font-bold text-stone-800 sm:text-3xl">{score}</span>
+        <span className="text-[11px] text-stone-400 sm:text-xs">/ {maxScore} 分</span>
       </div>
     </div>
   );
@@ -179,92 +177,184 @@ function CategoryBar({
 }
 
 // ---------------------------------------------------------------------------
-// Wrong answer item
+// Question card (matches admin style)
 // ---------------------------------------------------------------------------
 
-function WrongAnswerItem({
-  index,
-  questionContent,
-  questionType,
-  yourAnswer,
-  correctAnswer,
-  options,
-}: {
-  index: number;
-  questionContent: string;
-  questionType: string;
-  yourAnswer: string;
-  correctAnswer: string;
-  options?: { label: string; content: string; imageUrl?: string | null }[];
-}) {
-  // For choice questions, show the option content alongside the letter
-  const formatAnswer = (answer: string, isCorrect: boolean) => {
-    if (!options || options.length === 0) return answer;
-    // If answer is a letter like "A" or "A,B", map to option content
-    const letters = answer.split(',').map((s) => s.trim());
-    const mapped = letters.map((letter) => {
-      const opt = options.find((o) => o.label === letter);
-      return opt ? `${letter}. ${opt.content}` : letter;
-    });
-    return mapped.join(isCorrect ? '、' : '、');
-  };
+function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
+  const isTrueFalse = q.questionType === 'TRUE_FALSE';
+  const isChoice = ['SINGLE_CHOICE', 'MULTI_CHOICE'].includes(q.questionType);
+  const answered = q.yourAnswer != null && q.yourAnswer.trim() !== '';
 
-  // Get image URL for a given answer letter
-  const getAnswerImage = (answer: string) => {
-    if (!options) return null;
-    const letters = answer.split(',').map((s) => s.trim());
-    return letters
-      .map((letter) => options.find((o) => o.label === letter))
-      .filter((opt) => opt?.imageUrl)
-      .map((opt) => opt!);
-  };
+  /** Format choice answer labels */
+  function formatChoiceAnswer(val: string | null): string {
+    if (!val || val.trim() === '') return '（未作答）';
+    return val;
+  }
 
   return (
-    <div className="rounded-xl border border-stone-100 bg-stone-50/50 p-4">
-      <div className="mb-2 flex items-start gap-2">
-        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-600">
-          {index}
+    <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-stone-100 px-3 py-2 sm:px-5 sm:py-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
+          <span className="text-[13px] font-medium text-stone-800 sm:text-sm">第 {index} 题</span>
+          <Badge variant="default">{QUESTION_TYPE_LABELS[q.questionType] ?? q.questionType}</Badge>
+          {q.isCorrect === true && <Badge variant="success">正确</Badge>}
+          {q.isCorrect === false && <Badge variant="danger">{answered ? '错误' : '未作答'}</Badge>}
+          {q.isCorrect == null && <Badge variant="warning">待评分</Badge>}
+        </div>
+        <span className="text-[13px] font-semibold text-stone-600 shrink-0 ml-2 sm:text-sm">
+          {q.earnedPoints}/{q.maxPoints} 分
         </span>
-        <div className="flex-1">
-          <div className="mb-1">
-            <Badge variant="default">
-              {QUESTION_TYPE_LABELS[questionType] || questionType}
-            </Badge>
-          </div>
-          <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-wrap">
-            {questionContent}
-          </p>
-        </div>
       </div>
-      <div className="ml-7 mt-2 space-y-1 text-sm">
-        <div className="flex gap-1">
-          <span className="shrink-0 text-red-500">
-            <svg className="mt-0.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </span>
-          <div className="text-stone-600">
-            <span className="text-stone-400">你的答案: </span>
-            {yourAnswer ? formatAnswer(yourAnswer, false) : '（未作答）'}
-            {yourAnswer && getAnswerImage(yourAnswer)?.map((opt) => (
-              <img key={opt.label} src={opt.imageUrl!} alt={`${opt.label} 选项`} className="mt-1 max-h-24 rounded border border-stone-200" />
-            ))}
-          </div>
-        </div>
-        {correctAnswer && (
-          <div className="flex gap-1">
-            <span className="shrink-0 text-teal-500">
-              <svg className="mt-0.5 h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-            </span>
-            <div className="text-stone-600">
-              <span className="text-stone-400">正确答案: </span>
-              {formatAnswer(correctAnswer, true)}
-              {getAnswerImage(correctAnswer)?.map((opt) => (
-                <img key={opt.label} src={opt.imageUrl!} alt={`${opt.label} 选项`} className="mt-1 max-h-24 rounded border border-stone-200" />
-              ))}
+
+      {/* Body */}
+      <div className="px-3 py-2.5 space-y-2.5 sm:px-5 sm:py-4 sm:space-y-3">
+        <p className="text-[13px] text-stone-700 whitespace-pre-wrap leading-relaxed sm:text-sm">
+          {q.questionContent}
+        </p>
+
+        {/* TRUE_FALSE: option-style layout */}
+        {isTrueFalse && (() => {
+          const correctVal = q.correctAnswer?.toUpperCase();
+          const yourVal = q.yourAnswer?.toUpperCase();
+          const isCorrectTrue = correctVal === 'TRUE' || q.correctAnswer === '是' || q.correctAnswer === '对' || q.correctAnswer === '√';
+          const choseTrue = yourVal === 'TRUE' || q.yourAnswer === '是' || q.yourAnswer === '对' || q.yourAnswer === '√';
+          const choseFalse = yourVal === 'FALSE' || q.yourAnswer === '否' || q.yourAnswer === '错' || q.yourAnswer === '×';
+
+          const tfOptions = [
+            { label: '正确（对）', value: true, isCorrectOpt: isCorrectTrue, isChosen: choseTrue },
+            { label: '错误（错）', value: false, isCorrectOpt: !isCorrectTrue, isChosen: choseFalse },
+          ];
+
+          return (
+            <>
+              <div className="flex flex-col gap-0.5 text-[13px] sm:flex-row sm:items-center sm:gap-4 sm:text-sm">
+                <span className="text-stone-500">
+                  你的选择：
+                  <span className={`font-medium ${!answered ? 'text-stone-400' : q.isCorrect ? 'text-green-700' : 'text-red-600'}`}>
+                    {!answered ? '（未作答）' : choseTrue ? '正确（对）' : '错误（错）'}
+                  </span>
+                </span>
+                {q.correctAnswer && (
+                  <span className="text-stone-500">
+                    正确答案：
+                    <span className="font-medium text-green-700">{isCorrectTrue ? '正确（对）' : '错误（错）'}</span>
+                  </span>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                {tfOptions.map((o) => {
+                  let bg = 'bg-white';
+                  let border = 'border-stone-200';
+                  let text = 'text-stone-600';
+
+                  if (o.isCorrectOpt && o.isChosen) {
+                    bg = 'bg-green-50'; border = 'border-green-300'; text = 'text-green-800';
+                  } else if (o.isCorrectOpt) {
+                    bg = 'bg-green-50'; border = 'border-green-200'; text = 'text-green-700';
+                  } else if (o.isChosen) {
+                    bg = 'bg-red-50'; border = 'border-red-200'; text = 'text-red-700';
+                  }
+
+                  return (
+                    <div key={o.label} className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[13px] sm:px-3 sm:py-2 sm:text-sm ${bg} ${border} ${text}`}>
+                      <span className="font-medium">{o.value ? '✓' : '✗'}</span>
+                      <span className="flex-1">{o.label}</span>
+                      {o.isCorrectOpt && (
+                        <svg className="h-4 w-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      )}
+                      {o.isChosen && !o.isCorrectOpt && (
+                        <svg className="h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          );
+        })()}
+
+        {/* Choice options */}
+        {isChoice && q.options && q.options.length > 0 && (
+          <>
+            <div className="flex flex-col gap-0.5 text-[13px] sm:flex-row sm:items-center sm:gap-4 sm:text-sm">
+              <span className="text-stone-500">
+                你的选择：
+                <span className={`font-medium ${answered ? (q.isCorrect ? 'text-green-700' : 'text-red-600') : 'text-stone-400'}`}>
+                  {formatChoiceAnswer(q.yourAnswer)}
+                </span>
+              </span>
+              {q.correctAnswer && (
+                <span className="text-stone-500">
+                  正确答案：
+                  <span className="font-medium text-green-700">{q.correctAnswer}</span>
+                </span>
+              )}
             </div>
+            <div className="space-y-1.5">
+              {q.options.map((o) => {
+                const isCorrectOpt = q.correctAnswer?.includes(o.label);
+                const isChosen = q.yourAnswer?.includes(o.label);
+                let bg = 'bg-white';
+                let border = 'border-stone-200';
+                let text = 'text-stone-600';
+
+                if (isCorrectOpt && isChosen) {
+                  bg = 'bg-green-50'; border = 'border-green-300'; text = 'text-green-800';
+                } else if (isCorrectOpt) {
+                  bg = 'bg-green-50'; border = 'border-green-200'; text = 'text-green-700';
+                } else if (isChosen) {
+                  bg = 'bg-red-50'; border = 'border-red-200'; text = 'text-red-700';
+                }
+
+                return (
+                  <div key={o.label} className={`flex items-start gap-2 rounded-lg border px-2.5 py-1.5 text-[13px] sm:items-center sm:px-3 sm:py-2 sm:text-sm ${bg} ${border} ${text}`}>
+                    <span className="font-medium shrink-0 mt-px sm:mt-0">{o.label}.</span>
+                    <span className="flex-1 break-all">{o.content}</span>
+                    {isCorrectOpt && (
+                      <svg className="h-4 w-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                    )}
+                    {isChosen && !isCorrectOpt && (
+                      <svg className="h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Text answer (SHORT_ANSWER, FILL_BLANK, etc.) */}
+        {!isChoice && !isTrueFalse && (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+            <div>
+              <p className="mb-1 text-[11px] font-medium text-stone-500 sm:mb-1.5 sm:text-xs">你的作答</p>
+              <div className={`rounded-lg border px-3 py-2.5 text-[13px] whitespace-pre-wrap min-h-[50px] sm:px-4 sm:py-3 sm:text-sm sm:min-h-[60px] ${
+                !answered
+                  ? 'border-stone-200 bg-stone-50 text-stone-400'
+                  : q.isCorrect
+                    ? 'border-green-200 bg-green-50 text-green-800'
+                    : 'border-red-200 bg-red-50 text-red-700'
+              }`}>
+                {q.yourAnswer || '（未作答）'}
+              </div>
+            </div>
+            {q.correctAnswer && (
+              <div>
+                <p className="mb-1 text-[11px] font-medium text-stone-500 sm:mb-1.5 sm:text-xs">参考答案</p>
+                <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-[13px] text-green-800 whitespace-pre-wrap min-h-[50px] sm:px-4 sm:py-3 sm:text-sm sm:min-h-[60px]">
+                  {q.correctAnswer}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -291,7 +381,8 @@ function ResultPage() {
   const searchParams = useSearchParams();
 
   const [result, setResult] = useState<ExamResultData | null>(null);
-  const [wrongAnswers, setWrongAnswers] = useState<WrongAnswerFromAPI[]>([]);
+  const [allQuestions, setAllQuestions] = useState<QuestionFromAPI[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('ALL');
   const [examTitle, setExamTitle] = useState('');
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [passScore, setPassScore] = useState<number>(60);
@@ -332,7 +423,7 @@ function ResultPage() {
       setRanking(resp.ranking ?? null);
       setUnansweredCount(resp.unansweredCount ?? 0);
       setPendingGradingCount(resp.pendingGradingCount ?? 0);
-      setWrongAnswers(resp.wrongAnswers || []);
+      setAllQuestions(resp.allQuestions || resp.wrongAnswers || []);
       setIsResultQueryOpen(resp.isResultQueryOpen ?? true);
       setResultQueryOpenAt(resp.resultQueryOpenAt ?? null);
     }
@@ -398,6 +489,20 @@ function ResultPage() {
     return Math.round((result.correctCount / result.totalQuestions) * 100).toString();
   }, [result]);
 
+  // Group questions by type for tabs
+  const questionsByType = useMemo(() => {
+    const groups: Record<string, QuestionFromAPI[]> = {};
+    for (const q of allQuestions) {
+      if (!groups[q.questionType]) groups[q.questionType] = [];
+      groups[q.questionType].push(q);
+    }
+    return groups;
+  }, [allQuestions]);
+
+  const typeOrder = ['SINGLE_CHOICE', 'MULTI_CHOICE', 'TRUE_FALSE', 'SHORT_ANSWER', 'FILL_BLANK', 'CASE_ANALYSIS', 'PRACTICAL'];
+  const availableTypes = typeOrder.filter((t) => questionsByType[t]?.length);
+  const displayQuestions = activeTab === 'ALL' ? allQuestions : (questionsByType[activeTab] ?? []);
+
   const formattedSubmitTime = useMemo(() => {
     if (!submittedAt) return '';
     const d = new Date(submittedAt);
@@ -462,66 +567,79 @@ function ResultPage() {
     : false; // Don't show "passed" until fully graded
 
   return (
-    <div className="min-h-screen px-4 py-6 sm:py-10">
+    <div className="min-h-screen bg-stone-50 px-3 py-4 sm:px-4 sm:py-10">
       <div className="mx-auto max-w-2xl">
         {/* Header */}
-        <div className="mb-6 text-center">
-          <Logo size="sm" className="mx-auto mb-3 justify-center" />
-          <h1 className="text-lg font-bold text-stone-800">{examTitle || '考试成绩报告'}</h1>
+        <div className="mb-4 text-center sm:mb-6">
+          <Logo size="sm" className="mx-auto mb-2 justify-center sm:mb-3" />
+          <h1 className="text-base font-bold text-stone-800 sm:text-lg">{examTitle || '考试成绩报告'}</h1>
           {formattedSubmitTime && (
-            <p className="mt-1 text-xs text-stone-400">交卷时间: {formattedSubmitTime}</p>
+            <p className="mt-0.5 text-[11px] text-stone-400 sm:mt-1 sm:text-xs">交卷时间: {formattedSubmitTime}</p>
           )}
         </div>
 
         {/* ===== Section 1: Score Overview ===== */}
-        <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:mb-4 sm:p-6">
           <div className="flex flex-col items-center">
-            {/* Score ring */}
-            <ScoreRing
-              score={displayScore}
-              maxScore={result.maxPossibleScore}
-              isPassed={isPassed}
-            />
-
-            {/* Score label — no pass/fail indication per client requirement */}
-            <p className="mt-3 text-sm text-stone-500">
-              线上理论得分
-            </p>
-
-            {/* Combined score section — only show combined score when query is open */}
+            {/* Score ring — show combined score when available, otherwise online score */}
             {isResultQueryOpen && result.combinedScore != null ? (
-              <div className="mt-3 w-full rounded-xl border border-teal-200 bg-teal-50 px-4 py-3">
-                <div className="flex items-start gap-2.5">
-                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-teal-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-teal-800">
-                      综合成绩：<span className="text-lg font-bold">{result.combinedScore}</span> 分
+              <>
+                <ScoreRing
+                  score={result.combinedScore}
+                  maxScore={100}
+                  isPassed={isPassed}
+                />
+                <p className="mt-2 text-[13px] font-medium text-teal-600 sm:mt-3 sm:text-sm">综合成绩</p>
+
+                {/* Score breakdown */}
+                <div className="mt-2 grid w-full grid-cols-2 gap-2 sm:mt-3">
+                  <div className="rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-2 text-center sm:px-3 sm:py-2.5">
+                    <p className="text-[11px] text-stone-500 sm:text-xs">线上得分</p>
+                    <p className="mt-0.5 text-base font-bold text-stone-800 sm:text-lg">
+                      {displayScore}<span className="text-xs font-normal text-stone-400 sm:text-sm"> / {result.maxPossibleScore}</span>
                     </p>
-                    <p className="mt-0.5 text-xs text-teal-600">
-                      理论(线上 {displayScore}{result.essayScore != null ? ` + 简答 ${result.essayScore}` : ''}) × 40%
-                      {result.practicalScore != null ? ` + 实操 ${result.practicalScore}` : ''} × 60%
+                  </div>
+                  <div className="rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-2 text-center sm:px-3 sm:py-2.5">
+                    <p className="text-[11px] text-stone-500 sm:text-xs">实操得分</p>
+                    <p className="mt-0.5 text-base font-bold text-stone-800 sm:text-lg">
+                      {result.practicalScore ?? '--'}
                     </p>
                   </div>
                 </div>
-              </div>
+
+                {/* Formula explanation */}
+                <p className="mt-1.5 text-[11px] text-stone-400 sm:mt-2 sm:text-xs">
+                  线上 {displayScore} × 40% + 实操 {result.practicalScore ?? '--'} × 60% = {result.combinedScore} 分
+                </p>
+              </>
             ) : (
-              <div className="mt-3 w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3">
-                <div className="flex items-start gap-2.5">
-                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <div>
-                    <p className="text-sm font-medium text-stone-700">综合得分请等待成绩公布</p>
-                    <p className="mt-0.5 text-xs text-stone-500">
-                      {resultQueryOpenAt
-                        ? `成绩将于 ${new Date(resultQueryOpenAt).toLocaleString('zh-CN')} 公布`
-                        : '综合成绩由管理员统一公布，届时可查看详细成绩与错题解析'}
-                    </p>
+              <>
+                <ScoreRing
+                  score={displayScore}
+                  maxScore={result.maxPossibleScore}
+                  isPassed={isPassed}
+                />
+                <p className="mt-2 text-[13px] text-stone-500 sm:mt-3 sm:text-sm">线上理论得分</p>
+
+                {/* Pending combined score */}
+                {!isResultQueryOpen && (
+                  <div className="mt-2 w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 sm:mt-3 sm:px-4 sm:py-3">
+                    <div className="flex items-start gap-2.5">
+                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-medium text-stone-700">综合得分请等待成绩公布</p>
+                        <p className="mt-0.5 text-xs text-stone-500">
+                          {resultQueryOpenAt
+                            ? `成绩将于 ${new Date(resultQueryOpenAt).toLocaleString('zh-CN')} 公布`
+                            : '综合成绩由管理员统一公布，届时可查看详细成绩与错题解析'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -530,31 +648,31 @@ function ResultPage() {
         {isResultQueryOpen && (
           <>
             {/* ===== Section 2: Stats Grid ===== */}
-            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl border border-stone-200 bg-white px-3 py-4 text-center shadow-sm">
-                <p className="text-xl font-bold text-teal-600">{accuracyRate}%</p>
-                <p className="mt-0.5 text-[11px] text-stone-400">正确率</p>
+            <div className="mb-3 grid grid-cols-4 gap-2 sm:mb-4 sm:gap-3">
+              <div className="rounded-xl border border-stone-200 bg-white px-2 py-3 text-center shadow-sm sm:rounded-2xl sm:px-3 sm:py-4">
+                <p className="text-lg font-bold text-teal-600 sm:text-xl">{accuracyRate}%</p>
+                <p className="mt-0.5 text-[10px] text-stone-400 sm:text-[11px]">正确率</p>
               </div>
-              <div className="rounded-2xl border border-stone-200 bg-white px-3 py-4 text-center shadow-sm">
-                <p className="text-xl font-bold text-stone-800">{result.correctCount}/{result.totalQuestions}</p>
-                <p className="mt-0.5 text-[11px] text-stone-400">答对/总题数</p>
+              <div className="rounded-xl border border-stone-200 bg-white px-2 py-3 text-center shadow-sm sm:rounded-2xl sm:px-3 sm:py-4">
+                <p className="text-lg font-bold text-stone-800 sm:text-xl">{result.correctCount}/{result.totalQuestions}</p>
+                <p className="mt-0.5 text-[10px] text-stone-400 sm:text-[11px]">答对/总题</p>
               </div>
-              <div className="rounded-2xl border border-stone-200 bg-white px-3 py-4 text-center shadow-sm">
-                <p className="text-xl font-bold text-stone-800">{timeTaken}</p>
-                <p className="mt-0.5 text-[11px] text-stone-400">答题用时</p>
+              <div className="rounded-xl border border-stone-200 bg-white px-2 py-3 text-center shadow-sm sm:rounded-2xl sm:px-3 sm:py-4">
+                <p className="text-lg font-bold text-stone-800 sm:text-xl">{timeTaken}</p>
+                <p className="mt-0.5 text-[10px] text-stone-400 sm:text-[11px]">答题用时</p>
               </div>
-              <div className="rounded-2xl border border-stone-200 bg-white px-3 py-4 text-center shadow-sm">
-                <p className="text-xl font-bold text-stone-800">
+              <div className="rounded-xl border border-stone-200 bg-white px-2 py-3 text-center shadow-sm sm:rounded-2xl sm:px-3 sm:py-4">
+                <p className="text-lg font-bold text-stone-800 sm:text-xl">
                   {unansweredCount > 0 ? unansweredCount : '0'}
                 </p>
-                <p className="mt-0.5 text-[11px] text-stone-400">未作答</p>
+                <p className="mt-0.5 text-[10px] text-stone-400 sm:text-[11px]">未作答</p>
               </div>
             </div>
 
             {/* ===== Section 5: Category Scores ===== */}
             {categoryScores.length > 0 && (
-              <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-                <h2 className="mb-4 text-sm font-semibold text-stone-700">
+              <div className="mb-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:mb-4 sm:p-5">
+                <h2 className="mb-3 text-[13px] font-semibold text-stone-700 sm:mb-4 sm:text-sm">
                   分类得分
                 </h2>
                 <div className="space-y-3.5">
@@ -572,38 +690,58 @@ function ResultPage() {
               </div>
             )}
 
-            {/* ===== Section 6: Wrong Answer Analysis ===== */}
-            {wrongAnswers.length > 0 && (
-              <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-                <h2 className="mb-1 text-sm font-semibold text-stone-700">
-                  错题分析
-                </h2>
-                <p className="mb-4 text-xs text-stone-400">
-                  共 {wrongAnswers.length} 题答错，以下为详细解析
-                </p>
-                <div className="space-y-3">
-                  {wrongAnswers.map((wa, idx) => (
-                    <WrongAnswerItem
-                      key={wa.questionId}
-                      index={idx + 1}
-                      questionContent={wa.questionContent}
-                      questionType={wa.questionType}
-                      yourAnswer={wa.yourAnswer || ''}
-                      correctAnswer={wa.correctAnswer || ''}
-                      options={wa.options}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* ===== Section 6: 答题明细 with filter tabs ===== */}
+            {allQuestions.length > 0 && (
+              <div className="mb-3 sm:mb-4">
+                <h2 className="mb-2 text-[13px] font-semibold text-stone-700 sm:mb-3 sm:text-sm">答题明细</h2>
 
-            {/* No wrong answers — positive feedback */}
-            {wrongAnswers.length === 0 && result.correctCount > 0 && (
-              <div className="mb-4 rounded-2xl border border-teal-100 bg-teal-50/50 p-5 text-center shadow-sm">
-                <svg className="mx-auto mb-2 h-8 w-8 text-teal-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-                </svg>
-                <p className="text-sm font-medium text-teal-700">客观题全部回答正确</p>
+                {/* Tab bar */}
+                <div className="relative mb-4">
+                  <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+                    <button
+                      onClick={() => setActiveTab('ALL')}
+                      className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors sm:px-4 sm:text-sm ${
+                        activeTab === 'ALL'
+                          ? 'bg-teal-600 text-white'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      }`}
+                    >
+                      全部（{allQuestions.length}）
+                    </button>
+                    {availableTypes.map((type) => {
+                      const qs = questionsByType[type];
+                      const wrongCount = qs.filter((q) => q.isCorrect === false).length;
+                      return (
+                        <button
+                          key={type}
+                          onClick={() => setActiveTab(type)}
+                          className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors sm:px-4 sm:text-sm ${
+                            activeTab === type
+                              ? 'bg-teal-600 text-white'
+                              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                          }`}
+                        >
+                          {QUESTION_TYPE_LABELS[type]}（{qs.length}）
+                          {wrongCount > 0 && activeTab !== type && (
+                            <span className="ml-1 text-xs text-red-500">{wrongCount}错</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Right fade hint for scroll */}
+                  <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-stone-50 to-transparent sm:hidden" />
+                </div>
+
+                {/* Question list */}
+                <div className="space-y-2.5 sm:space-y-3">
+                  {displayQuestions.map((q, idx) => (
+                    <QuestionCard key={q.questionId} q={q} index={idx + 1} />
+                  ))}
+                  {displayQuestions.length === 0 && (
+                    <p className="py-8 text-center text-sm text-stone-400">该类型无题目</p>
+                  )}
+                </div>
               </div>
             )}
           </>

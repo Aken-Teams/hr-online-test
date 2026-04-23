@@ -93,8 +93,8 @@ export async function GET(
       }
     }
 
-    // Effective flag: show correct answers only when query is open AND the setting is enabled
-    const effectiveShowCorrectAnswers = session.exam.showCorrectAnswers && isResultQueryOpen;
+    // Show correct answers whenever the result query window is open
+    const effectiveShowCorrectAnswers = isResultQueryOpen;
 
     // Load answers with question details for wrong answer analysis
     const answers = await prisma.answer.findMany({
@@ -145,28 +145,26 @@ export async function GET(
       (a) => a.earnedPoints == null && ['SHORT_ANSWER', 'FILL_BLANK', 'CASE_ANALYSIS', 'PRACTICAL'].includes(a.question.type)
     ).length;
 
-    // Build wrong answer analysis — only when result query is open
-    const wrongAnswers = !isResultQueryOpen ? [] : [
-      ...answers
-        .filter((a) => a.isCorrect === false || (a.isCorrect == null && a.earnedPoints == null))
-        .map((a) => ({
-          questionId: a.questionId,
-          questionType: a.question.type,
-          questionContent: a.question.content,
-          yourAnswer: a.answerContent,
-          correctAnswer: effectiveShowCorrectAnswers
-            ? a.question.correctAnswer
-            : null,
-          earnedPoints: a.earnedPoints ?? 0,
-          maxPoints: a.question.points,
-          options: effectiveShowCorrectAnswers
-            ? a.question.options.map((o) => ({
-                label: o.label,
-                content: o.content,
-                imageUrl: o.imageUrl ?? null,
-              }))
-            : undefined,
+    // Build all question details — only when result query is open
+    const allQuestions = !isResultQueryOpen ? [] : [
+      ...answers.map((a) => ({
+        questionId: a.questionId,
+        questionType: a.question.type,
+        questionContent: a.question.content,
+        yourAnswer: a.answerContent,
+        correctAnswer: effectiveShowCorrectAnswers
+          ? a.question.correctAnswer
+          : null,
+        earnedPoints: a.earnedPoints ?? 0,
+        maxPoints: a.question.points,
+        isCorrect: a.isCorrect,
+        // Always include options so the student can see what they chose
+        options: a.question.options.map((o) => ({
+          label: o.label,
+          content: o.content,
+          imageUrl: o.imageUrl ?? null,
         })),
+      })),
       // Also add questions with NO answer record (legacy data)
       ...missingQuestions.map((eq) => ({
         questionId: eq.questionId,
@@ -178,15 +176,19 @@ export async function GET(
           : null,
         earnedPoints: 0,
         maxPoints: eq.points,
-        options: effectiveShowCorrectAnswers
-          ? eq.question.options.map((o) => ({
-              label: o.label,
-              content: o.content,
-              imageUrl: o.imageUrl ?? null,
-            }))
-          : undefined,
+        isCorrect: false as boolean | null,
+        options: eq.question.options.map((o) => ({
+          label: o.label,
+          content: o.content,
+          imageUrl: o.imageUrl ?? null,
+        })),
       })),
     ];
+
+    // Wrong answers subset (for backward compat)
+    const wrongAnswers = allQuestions.filter(
+      (q) => q.isCorrect === false || (q.isCorrect == null && q.earnedPoints === 0)
+    );
 
     // --- Ranking & exam-wide stats ---
     const allResults = await prisma.examResult.findMany({
@@ -266,6 +268,7 @@ export async function GET(
         unansweredCount,
         pendingGradingCount,
         wrongAnswers,
+        allQuestions,
       },
     });
   } catch (error) {

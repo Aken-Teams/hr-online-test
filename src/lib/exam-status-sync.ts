@@ -37,7 +37,7 @@ export async function syncExamStatuses(): Promise<TransitionResult> {
           });
           await tx.auditLog.create({
             data: {
-              adminId: 'SYSTEM',
+              adminId: null,
               action: 'EXAM_CLOSED',
               details: {
                 examId: exam.id,
@@ -91,7 +91,7 @@ export async function syncExamStatuses(): Promise<TransitionResult> {
           });
           await tx.auditLog.create({
             data: {
-              adminId: 'SYSTEM',
+              adminId: null,
               action: 'EXAM_PUBLISHED',
               details: {
                 examId: exam.id,

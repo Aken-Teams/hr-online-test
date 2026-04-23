@@ -26,3 +26,7 @@ body {
 ::-webkit-scrollbar-track { background: #fafaf9; }
 ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+/* Hide scrollbar for horizontal scroll containers on mobile */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
