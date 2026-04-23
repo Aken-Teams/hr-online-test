@@ -104,6 +104,9 @@ export default function CreateExamPage() {
           ...r,
           commonRatio: r.commonRatio / 100,
         })),
+        batches: step1.batches
+          .filter((b) => b.name && b.openAt && b.closeAt)
+          .map((b) => ({ name: b.name, openAt: b.openAt, closeAt: b.closeAt })),
         status: 'DRAFT',
       };
 
@@ -168,6 +171,9 @@ export default function CreateExamPage() {
           ...r,
           commonRatio: r.commonRatio / 100,
         })),
+        batches: step1.batches
+          .filter((b) => b.name && b.openAt && b.closeAt)
+          .map((b) => ({ name: b.name, openAt: b.openAt, closeAt: b.closeAt })),
       };
 
       const res = await fetch(`/api/admin/exams/${examId}`, {

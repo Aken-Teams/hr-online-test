@@ -11,6 +11,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { useToast } from '@/components/ui/Toast';
 import { QUESTION_TYPE_LABELS } from '@/lib/constants';
 import type { QuestionType, ExamData } from '@/types/exam';
+import type { BatchInput } from '@/app/admin/exams/new/steps/Step1BasicInfo';
 import TabBasicInfo from './tabs/TabBasicInfo';
 import TabParticipants from './tabs/TabParticipants';
 import TabQuestions from './tabs/TabQuestions';
@@ -78,6 +79,7 @@ export default function EditExamPage() {
   // Exam status
   const [examStatus, setExamStatus] = useState<string>('DRAFT');
   const isFullyEditable = ['DRAFT', 'PUBLISHED'].includes(examStatus);
+  const isArchived = examStatus === 'ARCHIVED';
 
   // Publish
   const [showPublishDialog, setShowPublishDialog] = useState(false);
@@ -87,6 +89,9 @@ export default function EditExamPage() {
 
   // Question rules
   const [rules, setRules] = useState<QuestionRule[]>([]);
+
+  // Batches
+  const [batches, setBatches] = useState<BatchInput[]>([]);
 
   const totalScore = useMemo(() => {
     return rules.reduce((sum, r) => sum + r.count * r.pointsPerQuestion, 0);
@@ -137,6 +142,17 @@ export default function EditExamPage() {
       if (exam.closeAt) setCloseAt(toLocalDatetime(exam.closeAt));
       if (exam.resultQueryOpenAt) setResultQueryOpenAt(toLocalDatetime(exam.resultQueryOpenAt));
       if (exam.resultQueryCloseAt) setResultQueryCloseAt(toLocalDatetime(exam.resultQueryCloseAt));
+
+      // Load batches
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rawBatches: any[] = (json.data as any).batches || [];
+      setBatches(
+        rawBatches.map((b: { name: string; openAt: string; closeAt: string }) => ({
+          name: b.name,
+          openAt: toLocalDatetime(b.openAt),
+          closeAt: toLocalDatetime(b.closeAt),
+        }))
+      );
     } catch {
       toast('加载考试数据失败', 'error');
     } finally {
@@ -200,6 +216,9 @@ export default function EditExamPage() {
           ...r,
           commonRatio: r.commonRatio / 100,
         })),
+        batches: batches
+          .filter((b) => b.name && b.openAt && b.closeAt)
+          .map((b) => ({ name: b.name, openAt: b.openAt, closeAt: b.closeAt })),
       };
 
       const res = await fetch(`/api/admin/exams/${examId}`, {
@@ -262,7 +281,7 @@ export default function EditExamPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="编辑考试"
+        title={isArchived ? '查看考试' : '编辑考试'}
         actions={
           <div className="flex items-center gap-2">
             {examStatus === 'DRAFT' && (
@@ -279,7 +298,17 @@ export default function EditExamPage() {
         }
       />
 
-      {!isFullyEditable && (
+      {isArchived && (
+        <div className="flex items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-stone-500" />
+          <div>
+            <p className="text-sm font-medium text-stone-700">考试已归档，仅供查看</p>
+            <p className="mt-0.5 text-xs text-stone-500">归档的考试无法修改任何设置。</p>
+          </div>
+        </div>
+      )}
+
+      {!isFullyEditable && !isArchived && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
           <div>
@@ -312,8 +341,10 @@ export default function EditExamPage() {
           tabSwitchLimit={tabSwitchLimit} setTabSwitchLimit={setTabSwitchLimit}
           enableFaceAuth={enableFaceAuth} setEnableFaceAuth={setEnableFaceAuth}
           rules={rules} setRules={setRules}
+          batches={batches} setBatches={setBatches}
           totalScore={totalScore}
           isFullyEditable={isFullyEditable}
+          isArchived={isArchived}
           saving={saving}
           onSave={handleSave}
         />

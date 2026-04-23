@@ -2,8 +2,14 @@
 
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+
+export interface BatchInput {
+  name: string;
+  openAt: string;
+  closeAt: string;
+}
 
 export interface Step1Data {
   title: string;
@@ -24,6 +30,7 @@ export interface Step1Data {
   isPracticeMode: boolean;
   tabSwitchLimit: number;
   enableFaceAuth: boolean;
+  batches: BatchInput[];
 }
 
 export const DEFAULT_STEP1: Step1Data = {
@@ -45,6 +52,7 @@ export const DEFAULT_STEP1: Step1Data = {
   isPracticeMode: false,
   tabSwitchLimit: 3,
   enableFaceAuth: false,
+  batches: [],
 };
 
 interface Props {
@@ -185,6 +193,72 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
             value={data.resultQueryCloseAt}
             onChange={(e) => set('resultQueryCloseAt', e.target.value)}
           />
+        </div>
+      </Card>
+
+      <Card title="梯次设置（可选）">
+        <p className="text-xs text-stone-500 mb-3">
+          将考试分为多个时段，每个梯次只在指定时间窗口内允许开考。不设梯次则使用上方的考试开放/截止时间。
+        </p>
+        {data.batches.length > 0 && data.openAt && data.closeAt && (
+          <p className="text-xs text-amber-600 mb-3">
+            梯次时间必须在考试开放时间（{new Date(data.openAt).toLocaleString('zh-CN')}）至截止时间（{new Date(data.closeAt).toLocaleString('zh-CN')}）之间
+          </p>
+        )}
+        <div className="space-y-3">
+          {data.batches.map((batch, idx) => (
+            <div key={idx} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_1fr_40px] items-end">
+              <Input
+                label={idx === 0 ? '梯次名称' : undefined}
+                value={batch.name}
+                onChange={(e) => {
+                  const updated = [...data.batches];
+                  updated[idx] = { ...batch, name: e.target.value };
+                  set('batches', updated);
+                }}
+                placeholder={`第${idx + 1}梯次`}
+              />
+              <Input
+                label={idx === 0 ? '开始时间' : undefined}
+                type="datetime-local"
+                value={batch.openAt}
+                min={data.openAt || undefined}
+                max={data.closeAt || undefined}
+                onChange={(e) => {
+                  const updated = [...data.batches];
+                  updated[idx] = { ...batch, openAt: e.target.value };
+                  set('batches', updated);
+                }}
+              />
+              <Input
+                label={idx === 0 ? '结束时间' : undefined}
+                type="datetime-local"
+                value={batch.closeAt}
+                min={data.openAt || undefined}
+                max={data.closeAt || undefined}
+                onChange={(e) => {
+                  const updated = [...data.batches];
+                  updated[idx] = { ...batch, closeAt: e.target.value };
+                  set('batches', updated);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => set('batches', data.batches.filter((_, i) => i !== idx))}
+                className="flex h-[38px] items-center justify-center rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => set('batches', [...data.batches, { name: `第${data.batches.length + 1}梯次`, openAt: '', closeAt: '' }])}
+            className="inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700"
+          >
+            <Plus className="h-4 w-4" />
+            添加梯次
+          </button>
         </div>
       </Card>
 

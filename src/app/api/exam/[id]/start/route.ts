@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getEmployeeFromCookie } from '@/lib/auth';
 import { generateQuestionSet } from '@/lib/question-generator';
+import { isInExamTimeWindow } from '@/lib/exam-batch';
 
 /** Fisher-Yates shuffle (returns a new array) */
 function shuffle<T>(arr: T[]): T[] {
@@ -43,17 +44,23 @@ export async function POST(
       );
     }
 
-    // Check time window
+    // Check time window (batch-aware)
     const now = new Date();
-    if (exam.openAt && exam.openAt > now) {
+    const batches = await prisma.examBatch.findMany({
+      where: { examId },
+      orderBy: { openAt: 'asc' },
+    });
+    const windowResult = isInExamTimeWindow(exam, batches, now);
+    if (!windowResult.inWindow) {
+      const msg = windowResult.allBatchesEnded
+        ? '考试已关闭'
+        : windowResult.nextBatch
+          ? `不在考试时间内，下一梯次：${windowResult.nextBatch.name}`
+          : exam.openAt && exam.openAt > now
+            ? '考试尚未开始'
+            : '考试已关闭';
       return NextResponse.json(
-        { success: false, error: '考试尚未开始' },
-        { status: 403 }
-      );
-    }
-    if (exam.closeAt && exam.closeAt < now) {
-      return NextResponse.json(
-        { success: false, error: '考试已关闭' },
+        { success: false, error: msg },
         { status: 403 }
       );
     }
@@ -237,6 +244,7 @@ export async function POST(
           examId,
           userId: employee.userId,
           assignmentId,
+          batchId: windowResult.currentBatch?.id ?? null,
           status: 'IN_PROGRESS',
           attemptNumber: attemptCount + 1,
           startedAt: now,

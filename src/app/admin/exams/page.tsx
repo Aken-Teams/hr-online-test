@@ -210,8 +210,8 @@ export default function ExamListPage() {
                       className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
                       onClick={() => router.push(`/admin/exams/${exam.id}`)}
                     >
-                      <Pencil className="h-3 w-3" />
-                      编辑
+                      {exam.status === 'ARCHIVED' ? <Eye className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+                      {exam.status === 'ARCHIVED' ? '查看' : '编辑'}
                     </button>
                     {exam.status === 'DRAFT' && (
                       <button
@@ -334,8 +334,8 @@ export default function ExamListPage() {
                             className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
                             onClick={() => router.push(`/admin/exams/${exam.id}`)}
                           >
-                            <Pencil className="h-3 w-3" />
-                            编辑
+                            {exam.status === 'ARCHIVED' ? <Eye className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+                            {exam.status === 'ARCHIVED' ? '查看' : '编辑'}
                           </button>
                           {exam.status === 'DRAFT' && (
                             <button

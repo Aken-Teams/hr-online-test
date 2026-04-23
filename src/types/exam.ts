@@ -240,6 +240,13 @@ export interface EmployeeData {
 // ============================================================
 
 /** An exam assignment card shown in the employee "My Exams" page */
+export interface ExamBatchItem {
+  id: string;
+  name: string;
+  openAt: string;
+  closeAt: string;
+}
+
 export interface MyExamItem {
   examId: string;
   assignmentId: string;
@@ -256,6 +263,8 @@ export interface MyExamItem {
   sessionId: string | null;
   attemptNumber: number;
   canStart: boolean;
+  /** Exam batches (梯次) — empty if no batches configured */
+  batches?: ExamBatchItem[];
 }
 
 /** A result row shown in the employee "My Results" page */

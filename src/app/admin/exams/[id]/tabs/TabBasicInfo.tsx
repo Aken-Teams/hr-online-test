@@ -4,8 +4,10 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { Plus, Trash2 } from 'lucide-react';
 import { QUESTION_TYPE_LABELS, EXAM_QUESTION_TYPES } from '@/lib/constants';
 import type { QuestionType } from '@/types/exam';
+import type { BatchInput } from '@/app/admin/exams/new/steps/Step1BasicInfo';
 
 interface QuestionRule {
   id?: string;
@@ -59,8 +61,11 @@ interface Props {
   setEnableFaceAuth: (v: boolean) => void;
   rules: QuestionRule[];
   setRules: (rules: QuestionRule[]) => void;
+  batches: BatchInput[];
+  setBatches: (batches: BatchInput[]) => void;
   totalScore: number;
   isFullyEditable: boolean;
+  isArchived?: boolean;
   saving: boolean;
   onSave: () => void;
 }
@@ -77,7 +82,7 @@ export default function TabBasicInfo(props: Props) {
     showCorrectAnswers, setShowCorrectAnswers,
     isPracticeMode, setIsPracticeMode, tabSwitchLimit, setTabSwitchLimit,
     enableFaceAuth, setEnableFaceAuth,
-    rules, setRules, totalScore, isFullyEditable, saving, onSave,
+    rules, setRules, batches, setBatches, totalScore, isFullyEditable, isArchived, saving, onSave,
   } = props;
 
   function addRule() {
@@ -93,7 +98,7 @@ export default function TabBasicInfo(props: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isArchived ? 'pointer-events-none opacity-75' : ''}`}>
       <Card title="基本信息">
         <div className="space-y-4">
           <Input label="考试标题" required value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -135,6 +140,74 @@ export default function TabBasicInfo(props: Props) {
         </div>
       </Card>
 
+      <Card title="梯次设置（可选）">
+        <p className="text-xs text-stone-500 mb-3">
+          将考试分为多个时段，每个梯次只在指定时间窗口内允许开考。不设梯次则使用上方的考试开放/截止时间。
+        </p>
+        {batches.length > 0 && openAt && closeAt && (
+          <p className="text-xs text-amber-600 mb-3">
+            梯次时间必须在考试开放时间（{new Date(openAt).toLocaleString('zh-CN')}）至截止时间（{new Date(closeAt).toLocaleString('zh-CN')}）之间
+          </p>
+        )}
+        <div className={`space-y-3 ${!isFullyEditable ? 'pointer-events-none opacity-60' : ''}`}>
+          {batches.map((batch, idx) => (
+            <div key={idx} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_1fr_40px] items-end">
+              <Input
+                label={idx === 0 ? '梯次名称' : undefined}
+                value={batch.name}
+                onChange={(e) => {
+                  const updated = [...batches];
+                  updated[idx] = { ...batch, name: e.target.value };
+                  setBatches(updated);
+                }}
+                placeholder={`第${idx + 1}梯次`}
+              />
+              <Input
+                label={idx === 0 ? '开始时间' : undefined}
+                type="datetime-local"
+                value={batch.openAt}
+                min={openAt || undefined}
+                max={closeAt || undefined}
+                onChange={(e) => {
+                  const updated = [...batches];
+                  updated[idx] = { ...batch, openAt: e.target.value };
+                  setBatches(updated);
+                }}
+              />
+              <Input
+                label={idx === 0 ? '结束时间' : undefined}
+                type="datetime-local"
+                value={batch.closeAt}
+                min={openAt || undefined}
+                max={closeAt || undefined}
+                onChange={(e) => {
+                  const updated = [...batches];
+                  updated[idx] = { ...batch, closeAt: e.target.value };
+                  setBatches(updated);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setBatches(batches.filter((_, i) => i !== idx))}
+                className="flex h-[38px] items-center justify-center rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          {isFullyEditable && (
+            <button
+              type="button"
+              onClick={() => setBatches([...batches, { name: `第${batches.length + 1}梯次`, openAt: '', closeAt: '' }])}
+              className="inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700"
+            >
+              <Plus className="h-4 w-4" />
+              添加梯次
+            </button>
+          )}
+        </div>
+      </Card>
+
       <Card title="考试设置">
         <div className="space-y-4">
           <ToggleRow label="随机出题" description="题目顺序随机打乱" checked={shuffleQuestions} onChange={setShuffleQuestions} />
@@ -171,9 +244,11 @@ export default function TabBasicInfo(props: Props) {
         </div>
       </Card>
 
-      <div className="flex justify-end pb-6">
-        <Button onClick={onSave} loading={saving}>保存修改</Button>
-      </div>
+      {!isArchived && (
+        <div className="flex justify-end pb-6">
+          <Button onClick={onSave} loading={saving}>保存修改</Button>
+        </div>
+      )}
     </div>
   );
 }

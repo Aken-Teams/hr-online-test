@@ -30,7 +30,7 @@ export async function GET() {
           { userId: null, department: employee.department },
         ],
         exam: {
-          status: { in: ['PUBLISHED', 'ACTIVE', 'CLOSED'] },
+          status: { in: ['PUBLISHED', 'ACTIVE', 'CLOSED', 'ARCHIVED'] },
         },
       },
       include: {
@@ -107,7 +107,7 @@ export async function GET() {
       const session = a.sessions[0] || looseByExam.get(exam.id) || null;
       const result = session?.result ?? null;
 
-      const isClosed = exam.status === 'CLOSED';
+      const isClosed = exam.status === 'CLOSED' || exam.status === 'ARCHIVED';
       const isPastClose = exam.closeAt ? exam.closeAt < now : false;
       const examEnded = isClosed || isPastClose;
 

@@ -146,6 +146,11 @@ function InstructionsPage() {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
 
+  // Batch info from available API
+  const [currentBatch, setCurrentBatch] = useState<{ id: string; name: string } | null>(null);
+  const [nextBatch, setNextBatch] = useState<{ name: string; openAt: string } | null>(null);
+  const [examBatches, setExamBatches] = useState<{ id: string; name: string; openAt: string; closeAt: string }[]>([]);
+
   // ---------------------------------------------------------------------------
   // Fetch available exam
   // ---------------------------------------------------------------------------
@@ -209,6 +214,13 @@ function InstructionsPage() {
         }
 
         setExam(data.data);
+
+        // Store batch info from the API response
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = data.data as any;
+        if (raw.batches) setExamBatches(raw.batches);
+        if (raw.currentBatch) setCurrentBatch(raw.currentBatch);
+        if (raw.nextBatch) setNextBatch(raw.nextBatch);
       } catch {
         setError('获取考试信息失败，请稍后重试');
       } finally {
@@ -226,10 +238,19 @@ function InstructionsPage() {
   const isWithinWindow = useCallback(() => {
     if (!exam) return false;
     const now = new Date();
+
+    // Batch-aware: if batches exist, check if in any batch window
+    if (examBatches.length > 0) {
+      return examBatches.some(
+        (b) => new Date(b.openAt) <= now && new Date(b.closeAt) >= now
+      );
+    }
+
+    // No batches: use exam-level openAt/closeAt
     if (exam.openAt && new Date(exam.openAt) > now) return false;
     if (exam.closeAt && new Date(exam.closeAt) < now) return false;
     return true;
-  }, [exam]);
+  }, [exam, examBatches]);
 
   // ---------------------------------------------------------------------------
   // Start exam
@@ -455,14 +476,40 @@ function InstructionsPage() {
             </div>
           )}
 
+          {/* Batch status info */}
+          {examBatches.length > 0 && windowOpen && currentBatch && (
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+              <p className="text-sm font-medium text-green-800">
+                当前梯次：{currentBatch.name}
+              </p>
+              <p className="mt-1 text-xs text-green-700">
+                {(() => {
+                  const batch = examBatches.find((b) => b.id === currentBatch.id);
+                  if (!batch) return '';
+                  return `${new Date(batch.openAt).toLocaleString('zh-CN')} ~ ${new Date(batch.closeAt).toLocaleString('zh-CN')}`;
+                })()}
+              </p>
+            </div>
+          )}
+
           {/* Time window warning */}
           {canStart && !windowOpen && (
             <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
-              <p className="text-sm font-medium text-yellow-800">考试未开放</p>
+              <p className="text-sm font-medium text-yellow-800">
+                {examBatches.length > 0 ? '不在梯次时间内' : '考试未开放'}
+              </p>
               <p className="mt-1 text-xs text-yellow-700">
-                {exam.openAt && `开放时间：${new Date(exam.openAt).toLocaleString('zh-CN')}`}
-                {exam.openAt && exam.closeAt && ' ~ '}
-                {exam.closeAt && `${new Date(exam.closeAt).toLocaleString('zh-CN')}`}
+                {nextBatch ? (
+                  <>下一梯次：{nextBatch.name}（{new Date(nextBatch.openAt).toLocaleString('zh-CN')}）</>
+                ) : examBatches.length > 0 ? (
+                  '所有梯次已结束'
+                ) : (
+                  <>
+                    {exam.openAt && `开放时间：${new Date(exam.openAt).toLocaleString('zh-CN')}`}
+                    {exam.openAt && exam.closeAt && ' ~ '}
+                    {exam.closeAt && `${new Date(exam.closeAt).toLocaleString('zh-CN')}`}
+                  </>
+                )}
               </p>
             </div>
           )}

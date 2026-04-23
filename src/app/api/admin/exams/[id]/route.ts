@@ -33,6 +33,10 @@ export async function GET(
             },
           },
         },
+        batches: {
+          select: { id: true, name: true, openAt: true, closeAt: true },
+          orderBy: { openAt: 'asc' as const },
+        },
         _count: {
           select: {
             sessions: true,
@@ -86,6 +90,13 @@ export async function PUT(
       return NextResponse.json(
         { success: false, error: '考试不存在' },
         { status: 404 }
+      );
+    }
+
+    if (existing.status === 'ARCHIVED') {
+      return NextResponse.json(
+        { success: false, error: '归档的考试无法修改' },
+        { status: 403 }
       );
     }
 
@@ -164,6 +175,38 @@ export async function PUT(
           }
         }
 
+        // Batches: delete-all + re-create (simple overwrite)
+        if ('batches' in body) {
+          await tx.examBatch.deleteMany({ where: { examId: id } });
+          const batches: { name: string; openAt: string; closeAt: string }[] =
+            body.batches || [];
+          if (batches.length > 0) {
+            const examOpen = data.openAt ? new Date(data.openAt) : null;
+            const examClose = data.closeAt ? new Date(data.closeAt) : null;
+            for (const b of batches) {
+              const bOpen = new Date(b.openAt);
+              const bClose = new Date(b.closeAt);
+              if (examOpen && bOpen < examOpen) {
+                throw new Error(`梯次「${b.name}」的开始时间不能早于考试开放时间`);
+              }
+              if (examClose && bClose > examClose) {
+                throw new Error(`梯次「${b.name}」的结束时间不能晚于考试截止时间`);
+              }
+              if (bOpen >= bClose) {
+                throw new Error(`梯次「${b.name}」的开始时间必须早于结束时间`);
+              }
+            }
+            await tx.examBatch.createMany({
+              data: batches.map((b) => ({
+                examId: id,
+                name: b.name,
+                openAt: new Date(b.openAt),
+                closeAt: new Date(b.closeAt),
+              })),
+            });
+          }
+        }
+
         return { exam: updated, restricted: false };
       }
 
@@ -210,6 +253,12 @@ export async function PUT(
       message,
     });
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith('梯次')) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 }
+      );
+    }
     console.error('Update exam error:', error);
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },

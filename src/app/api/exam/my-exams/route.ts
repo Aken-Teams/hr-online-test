@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getEmployeeFromCookie } from '@/lib/auth';
+import { isInExamTimeWindow } from '@/lib/exam-batch';
 import type { MyExamItem } from '@/types/exam';
 
 /**
@@ -31,7 +32,7 @@ export async function GET() {
           },
         ],
         exam: {
-          status: { in: ['PUBLISHED', 'ACTIVE', 'CLOSED'] },
+          status: { in: ['PUBLISHED', 'ACTIVE', 'CLOSED', 'ARCHIVED'] },
         },
       },
       include: {
@@ -48,6 +49,10 @@ export async function GET() {
             closeAt: true,
             status: true,
             maxAttempts: true,
+            batches: {
+              select: { id: true, name: true, openAt: true, closeAt: true },
+              orderBy: { openAt: 'asc' as const },
+            },
           },
         },
         sessions: {
@@ -97,16 +102,15 @@ export async function GET() {
       const exam = a.exam;
       // Prefer session from the assignment relation; fall back to examId+userId match
       const session = a.sessions[0] || sessionsByExam.get(exam.id) || null;
-      const isBeforeOpen = exam.openAt ? exam.openAt > now : false;
-      const isAfterClose = exam.closeAt ? exam.closeAt < now : false;
-      const isInTimeWindow = !isBeforeOpen && !isAfterClose;
+      const windowResult = isInExamTimeWindow(exam, exam.batches, now);
 
       const attemptNumber = session?.attemptNumber ?? 0;
       const sessionStatus = session?.status ?? 'NOT_STARTED';
       const isCompleted = sessionStatus === 'SUBMITTED' || sessionStatus === 'COMPLETED' || sessionStatus === 'AUTO_SUBMITTED';
       const canStart =
-        isInTimeWindow &&
+        windowResult.inWindow &&
         exam.status !== 'CLOSED' &&
+        exam.status !== 'ARCHIVED' &&
         (sessionStatus === 'IN_PROGRESS' || (!isCompleted && attemptNumber < exam.maxAttempts));
 
       return {
@@ -127,6 +131,12 @@ export async function GET() {
         sessionId: session?.id ?? null,
         attemptNumber,
         canStart,
+        batches: exam.batches.map((b) => ({
+          id: b.id,
+          name: b.name,
+          openAt: b.openAt.toISOString(),
+          closeAt: b.closeAt.toISOString(),
+        })),
       };
     });
 

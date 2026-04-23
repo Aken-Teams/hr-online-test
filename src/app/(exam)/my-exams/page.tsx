@@ -27,6 +27,7 @@ interface MyExam {
   sessionId: string | null;
   canStart: boolean;
   isPracticeMode: boolean;
+  batches?: { id: string; name: string; openAt: string; closeAt: string }[];
 }
 
 export default function MyExamsPage() {
@@ -154,6 +155,12 @@ export default function MyExamsPage() {
                     </div>
                     <div>满分 {exam.totalScore} 分</div>
                   </div>
+
+                  {exam.batches && exam.batches.length > 0 && (
+                    <p className="text-xs text-stone-400">
+                      共 {exam.batches.length} 个梯次
+                    </p>
+                  )}
 
                   {exam.description && (
                     <p className="text-xs text-stone-400 line-clamp-2">{exam.description}</p>

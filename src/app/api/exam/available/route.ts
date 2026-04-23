@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getEmployeeFromCookie } from '@/lib/auth';
 import { syncExamStatuses } from '@/lib/exam-status-sync';
+import { isInExamTimeWindow } from '@/lib/exam-batch';
 
 /**
  * GET /api/exam/available?assignmentId=xxx
@@ -91,6 +92,10 @@ export async function GET(request: Request) {
             pointsPerQuestion: true,
           },
         },
+        batches: {
+          select: { id: true, name: true, openAt: true, closeAt: true },
+          orderBy: { openAt: 'asc' },
+        },
         _count: {
           select: {
             sessions: {
@@ -108,12 +113,13 @@ export async function GET(request: Request) {
       );
     }
 
-    // Check time window
+    // Check time window (batch-aware)
     const now = new Date();
+    const windowResult = isInExamTimeWindow(exam, exam.batches, now);
     const isBeforeOpen = exam.openAt && exam.openAt > now;
     const isAfterClose = exam.closeAt && exam.closeAt < now;
 
-    if (isBeforeOpen) {
+    if (isBeforeOpen && !windowResult.inWindow) {
       return NextResponse.json(
         { success: false, error: '考试尚未开始' },
         { status: 403 }
@@ -137,7 +143,7 @@ export async function GET(request: Request) {
 
     const attemptCount = exam._count.sessions;
 
-    if (isAfterClose) {
+    if (isAfterClose && windowResult.allBatchesEnded !== false) {
       if (attemptCount === 0) {
         return NextResponse.json(
           { success: false, error: '考试已关闭' },
@@ -146,7 +152,8 @@ export async function GET(request: Request) {
       }
     }
 
-    const canStart = !isAfterClose && (attemptCount < exam.maxAttempts || !!existingSession);
+    // canStart: must be in a time window (batch or exam-level) and have attempts remaining
+    const canStart = windowResult.inWindow && (attemptCount < exam.maxAttempts || !!existingSession);
 
     return NextResponse.json({
       success: true,
@@ -169,6 +176,16 @@ export async function GET(request: Request) {
         canStart,
         assignmentProcess,
         assignmentLevel,
+        batches: exam.batches.map((b) => ({
+          id: b.id,
+          name: b.name,
+          openAt: b.openAt.toISOString(),
+          closeAt: b.closeAt.toISOString(),
+        })),
+        currentBatch: windowResult.currentBatch ?? null,
+        nextBatch: windowResult.nextBatch
+          ? { ...windowResult.nextBatch, openAt: windowResult.nextBatch.openAt.toISOString() }
+          : null,
         existingSession: existingSession
           ? {
               id: existingSession.id,

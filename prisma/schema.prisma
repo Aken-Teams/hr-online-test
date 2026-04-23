@@ -169,10 +169,25 @@ model Exam {
   examQuestions      ExamQuestion[]
   sessions           ExamSession[]
   assignments        ExamAssignment[]
+  batches            ExamBatch[]
   importedQuestions  Question[]         @relation("ImportedQuestions")
 
   @@index([status, openAt, closeAt])
   @@map("exams")
+}
+
+model ExamBatch {
+  id       String   @id @default(cuid())
+  examId   String   @map("exam_id")
+  name     String
+  openAt   DateTime @map("open_at")
+  closeAt  DateTime @map("close_at")
+
+  exam     Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  sessions ExamSession[]
+
+  @@index([examId])
+  @@map("exam_batches")
 }
 
 model ExamQuestionRule {
@@ -254,10 +269,12 @@ model ExamSession {
   autoSubmitReason String?       @map("auto_submit_reason")
   questionOrder    Json?         @map("question_order")
   assignmentId     String?       @map("assignment_id")
+  batchId          String?       @map("batch_id")
 
   exam       Exam            @relation(fields: [examId], references: [id])
   user       User            @relation(fields: [userId], references: [id])
   assignment ExamAssignment? @relation(fields: [assignmentId], references: [id])
+  batch      ExamBatch?      @relation(fields: [batchId], references: [id])
   answers    Answer[]
   result     ExamResult?
   auditLogs  AuditLog[]
@@ -266,6 +283,7 @@ model ExamSession {
   @@index([examId, status])
   @@index([userId])
   @@index([assignmentId])
+  @@index([batchId])
   @@index([status, startedAt])
   @@map("exam_sessions")
 }

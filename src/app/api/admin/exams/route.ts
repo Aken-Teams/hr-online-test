@@ -182,6 +182,35 @@ export async function POST(request: Request) {
         });
       }
 
+      // Create batches (validate times within exam window)
+      const batches: { name: string; openAt: string; closeAt: string }[] =
+        body.batches || [];
+      if (batches.length > 0) {
+        const examOpen = data.openAt ? new Date(data.openAt) : null;
+        const examClose = data.closeAt ? new Date(data.closeAt) : null;
+        for (const b of batches) {
+          const bOpen = new Date(b.openAt);
+          const bClose = new Date(b.closeAt);
+          if (examOpen && bOpen < examOpen) {
+            throw new Error(`梯次「${b.name}」的开始时间不能早于考试开放时间`);
+          }
+          if (examClose && bClose > examClose) {
+            throw new Error(`梯次「${b.name}」的结束时间不能晚于考试截止时间`);
+          }
+          if (bOpen >= bClose) {
+            throw new Error(`梯次「${b.name}」的开始时间必须早于结束时间`);
+          }
+        }
+        await tx.examBatch.createMany({
+          data: batches.map((b) => ({
+            examId: newExam.id,
+            name: b.name,
+            openAt: new Date(b.openAt),
+            closeAt: new Date(b.closeAt),
+          })),
+        });
+      }
+
       // Audit log
       await tx.auditLog.create({
         data: {
@@ -202,6 +231,12 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith('梯次')) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 }
+      );
+    }
     console.error('Create exam error:', error);
     return NextResponse.json(
       { success: false, error: '服务器内部错误' },
