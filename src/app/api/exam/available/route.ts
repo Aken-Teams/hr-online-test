@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getEmployeeFromCookie } from '@/lib/auth';
+import { syncExamStatuses } from '@/lib/exam-status-sync';
 
 /**
  * GET /api/exam/available?assignmentId=xxx
@@ -17,6 +18,9 @@ export async function GET(request: Request) {
         { status: 401 }
       );
     }
+
+    // Auto-sync exam statuses based on openAt/closeAt
+    await syncExamStatuses();
 
     const { searchParams } = new URL(request.url);
     const assignmentId = searchParams.get('assignmentId');

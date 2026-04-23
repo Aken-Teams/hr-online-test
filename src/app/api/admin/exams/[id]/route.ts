@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
 import { examCreateSchema } from '@/lib/validators';
+import { syncExamStatuses } from '@/lib/exam-status-sync';
 
 export async function GET(
   _request: Request,
@@ -17,6 +18,9 @@ export async function GET(
     }
 
     const { id } = await params;
+
+    // Auto-sync exam statuses based on openAt/closeAt
+    await syncExamStatuses();
 
     const exam = await prisma.exam.findUnique({
       where: { id },

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
 import { examCreateSchema } from '@/lib/validators';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
+import { syncExamStatuses } from '@/lib/exam-status-sync';
 import type { ExamStatus } from '@prisma/client';
 
 export async function GET(request: Request) {
@@ -14,6 +15,9 @@ export async function GET(request: Request) {
         { status: 401 }
       );
     }
+
+    // Auto-sync exam statuses based on openAt/closeAt before listing
+    await syncExamStatuses();
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));

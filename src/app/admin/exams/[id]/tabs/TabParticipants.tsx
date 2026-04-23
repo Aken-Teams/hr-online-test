@@ -185,11 +185,11 @@ export default function TabParticipants({ examId }: Props) {
             加载中...
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* Action bar: search + buttons */}
-            <div className="flex flex-wrap items-center gap-2">
-              {participants.length > 0 && (
-                <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <div className="space-y-3">
+            {/* Toolbar: search + filters + buttons in one row */}
+            {participants.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[140px] max-w-[180px]">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
                   <input
                     type="text"
@@ -199,70 +199,28 @@ export default function TabParticipants({ examId }: Props) {
                     className="w-full rounded-md border border-stone-200 bg-white py-1.5 pl-8 pr-3 text-sm text-stone-700 placeholder:text-stone-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
                   />
                 </div>
-              )}
-              <div className="flex items-center gap-2 ml-auto">
-                {participants.length > 0 && (
-                  <Button variant="outline" size="sm" onClick={handleDeleteAll}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                    清空名单
-                  </Button>
-                )}
-                <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
-                  <Upload className="h-3.5 w-3.5" />
-                  导入名单
-                </Button>
-              </div>
-            </div>
-
-            {/* Filter row */}
-            {participants.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
                 {filterOptions.departments.length > 1 && (
-                  <select
-                    value={filterDept}
-                    onChange={(e) => setFilterDept(e.target.value)}
-                    className={selectClass}
-                  >
+                  <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className={selectClass}>
                     <option value="">全部部门</option>
-                    {filterOptions.departments.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
+                    {filterOptions.departments.map((d) => <option key={d} value={d}>{d}</option>)}
                   </select>
                 )}
                 {filterOptions.processes.length > 1 && (
-                  <select
-                    value={filterProcess}
-                    onChange={(e) => setFilterProcess(e.target.value)}
-                    className={selectClass}
-                  >
+                  <select value={filterProcess} onChange={(e) => setFilterProcess(e.target.value)} className={selectClass}>
                     <option value="">全部工序</option>
-                    {filterOptions.processes.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
+                    {filterOptions.processes.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
                 )}
                 {filterOptions.levels.length > 1 && (
-                  <select
-                    value={filterLevel}
-                    onChange={(e) => setFilterLevel(e.target.value)}
-                    className={selectClass}
-                  >
+                  <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)} className={selectClass}>
                     <option value="">全部等级</option>
-                    {filterOptions.levels.map((l) => (
-                      <option key={l} value={l}>{l}</option>
-                    ))}
+                    {filterOptions.levels.map((l) => <option key={l} value={l}>{l}</option>)}
                   </select>
                 )}
                 {filterOptions.statuses.length > 1 && (
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className={selectClass}
-                  >
+                  <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className={selectClass}>
                     <option value="">全部状态</option>
-                    {filterOptions.statuses.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
+                    {filterOptions.statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 )}
                 {hasActiveFilters && (
@@ -271,9 +229,27 @@ export default function TabParticipants({ examId }: Props) {
                     className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-stone-500 hover:bg-stone-100 hover:text-stone-700"
                   >
                     <X className="h-3 w-3" />
-                    清除筛选
+                    清除
                   </button>
                 )}
+                <div className="flex items-center gap-2 ml-auto">
+                  <Button variant="outline" size="sm" onClick={handleDeleteAll}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    清空名单
+                  </Button>
+                  <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
+                    <Upload className="h-3.5 w-3.5" />
+                    导入名单
+                  </Button>
+                </div>
+              </div>
+            )}
+            {participants.length === 0 && (
+              <div className="flex items-center gap-2 justify-end">
+                <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
+                  <Upload className="h-3.5 w-3.5" />
+                  导入名单
+                </Button>
               </div>
             )}
 

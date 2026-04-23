@@ -31,6 +31,7 @@ interface ResultSummary {
   passRate: number;
   highestScore: number;
   compositePassScore?: number;
+  practicalWeight?: number;
 }
 
 interface ResultRow {
@@ -175,6 +176,8 @@ export default function ExamResultsPage() {
 
   // Check if any result has practical/combined scores
   const hasCombined = results.some((r) => r.combinedScore != null);
+  // Whether this exam uses combined scoring (practical weight > 0)
+  const usesCombinedScoring = (summary?.practicalWeight ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -283,10 +286,10 @@ export default function ExamResultsPage() {
                     <span className="text-sm font-medium text-stone-800">{row.employeeName}</span>
                   </div>
                   {(() => {
-                    const cp = hasCombined && row.combinedScore != null
+                    const cp = row.combinedScore != null
                       ? row.combinedScore >= (summary?.compositePassScore ?? 90)
                       : null;
-                    const dp = cp ?? row.isPassed;
+                    const dp = usesCombinedScoring ? cp : row.isPassed;
                     return dp != null ? (
                       <Badge variant={dp ? 'success' : 'danger'}>
                         {dp ? '合格' : '不合格'}
@@ -360,10 +363,13 @@ export default function ExamResultsPage() {
               </TableHeader>
               <TableBody>
                 {results.map((row) => {
-                  const compositePass = hasCombined && row.combinedScore != null
+                  const compositePass = row.combinedScore != null
                     ? row.combinedScore >= (summary?.compositePassScore ?? 90)
                     : null;
-                  const displayPassed = compositePass ?? row.isPassed;
+                  // If exam uses combined scoring, only show pass/fail when combinedScore exists
+                  const displayPassed = usesCombinedScoring
+                    ? compositePass
+                    : row.isPassed;
 
                   return (
                     <TableRow key={row.sessionId}>

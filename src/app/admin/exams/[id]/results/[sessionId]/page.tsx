@@ -431,10 +431,14 @@ export default function SessionDetailPage() {
       {r && (() => {
         const hasPractical = r.practicalScore != null;
         const hasCombined = r.combinedScore != null;
+        const usesCombined = (data.practicalWeight ?? 0) > 0;
         const compositePass = hasCombined ? r.combinedScore! >= (data.compositePassScore ?? 90) : null;
-        const displayPassed = compositePass ?? r.isPassed;
+        // If exam uses combined scoring, only determine pass/fail when combinedScore exists
+        const displayPassed = usesCombined ? compositePass : r.isPassed;
         const ringScore = hasCombined ? r.combinedScore! : r.totalScore;
         const ringMax = hasCombined ? 100 : r.maxPossibleScore;
+        // When exam uses combined scoring but no practical yet, show stats with practical placeholders
+        const showPracticalSection = usesCombined;
 
         return (
           <Card>
@@ -443,10 +447,10 @@ export default function SessionDetailPage() {
               <div className="flex items-center gap-4 sm:gap-5">
                 <ScoreRing score={ringScore} max={ringMax} size={100} />
                 <div className="flex flex-col gap-1.5">
-                  <Badge variant={displayPassed ? 'success' : 'danger'}>
-                    {displayPassed ? '通过' : '未通过'}
-                  </Badge>
-                  {hasCombined ? (
+                  {displayPassed === true && <Badge variant="success">通过</Badge>}
+                  {displayPassed === false && <Badge variant="danger">未通过</Badge>}
+                  {displayPassed == null && <Badge variant="warning">待定</Badge>}
+                  {usesCombined ? (
                     <p className="text-xs text-stone-500">
                       综合及格线 <span className="font-semibold text-stone-700">{data.compositePassScore ?? 90}</span> 分
                     </p>
@@ -454,6 +458,9 @@ export default function SessionDetailPage() {
                     <p className="text-xs text-stone-500">
                       及格线 <span className="font-semibold text-stone-700">{data.passScore}</span> 分
                     </p>
+                  )}
+                  {usesCombined && !hasPractical && (
+                    <span className="text-xs text-amber-600">待上传实操分</span>
                   )}
                   {r.gradeLabel && (
                     <span className="text-xs text-stone-400">{r.gradeLabel}</span>
@@ -465,7 +472,7 @@ export default function SessionDetailPage() {
               <div className="hidden sm:block w-px self-stretch bg-stone-200" />
 
               {/* Stats grid */}
-              {hasPractical ? (
+              {showPracticalSection ? (
                 <div className="grid w-full flex-1 grid-cols-2 gap-2.5 sm:grid-cols-5 sm:gap-3">
                   <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
                     <p className="text-xs text-stone-500">线上分 <span className="text-stone-400">({Math.round((data.theoryWeight ?? 0.4) * 100)}%)</span></p>
