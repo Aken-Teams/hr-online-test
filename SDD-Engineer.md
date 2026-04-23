@@ -1,9 +1,9 @@
 # 智考雲 — 系統設計文件（工程師版）
 
-> **版本**：v2.0
+> **版本**：v3.0
 > **建立時間**：2026/04/21
-> **更新時間**：2026/04/22
-> **對應 PRD 版本**：v5.0
+> **更新時間**：2026/04/23
+> **對應 PRD 版本**：v6.0
 
 ---
 
@@ -148,6 +148,7 @@ erDiagram
     Question ||--o{ ExamQuestion : "出題"
     Question ||--o{ Answer : "作答"
 
+    Exam ||--o{ ExamBatch : "梯次"
     Exam ||--o{ ExamQuestionRule : "出題規則"
     Exam ||--o{ ExamQuestion : "題目"
     Exam ||--o{ ExamAssignment : "指派"
@@ -215,6 +216,14 @@ erDiagram
         float basicQuestionRatio "預設0.1"
     }
 
+    ExamBatch {
+        string id PK
+        string examId FK
+        string name "第一梯次"
+        datetime openAt
+        datetime closeAt
+    }
+
     ExamQuestionRule {
         string id PK
         string examId FK
@@ -237,6 +246,7 @@ erDiagram
         string examId FK
         string userId FK
         string assignmentId FK "關聯指派"
+        string batchId FK "梯次（可選）"
         enum status "6種狀態"
         int tabSwitchCount
         json questionOrder "題目ID陣列"
@@ -290,7 +300,7 @@ erDiagram
 
 | 父模型 | 子模型 | onDelete |
 |--------|--------|----------|
-| Exam | ExamQuestionRule, ExamQuestion, ExamAssignment | Cascade |
+| Exam | ExamBatch, ExamQuestionRule, ExamQuestion, ExamAssignment | Cascade |
 | ExamSession | Answer, ExamResult | Cascade |
 | ExamSession | AuditLog | 手動刪除（無 Cascade）|
 | Exam | ExamSession | 手動刪除（API 層處理）|
@@ -504,7 +514,7 @@ src/
 │   │   ├── layout.tsx     # 考生端 Layout（登入後顯示側邊欄）
 │   │   ├── page.tsx       # 首頁/登入
 │   │   ├── dashboard/     # 儀表板（歡迎+快捷入口）
-│   │   ├── my-exams/      # 我的考試（多工序卡片列表）
+│   │   ├── my-exams/      # 我的考試（篩選+分頁卡片列表）
 │   │   ├── scores/        # 成績查詢（歷史成績彙總）
 │   │   ├── verify/        # 身份驗證（全螢幕，無側邊欄）
 │   │   ├── instructions/  # 考試須知（接受 assignmentId）
@@ -542,7 +552,9 @@ src/
 │   ├── prisma.ts          # Prisma 實例
 │   ├── scoring.ts         # 評分引擎
 │   ├── question-generator.ts  # 出題引擎（基本題+專業題雙軌）
+│   ├── exam-batch.ts      # 梯次時間窗口判斷（isInExamTimeWindow）
 │   ├── excel.ts           # Excel 解析/匯出（含應考名單解析）
+│   ├── deepseek.ts        # AI 智能欄位識別（DeepSeek API）
 │   ├── validators.ts      # Zod 驗證 Schema
 │   └── constants.ts       # 常數定義（含工序/分類常數）
 └── types/                 # TypeScript 型別
@@ -590,6 +602,23 @@ UPLOAD_DIR="./public/uploads"
 | 題庫篩選 | 新增關聯考試、工序、分類篩選 | 以考試為中心管理題庫 |
 | 成績顯示 | 成績未開放時所有分數統一隱藏 | 用戶要求全部隱藏，不先顯示線上分 |
 
+### v3.0（2026/04/23）— 考試梯次 + 篩選分頁 + 匯入優化
+
+| 項目 | 調整內容 | 原因 |
+|------|---------|------|
+| ExamBatch 模型 | 新增 ExamBatch（id, examId, name, openAt, closeAt），Exam 加 batches relation | 支援考試分時段管理（梯次） |
+| ExamSession.batchId | ExamSession 新增可選 batchId 欄位 | 追蹤考生在哪個梯次參加考試 |
+| exam-batch.ts | 新增 `isInExamTimeWindow()` 工具函式 | 梯次感知的時間窗口判斷，向後相容無梯次考試 |
+| 梯次時間驗證 | 建立/編輯考試時驗證梯次時間在考試範圍內 | 防止設定無效的梯次時間 |
+| 我的考試頁面 | 改為 4 組 CustomSelect 篩選 + 分頁（9/頁），預設顯示活躍考試 | 多考試場景下的瀏覽體驗優化 |
+| 考試列表篩選 | 管理後台考試列表新增狀態/標題篩選 | 快速定位考試 |
+| 批次匯入優化 | 題庫匯入、人員匯入均改用 `createMany` 批次寫入 | 大幅提升匯入效能（數千筆資料秒級完成） |
+| 人員匹配優化 | 預先載入所有使用者至 Map，O(1) 查詢匹配 | 取代逐筆查詢資料庫 |
+| 並行雜湊 | 驗證碼 bcrypt 雜湊改用 `Promise.all` 並行處理 | 減少密碼雜湊等待時間 |
+| AI 欄位識別 | 新增 deepseek.ts，Excel 匯入失敗時自動呼叫 AI 識別欄位 | 相容各種格式的 Excel 檔案 |
+| 已封存考試 | my-exams、my-results API 包含 ARCHIVED 狀態 | 考生可查看歷史考試 |
+| correctAnswer | Question.correctAnswer 改為 @db.Text | 支援長文字正確答案 |
+
 ---
 
-**文件狀態**：v2.0 — 多工序考試架構重構
+**文件狀態**：v3.0 — 考試梯次 + 篩選分頁 + 匯入優化
