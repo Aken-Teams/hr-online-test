@@ -42,8 +42,8 @@ function toSelectOptions(values: string[], allLabel: string, labelMap?: Record<s
 const TYPE_BADGE: Record<QuestionType, 'default' | 'info' | 'success' | 'warning' | 'danger' | 'purple'> = {
   SINGLE_CHOICE: 'info',
   MULTI_CHOICE: 'purple',
-  TRUE_FALSE: 'success',
-  SHORT_ANSWER: 'warning',
+  TRUE_FALSE: 'warning',
+  SHORT_ANSWER: 'success',
   FILL_BLANK: 'default',
   CASE_ANALYSIS: 'danger',
   PRACTICAL: 'info',

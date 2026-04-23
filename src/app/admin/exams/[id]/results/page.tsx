@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, Upload, ChevronDown } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -62,7 +62,9 @@ export default function ExamResultsPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
 
   const fetchResults = useCallback(async () => {
     try {
@@ -81,6 +83,19 @@ export default function ExamResultsPage() {
   useEffect(() => {
     fetchResults();
   }, [fetchResults]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (actionsRef.current && !actionsRef.current.contains(e.target as Node)) {
+        setShowActions(false);
+      }
+    }
+    if (showActions) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showActions]);
 
   async function handleExport() {
     setExporting(true);
@@ -160,7 +175,7 @@ export default function ExamResultsPage() {
       <PageHeader
         title={summary?.examTitle ? `成绩 - ${summary.examTitle}` : '考试成绩'}
         actions={
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -168,25 +183,44 @@ export default function ExamResultsPage() {
               className="hidden"
               onChange={handleImportOfflineScores}
             />
-            <Button
-              variant="outline"
-              onClick={() => {
-                window.open(`/api/admin/exams/${examId}/offline-scores?action=template`, '_blank');
-              }}
-            >
-              <Download className="h-4 w-4" />
-              下载导入模板
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => fileInputRef.current?.click()}
-              loading={importing}
-            >
-              导入线下成绩
-            </Button>
-            <Button variant="secondary" onClick={handleExport} loading={exporting}>
-              导出Excel
-            </Button>
+            {/* Actions dropdown */}
+            <div ref={actionsRef} className="relative">
+              <Button
+                onClick={() => setShowActions(!showActions)}
+              >
+                <Download className="h-4 w-4" />
+                导入导出
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+              {showActions && (
+                <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
+                  <button
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50"
+                    onClick={() => { handleExport(); setShowActions(false); }}
+                  >
+                    <Download className="h-4 w-4" />
+                    导出 Excel
+                  </button>
+                  <button
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50"
+                    onClick={() => { fileInputRef.current?.click(); setShowActions(false); }}
+                  >
+                    <Upload className="h-4 w-4" />
+                    导入线下成绩
+                  </button>
+                  <button
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50"
+                    onClick={() => {
+                      window.open(`/api/admin/exams/${examId}/offline-scores?action=template`, '_blank');
+                      setShowActions(false);
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                    下载导入模板
+                  </button>
+                </div>
+              )}
+            </div>
             <Button variant="outline" onClick={() => router.push('/admin/exams')}>
               <ArrowLeft className="h-4 w-4" />
               返回列表
@@ -293,9 +327,7 @@ export default function ExamResultsPage() {
                   <TableHead>排名</TableHead>
                   <TableHead>姓名</TableHead>
                   <TableHead>部门</TableHead>
-                  <TableHead>总分</TableHead>
-                  <TableHead>客观题</TableHead>
-                  <TableHead>主观题</TableHead>
+                  <TableHead>得分</TableHead>
                   <TableHead>是否通过</TableHead>
                   <TableHead>异常行为</TableHead>
                   <TableHead>用时</TableHead>
@@ -311,8 +343,6 @@ export default function ExamResultsPage() {
                     <TableCell className="font-semibold">
                       {row.totalScore != null ? row.totalScore : row.autoScore ?? '--'}
                     </TableCell>
-                    <TableCell>{row.autoScore}</TableCell>
-                    <TableCell>{row.manualScore != null ? row.manualScore : '--'}</TableCell>
                     <TableCell>
                       {row.isPassed != null ? (
                         <Badge variant={row.isPassed ? 'success' : 'danger'}>

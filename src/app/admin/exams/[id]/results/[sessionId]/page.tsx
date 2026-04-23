@@ -79,22 +79,24 @@ function formatTime(seconds: number) {
 
 function ScoreRing({ score, max, size = 120 }: { score: number; max: number; size?: number }) {
   const pct = max > 0 ? Math.round((score / max) * 100) : 0;
-  const r = (size - 12) / 2;
+  const strokeW = size <= 100 ? 8 : 10;
+  const r = (size - strokeW - 2) / 2;
   const c = 2 * Math.PI * r;
   const offset = c - (pct / 100) * c;
   const color = pct >= 60 ? '#0d9488' : '#ef4444';
+  const textSize = size <= 100 ? 'text-xl' : 'text-2xl';
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e7e5e4" strokeWidth={10} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e7e5e4" strokeWidth={strokeW} />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
           stroke={color}
-          strokeWidth={10}
+          strokeWidth={strokeW}
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={offset}
@@ -102,7 +104,7 @@ function ScoreRing({ score, max, size = 120 }: { score: number; max: number; siz
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-stone-800">{score}</span>
+        <span className={`${textSize} font-bold text-stone-800`}>{score}</span>
         <span className="text-xs text-stone-400">/ {max}</span>
       </div>
     </div>
@@ -365,7 +367,7 @@ export default function SessionDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={`${data.employee.name} 的考试成绩`}
-        description={`${data.examTitle} · ${data.employee.department} · 工号 ${data.employee.employeeNo}`}
+        description={`${data.examTitle} · ${data.employee.department}${data.employee.employeeNo?.startsWith('AUTO_') ? '' : ` · 工号 ${data.employee.employeeNo}`}`}
         actions={
           <Button
             variant="outline"
@@ -380,70 +382,58 @@ export default function SessionDetailPage() {
       {/* Score overview */}
       {r && (
         <Card>
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
-            {/* Score ring */}
-            <div className="flex flex-col items-center gap-2">
-              <ScoreRing score={r.totalScore} max={r.maxPossibleScore} />
-              <Badge variant={r.isPassed ? 'success' : 'danger'}>
-                {r.isPassed ? '通过' : '未通过'}
-              </Badge>
-              {r.gradeLabel && (
-                <span className="text-xs text-stone-400">{r.gradeLabel}</span>
-              )}
+          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-8">
+            {/* Score ring + pass info */}
+            <div className="flex items-center gap-4 sm:gap-5">
+              <ScoreRing score={r.totalScore} max={r.maxPossibleScore} size={100} />
+              <div className="flex flex-col gap-1.5">
+                <Badge variant={r.isPassed ? 'success' : 'danger'}>
+                  {r.isPassed ? '通过' : '未通过'}
+                </Badge>
+                <p className="text-xs text-stone-500">
+                  及格线 <span className="font-semibold text-stone-700">{data.passScore}</span> 分
+                </p>
+                {r.gradeLabel && (
+                  <span className="text-xs text-stone-400">{r.gradeLabel}</span>
+                )}
+              </div>
             </div>
 
-            {/* Stats */}
-            <div className="flex-1 w-full">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-center">
-                  <p className="text-xs text-stone-500">正确率</p>
-                  <p className="text-xl font-bold text-stone-800">{correctPct}%</p>
-                </div>
-                <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-center">
-                  <p className="text-xs text-stone-500">正确 / 总题数</p>
-                  <p className="text-xl font-bold text-stone-800">
-                    {r.correctCount} / {totalQ}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-center">
-                  <p className="text-xs text-stone-500">用时</p>
-                  <p className="text-xl font-bold text-stone-800">
-                    {r.timeTakenSeconds > 0 ? formatTime(r.timeTakenSeconds) : '--'}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-center">
-                  <p className="text-xs text-stone-500">未答题</p>
-                  <p className="text-xl font-bold text-stone-800">{data.unansweredCount}</p>
-                </div>
-              </div>
+            {/* Divider */}
+            <div className="hidden sm:block w-px self-stretch bg-stone-200" />
 
-              {/* Score breakdown */}
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                <div className="rounded-lg border border-stone-200 bg-white px-4 py-3">
-                  <p className="text-xs text-stone-500">客观题得分</p>
-                  <p className="text-lg font-semibold text-stone-800">{r.autoScore}</p>
-                </div>
-                <div className="rounded-lg border border-stone-200 bg-white px-4 py-3">
-                  <p className="text-xs text-stone-500">主观题得分</p>
-                  <p className="text-lg font-semibold text-stone-800">
-                    {r.manualScore != null ? r.manualScore : '--'}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-stone-200 bg-white px-4 py-3">
-                  <p className="text-xs text-stone-500">及格线</p>
-                  <p className="text-lg font-semibold text-stone-800">{data.passScore}</p>
-                </div>
+            {/* Stats grid */}
+            <div className="grid w-full flex-1 grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+              <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                <p className="text-xs text-stone-500">正确率</p>
+                <p className="mt-0.5 text-lg font-bold text-stone-800">{correctPct}%</p>
               </div>
-
-              {data.pendingGradingCount > 0 && (
-                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2">
-                  <p className="text-sm text-amber-700">
-                    尚有 {data.pendingGradingCount} 道主观题待人工评分
-                  </p>
-                </div>
-              )}
+              <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                <p className="text-xs text-stone-500">正确 / 总题数</p>
+                <p className="mt-0.5 text-lg font-bold text-stone-800">
+                  {r.correctCount} / {totalQ}
+                </p>
+              </div>
+              <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                <p className="text-xs text-stone-500">用时</p>
+                <p className="mt-0.5 text-lg font-bold text-stone-800">
+                  {r.timeTakenSeconds > 0 ? formatTime(r.timeTakenSeconds) : '--'}
+                </p>
+              </div>
+              <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                <p className="text-xs text-stone-500">未答题</p>
+                <p className="mt-0.5 text-lg font-bold text-stone-800">{data.unansweredCount}</p>
+              </div>
             </div>
           </div>
+
+          {data.pendingGradingCount > 0 && (
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2">
+              <p className="text-sm text-amber-700">
+                尚有 {data.pendingGradingCount} 道主观题待人工评分
+              </p>
+            </div>
+          )}
         </Card>
       )}
 

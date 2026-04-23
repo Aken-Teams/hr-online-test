@@ -34,6 +34,16 @@ const QUESTION_TYPE_LABELS: Record<string, string> = {
   PRACTICAL: '实操题',
 };
 
+const QUESTION_TYPE_BADGE: Record<string, 'default' | 'info' | 'success' | 'warning' | 'danger' | 'purple'> = {
+  SINGLE_CHOICE: 'info',
+  MULTI_CHOICE: 'purple',
+  TRUE_FALSE: 'warning',
+  SHORT_ANSWER: 'success',
+  FILL_BLANK: 'default',
+  CASE_ANALYSIS: 'danger',
+  PRACTICAL: 'info',
+};
+
 const SHORT_ANSWER_MAX_CHARS = 2000;
 
 // ---------------------------------------------------------------------------
@@ -756,7 +766,7 @@ export default function TestPage() {
                   <span className="text-sm font-medium text-stone-500">
                     第 {currentIndex + 1}/{totalQuestions} 题
                   </span>
-                  <Badge variant="info">
+                  <Badge variant={QUESTION_TYPE_BADGE[currentRawQuestion.type] ?? 'default'}>
                     {QUESTION_TYPE_LABELS[currentRawQuestion.type] || currentRawQuestion.type}
                   </Badge>
                   <span className="text-xs text-stone-400">

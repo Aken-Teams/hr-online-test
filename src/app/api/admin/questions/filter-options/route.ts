@@ -18,10 +18,12 @@ export async function GET(request: Request) {
     const examSourceId = searchParams.get('examSourceId') || undefined;
 
     const where = examSourceId ? { examSourceId } : {};
+    // Levels only from PROFESSIONAL questions — BASIC levels are inconsistent/messy
+    const whereProfessional = { ...where, category: 'PROFESSIONAL' };
 
     const [departments, levels, processes, categories, types] = await Promise.all([
       prisma.question.findMany({ where, select: { department: true }, distinct: ['department'] }),
-      prisma.question.findMany({ where, select: { level: true }, distinct: ['level'] }),
+      prisma.question.findMany({ where: whereProfessional, select: { level: true }, distinct: ['level'] }),
       prisma.question.findMany({ where, select: { process: true }, distinct: ['process'] }),
       prisma.question.findMany({ where, select: { category: true }, distinct: ['category'] }),
       prisma.question.findMany({ where, select: { type: true }, distinct: ['type'] }),

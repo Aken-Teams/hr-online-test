@@ -84,11 +84,11 @@ export async function GET() {
         })
       : [];
 
-    // Build a map: examId → latest session (for fallback when relation is empty)
+    // Build a map: examId → latest session WITHOUT assignmentId (backward compat only)
+    // Sessions WITH assignmentId should only match via the a.sessions relation
     const sessionsByExam = new Map<string, typeof allSessions[0]>();
     for (const s of allSessions) {
-      // Keep the one with highest attemptNumber per examId
-      if (!sessionsByExam.has(s.examId)) {
+      if (!s.assignmentId && !sessionsByExam.has(s.examId)) {
         sessionsByExam.set(s.examId, s);
       }
     }

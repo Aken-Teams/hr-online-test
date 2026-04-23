@@ -379,30 +379,26 @@ function InstructionsPage() {
         {/* Exam details */}
         <div className="space-y-3 px-4 py-4 md:space-y-4 md:px-6 md:py-5">
           {/* Info grid */}
-          <div className="grid grid-cols-2 gap-2 md:gap-3">
+          <div className="space-y-2 md:space-y-3">
             <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
               <p className="text-xs text-stone-500">题目组成</p>
               <p className="mt-0.5 text-xs font-medium text-stone-800 md:text-sm">
                 {composition || `共 ${exam.totalScore} 分`}
               </p>
             </div>
-            <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
-              <p className="text-xs text-stone-500">考试时长</p>
-              <p className="mt-0.5 text-sm font-medium text-stone-800">
-                {exam.timeLimitMinutes} 分钟
-              </p>
-            </div>
-            <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
-              <p className="text-xs text-stone-500">满分</p>
-              <p className="mt-0.5 text-sm font-medium text-stone-800">
-                {exam.totalScore} 分
-              </p>
-            </div>
-            <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
-              <p className="text-xs text-stone-500">线上理论及格分</p>
-              <p className="mt-0.5 text-sm font-medium text-stone-800">
-                {exam.passScore} 分
-              </p>
+            <div className="grid grid-cols-2 gap-2 md:gap-3">
+              <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
+                <p className="text-xs text-stone-500">考试时长</p>
+                <p className="mt-0.5 text-sm font-medium text-stone-800">
+                  {exam.timeLimitMinutes} 分钟
+                </p>
+              </div>
+              <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
+                <p className="text-xs text-stone-500">满分</p>
+                <p className="mt-0.5 text-sm font-medium text-stone-800">
+                  {exam.totalScore} 分
+                </p>
+              </div>
             </div>
           </div>
 
