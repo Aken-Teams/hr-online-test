@@ -5,6 +5,9 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
+
+type Category = 'BASIC' | 'PROFESSIONAL';
 
 interface FileResult {
   filename: string;
@@ -32,6 +35,10 @@ export default function TabQuestions({ examId }: Props) {
   const [loadingSummary, setLoadingSummary] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Classification dialog state
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   useEffect(() => {
     fetchSummary();
   }, [examId]);
@@ -50,16 +57,41 @@ export default function TabQuestions({ examId }: Props) {
     }
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const validFiles: File[] = [];
+    for (const f of Array.from(files)) {
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      if (ext === 'xls' || ext === 'xlsx') {
+        validFiles.push(f);
+      }
+    }
+
+    if (validFiles.length > 0) {
+      setPendingFiles(validFiles);
+      setDialogOpen(true);
+    }
+
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
+  async function handleClassificationConfirm(classifications: Map<string, Category>) {
+    setDialogOpen(false);
     setUploading(true);
+
     try {
       const formData = new FormData();
-      for (const file of Array.from(files)) {
+      for (const file of pendingFiles) {
         formData.append('files', file);
       }
+      // Send classifications as JSON
+      const classObj: Record<string, string> = {};
+      for (const [name, cat] of classifications) {
+        classObj[name] = cat;
+      }
+      formData.append('classifications', JSON.stringify(classObj));
 
       const res = await fetch(`/api/admin/exams/${examId}/import-questions`, {
         method: 'POST',
@@ -76,7 +108,7 @@ export default function TabQuestions({ examId }: Props) {
       toast(err instanceof Error ? err.message : '导入失败', 'error');
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = '';
+      setPendingFiles([]);
     }
   }
 
@@ -98,13 +130,10 @@ export default function TabQuestions({ examId }: Props) {
       <Card title="导入题库">
         <div className="space-y-4">
           <p className="text-sm text-stone-600">
-            上传题库 Excel 文件，文件名格式：
-            <code className="text-xs bg-stone-100 px-1 py-0.5 rounded">部门工序级别.xls</code>
-            <span className="text-stone-400 mx-1">例：</span>
-            <code className="text-xs bg-stone-100 px-1 py-0.5 rounded">工务部SAWⅡ级.xls</code>
+            上传题库 Excel 文件，系统会自动解析题目内容。
           </p>
           <p className="text-xs text-stone-500">
-            系统会自动从文件名解析部门、工序、级别。文件名含「基本」或「基础」关键字则标记为基本题，否则为专业题。
+            选择文件后需先分类（基本知识/专业知识），确认后再上传。
           </p>
 
           <div className="flex items-center gap-3">
@@ -114,7 +143,7 @@ export default function TabQuestions({ examId }: Props) {
               accept=".xls,.xlsx"
               multiple
               className="hidden"
-              onChange={handleUpload}
+              onChange={handleFileSelect}
             />
             <Button
               variant="secondary"
@@ -203,6 +232,17 @@ export default function TabQuestions({ examId }: Props) {
           </div>
         </Card>
       )}
+
+      {/* Classification dialog */}
+      <FileClassificationDialog
+        open={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false);
+          setPendingFiles([]);
+        }}
+        files={pendingFiles}
+        onConfirm={handleClassificationConfirm}
+      />
     </div>
   );
 }

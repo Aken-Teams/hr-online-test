@@ -59,40 +59,92 @@ function detectTypeFromSheetName(sheetName: string): QuestionType | null {
 
 /** Map Chinese column headers to our internal field names. */
 const COLUMN_MAP: Record<string, string> = {
+  // Content / question text
   '试题描述(文本)': 'content',
+  '试题描述文本': 'content',
   '试题描述': 'content',
   '题目内容': 'content',
   '题目': 'content',
+  '问题/处置措施': 'content',
+
+  // True/false answer
   '正确(是/否)': 'correctTF',
+  '判断': 'correctTF',
+  '是答案': 'correctAnswer',
+
+  // Correct answer
   '正确答案': 'correctAnswer',
+  '正确答案(字母)': 'correctAnswer',
   '答案': 'correctAnswer',
+
+  // Level / difficulty
   '试题级别': 'level',
   '级别': 'level',
+  '等级': 'level',
+  '难度级别': 'level',
+
+  // Department / role
   '所属部门': 'department',
   '部门': 'department',
   '人员范围': 'role',
   '岗位': 'role',
+
+  // Options A-E
   'A选项(文本)': 'optionA',
   'A选项': 'optionA',
+  '选项A': 'optionA',
   'B选项(文本)': 'optionB',
   'B选项': 'optionB',
+  '选项B': 'optionB',
   'C选项(文本)': 'optionC',
   'C选项': 'optionC',
+  '选项C': 'optionC',
   'D选项(文本)': 'optionD',
   'D选项': 'optionD',
+  '选项D': 'optionD',
   'E选项(文本)': 'optionE',
   'E选项': 'optionE',
+  '选项E': 'optionE',
+
+  // Multi-select
   '可多选(是/否)': 'isMultiSelect',
   '可多选': 'isMultiSelect',
+
+  // Reference / rubric
   '参考答案': 'referenceAnswer',
+  '参考答案要点': 'referenceAnswer',
+  '正确操作要点': 'referenceAnswer',
+  '操作要点': 'referenceAnswer',
   '评分标准': 'gradingRubric',
+
+  // Metadata
   '题目属性': 'deptRole', // combined "部门--岗位" format
   '备注': 'note',
+  '解析': 'note',
+  '分析要点': 'note',
+  '题型': '_questionType',
+  '技能': 'level',
+
+  // Merged options column (some files combine A-D in one "选项" column)
+  '选项': '_mergedOptions',
+
+  // Index columns (ignored during processing)
+  '序号': '_index',
+  '序號': '_index',
 };
 
-function mapColumnName(header: string): string {
-  const trimmed = header.trim();
-  return COLUMN_MAP[trimmed] || trimmed;
+function mapColumnName(header: string, customMap?: Record<string, string>): string {
+  const raw = header.trim();
+  // Normalize full-width brackets to half-width for lookup
+  const normalized = raw.replace(/（/g, '(').replace(/）/g, ')');
+
+  // Custom map takes priority (from AI fallback)
+  if (customMap) {
+    if (customMap[raw]) return customMap[raw];
+    if (customMap[normalized]) return customMap[normalized];
+  }
+
+  return COLUMN_MAP[normalized] || COLUMN_MAP[raw] || raw;
 }
 
 // ============================================================
@@ -103,8 +155,14 @@ function mapColumnName(header: string): string {
  * Parse a question bank Excel file (Buffer) and return structured rows.
  * Auto-detects question type from sheet names.
  * Supports .xls and .xlsx formats.
+ *
+ * @param customColumnMap  Optional column mapping override (e.g. from AI fallback).
+ *                         Keys = original header, values = internal field name.
  */
-export function parseQuestionExcel(buffer: Buffer): QuestionImportRow[] {
+export function parseQuestionExcel(
+  buffer: Buffer,
+  customColumnMap?: Record<string, string>
+): QuestionImportRow[] {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   const results: QuestionImportRow[] = [];
 
@@ -118,16 +176,50 @@ export function parseQuestionExcel(buffer: Buffer): QuestionImportRow[] {
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) continue;
 
-    const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+    let rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
       defval: '',
     });
+
+    // --- First-row-skip heuristic ---
+    // Some files have a description / purpose text as the first row instead
+    // of real column headers.  Detect this and re-parse with range: 1.
+    // Two cases:
+    //   (a) A header key itself is very long or starts with "目的" — the first
+    //       row was description text that XLSX used as column names.
+    //   (b) No 'content' column found and the first data value is long text.
+    if (rawRows.length > 1) {
+      const firstRowKeys = Object.keys(rawRows[0]);
+      const hasLongHeader = firstRowKeys.some(
+        (k) => k.length > 50 || k.startsWith('目的')
+      );
+
+      let needReparse = hasLongHeader;
+
+      if (!needReparse) {
+        const mappedKeys = firstRowKeys.map((k) => mapColumnName(k, customColumnMap));
+        const hasContentCol = mappedKeys.includes('content');
+        if (!hasContentCol) {
+          const firstVal = String(Object.values(rawRows[0])[0] ?? '');
+          if (firstVal.length > 30 || firstVal.startsWith('目的')) {
+            needReparse = true;
+          }
+        }
+      }
+
+      if (needReparse) {
+        rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+          defval: '',
+          range: 1,
+        });
+      }
+    }
 
     for (let rowIdx = 0; rowIdx < rawRows.length; rowIdx++) {
       const raw = rawRows[rowIdx];
       // Map Chinese column headers to internal names
       const row: Record<string, string> = {};
       for (const [key, value] of Object.entries(raw)) {
-        const mapped = mapColumnName(key);
+        const mapped = mapColumnName(key, customColumnMap);
         row[mapped] = String(value ?? '').trim();
       }
 
@@ -155,14 +247,42 @@ export function parseQuestionExcel(buffer: Buffer): QuestionImportRow[] {
         }
       }
 
+      // --- Merged options parsing ---
+      // Some files put all options in a single column like "A.xxx B.xxx C.xxx D.xxx"
+      if (
+        options.length === 0 &&
+        (questionType === 'SINGLE_CHOICE' || questionType === 'MULTI_CHOICE')
+      ) {
+        const mergedSrc = row._mergedOptions || '';
+        // Also scan other unmapped columns for merged pattern
+        const candidates = mergedSrc
+          ? [mergedSrc]
+          : Object.entries(row)
+              .filter(([k]) => !['content', 'correctAnswer', 'correctTF', 'level', 'department', 'role', 'deptRole', 'note', '_index', 'isMultiSelect', 'referenceAnswer', 'gradingRubric'].includes(k))
+              .map(([, v]) => v);
+
+        for (const val of candidates) {
+          if (/[A-E][.、．]\s*.+[B-E][.、．]/.test(val)) {
+            const optParts = val.split(/(?=[A-E][.、．])/);
+            for (const part of optParts) {
+              const m = part.match(/^([A-E])[.、．]\s*(.+)/);
+              if (m) {
+                options.push({ label: m[1], content: m[2].trim() });
+              }
+            }
+            break;
+          }
+        }
+      }
+
       // Determine correct answer
       let correctAnswer: string | undefined;
       if (questionType === 'TRUE_FALSE') {
         // 判断题: "正确(是/否)" column -> "是" = "TRUE", "否" = "FALSE"
         const tfValue = row.correctTF || row.correctAnswer || '';
-        if (tfValue === '是' || tfValue === '对' || tfValue === '√' || tfValue === 'true' || tfValue === 'TRUE') {
+        if (/^(是|对|正确|√|true|TRUE)$/.test(tfValue)) {
           correctAnswer = 'TRUE';
-        } else if (tfValue === '否' || tfValue === '错' || tfValue === 'X' || tfValue === '×' || tfValue === 'false' || tfValue === 'FALSE') {
+        } else if (/^(否|错|错误|X|×|false|FALSE)$/.test(tfValue)) {
           correctAnswer = 'FALSE';
         } else if (tfValue) {
           correctAnswer = tfValue;
@@ -175,7 +295,7 @@ export function parseQuestionExcel(buffer: Buffer): QuestionImportRow[] {
       let department = row.department || '';
       let role = row.role || '';
       if (!department && !role && row.deptRole) {
-        const parts = row.deptRole.split('--');
+        const parts = row.deptRole.split(/--|—/);
         department = parts[0]?.trim() || '';
         role = parts[1]?.trim() || department; // fallback to dept if no role
       }
@@ -203,6 +323,42 @@ export function parseQuestionExcel(buffer: Buffer): QuestionImportRow[] {
   }
 
   return results;
+}
+
+// ============================================================
+// Extract Headers + Sample Rows (for AI fallback)
+// ============================================================
+
+/**
+ * Extract the raw column headers and first few sample rows from an Excel file.
+ * Used to feed AI-based column identification when rule-based parsing fails.
+ */
+export function extractHeadersAndSamples(
+  buffer: Buffer,
+  maxSamples = 3
+): { headers: string[]; sampleRows: Record<string, string>[] } | null {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return null;
+
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) return null;
+
+  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+    defval: '',
+  });
+  if (rawRows.length === 0) return null;
+
+  const headers = Object.keys(rawRows[0]);
+  const sampleRows = rawRows.slice(0, maxSamples).map((row) => {
+    const mapped: Record<string, string> = {};
+    for (const [key, value] of Object.entries(row)) {
+      mapped[key] = String(value ?? '').substring(0, 200);
+    }
+    return mapped;
+  });
+
+  return { headers, sampleRows };
 }
 
 // ============================================================

@@ -7,10 +7,13 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, FileSpreadsheet, CheckCircle, XCircle, Loader2, Upload, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+type Category = 'BASIC' | 'PROFESSIONAL';
 
 interface FileResult {
   status: 'pending' | 'uploading' | 'done' | 'error';
@@ -22,6 +25,11 @@ interface FileResult {
   error?: string;
 }
 
+const CATEGORY_LABEL: Record<Category, string> = {
+  BASIC: '基本知识',
+  PROFESSIONAL: '专业知识',
+};
+
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
@@ -32,11 +40,16 @@ export default function QuestionImportPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [files, setFiles] = useState<File[]>([]);
+  const [fileCategories, setFileCategories] = useState<Map<string, Category>>(new Map());
   const [fileResults, setFileResults] = useState<Map<string, FileResult>>(new Map());
   const [importing, setImporting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  function addFiles(newFiles: FileList | File[]) {
+  // Classification dialog
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  function handleNewFiles(newFiles: FileList | File[]) {
     const validFiles: File[] = [];
     for (const f of Array.from(newFiles)) {
       const ext = f.name.split('.').pop()?.toLowerCase();
@@ -44,17 +57,35 @@ export default function QuestionImportPage() {
         toast(`${f.name}: 仅支持 .xls 和 .xlsx 格式`, 'warning');
         continue;
       }
-      // Skip duplicates by name
       if (files.some((existing) => existing.name === f.name)) continue;
       validFiles.push(f);
     }
     if (validFiles.length > 0) {
-      setFiles((prev) => [...prev, ...validFiles]);
+      setPendingFiles(validFiles);
+      setDialogOpen(true);
     }
+  }
+
+  function handleClassificationConfirm(classifications: Map<string, Category>) {
+    setDialogOpen(false);
+    setFiles((prev) => [...prev, ...pendingFiles]);
+    setFileCategories((prev) => {
+      const next = new Map(prev);
+      for (const [name, cat] of classifications) {
+        next.set(name, cat);
+      }
+      return next;
+    });
+    setPendingFiles([]);
   }
 
   function removeFile(name: string) {
     setFiles((prev) => prev.filter((f) => f.name !== name));
+    setFileCategories((prev) => {
+      const next = new Map(prev);
+      next.delete(name);
+      return next;
+    });
     setFileResults((prev) => {
       const next = new Map(prev);
       next.delete(name);
@@ -64,6 +95,7 @@ export default function QuestionImportPage() {
 
   function clearAll() {
     setFiles([]);
+    setFileCategories(new Map());
     setFileResults(new Map());
   }
 
@@ -75,7 +107,6 @@ export default function QuestionImportPage() {
     let totalDuplicates = 0;
 
     for (const file of files) {
-      // Skip already-done files
       const existing = fileResults.get(file.name);
       if (existing?.status === 'done') continue;
 
@@ -84,6 +115,7 @@ export default function QuestionImportPage() {
       try {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('category', fileCategories.get(file.name) || 'PROFESSIONAL');
 
         const res = await fetch('/api/admin/questions/import', {
           method: 'POST',
@@ -134,7 +166,7 @@ export default function QuestionImportPage() {
     e.preventDefault();
     setDragOver(false);
     if (e.dataTransfer.files.length > 0) {
-      addFiles(e.dataTransfer.files);
+      handleNewFiles(e.dataTransfer.files);
     }
   }
 
@@ -184,7 +216,7 @@ export default function QuestionImportPage() {
             className="hidden"
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) {
-                addFiles(e.target.files);
+                handleNewFiles(e.target.files);
               }
               e.target.value = '';
             }}
@@ -200,6 +232,7 @@ export default function QuestionImportPage() {
           <div className="space-y-2">
             {files.map((f) => {
               const result = fileResults.get(f.name);
+              const cat = fileCategories.get(f.name);
               return (
                 <div
                   key={f.name}
@@ -207,7 +240,20 @@ export default function QuestionImportPage() {
                 >
                   <FileSpreadsheet className="h-5 w-5 shrink-0 text-stone-400" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-stone-800 truncate">{f.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-stone-800 truncate">{f.name}</p>
+                      {cat && (
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                            cat === 'BASIC'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-amber-100 text-amber-700'
+                          }`}
+                        >
+                          {CATEGORY_LABEL[cat]}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-stone-400">
                       {(f.size / 1024).toFixed(1)} KB
                       {result?.status === 'done' && (
@@ -270,6 +316,17 @@ export default function QuestionImportPage() {
           </div>
         </Card>
       )}
+
+      {/* Classification dialog */}
+      <FileClassificationDialog
+        open={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false);
+          setPendingFiles([]);
+        }}
+        files={pendingFiles}
+        onConfirm={handleClassificationConfirm}
+      />
     </div>
   );
 }

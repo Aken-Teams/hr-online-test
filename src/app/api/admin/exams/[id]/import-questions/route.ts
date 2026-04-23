@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
-import { parseQuestionExcel, parseQuestionFilename } from '@/lib/excel';
+import { parseQuestionExcel, parseQuestionFilename, extractHeadersAndSamples } from '@/lib/excel';
+import { identifyColumnsWithAI } from '@/lib/deepseek';
 import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 
 /**
@@ -36,6 +37,15 @@ export async function POST(
 
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
+
+    // Read classifications from frontend (if provided)
+    const classificationsJson = formData.get('classifications') as string | null;
+    let classifications: Record<string, string> = {};
+    if (classificationsJson) {
+      try {
+        classifications = JSON.parse(classificationsJson);
+      } catch { /* ignore parse errors */ }
+    }
 
     if (files.length === 0) {
       return NextResponse.json(
@@ -85,7 +95,18 @@ export async function POST(
       // Parse filename for metadata
       const parsed = parseQuestionFilename(file.name);
       const buffer = Buffer.from(await file.arrayBuffer());
-      const rows = parseQuestionExcel(buffer);
+      let rows = parseQuestionExcel(buffer);
+
+      // AI fallback: if rule-based parsing returned 0 rows, try AI column identification
+      if (rows.length === 0) {
+        const extracted = extractHeadersAndSamples(buffer);
+        if (extracted) {
+          const aiMapping = await identifyColumnsWithAI(extracted.headers, extracted.sampleRows);
+          if (aiMapping) {
+            rows = parseQuestionExcel(buffer, aiMapping);
+          }
+        }
+      }
 
       let fileCreated = 0;
       let fileDuplicates = 0;
@@ -102,9 +123,14 @@ export async function POST(
         continue;
       }
 
-      // Determine category: if filename contains "基本"/"基础" -> BASIC, else PROFESSIONAL
-      const isBasic = file.name.includes('基本') || file.name.includes('基础') || file.name.toLowerCase().includes('basic');
-      const category = isBasic ? 'BASIC' : 'PROFESSIONAL';
+      // Determine category: use frontend classification first, then filename fallback
+      let category: string;
+      if (classifications[file.name]) {
+        category = classifications[file.name];
+      } else {
+        const isBasic = file.name.includes('基本') || file.name.includes('基础') || file.name.toLowerCase().includes('basic');
+        category = isBasic ? 'BASIC' : 'PROFESSIONAL';
+      }
 
       await prisma.$transaction(
         async (tx) => {

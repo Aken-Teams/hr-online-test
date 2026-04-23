@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
-import { parseQuestionExcel } from '@/lib/excel';
+import { parseQuestionExcel, extractHeadersAndSamples } from '@/lib/excel';
+import { identifyColumnsWithAI } from '@/lib/deepseek';
 import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 import { writeFile, unlink, mkdir } from 'fs/promises';
 import { execFile } from 'child_process';
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    const category = (formData.get('category') as string) || 'PROFESSIONAL';
 
     if (!file) {
       return NextResponse.json(
@@ -132,7 +134,18 @@ export async function POST(request: Request) {
     }
 
     // Step 2: Parse question text data
-    const rows = parseQuestionExcel(buffer);
+    let rows = parseQuestionExcel(buffer);
+
+    // AI fallback: if rule-based parsing returned 0 rows, try AI column identification
+    if (rows.length === 0) {
+      const extracted = extractHeadersAndSamples(buffer);
+      if (extracted) {
+        const aiMapping = await identifyColumnsWithAI(extracted.headers, extracted.sampleRows);
+        if (aiMapping) {
+          rows = parseQuestionExcel(buffer, aiMapping);
+        }
+      }
+    }
 
     // Cleanup temp file
     try { await unlink(tmpFile); } catch { /* ignore */ }
@@ -217,6 +230,7 @@ export async function POST(request: Request) {
               isMultiSelect: row.isMultiSelect ?? false,
               referenceAnswer: row.referenceAnswer ?? null,
               sourceFile: file.name,
+              category,
               options: row.options
                 ? {
                     create: row.options.map((opt, idx) => ({
