@@ -48,14 +48,20 @@ export async function GET(request: Request) {
       },
     });
 
-    // Get exam title
+    // Get exam title and scoring weights
     let examTitle = '';
+    let theoryWeight = 0.4;
+    let practicalWeight = 0.6;
+    let compositePassScore = 90;
     if (examId) {
       const exam = await prisma.exam.findUnique({
         where: { id: examId },
-        select: { title: true },
+        select: { title: true, theoryWeight: true, practicalWeight: true, compositePassScore: true },
       });
       examTitle = exam?.title ?? '';
+      theoryWeight = exam?.theoryWeight ?? 0.4;
+      practicalWeight = exam?.practicalWeight ?? 0.6;
+      compositePassScore = exam?.compositePassScore ?? 90;
     }
 
     if (results.length === 0) {
@@ -199,6 +205,8 @@ export async function GET(request: Request) {
       totalScore: r.totalScore,
       autoScore: r.autoScore ?? 0,
       manualScore: r.manualScore,
+      practicalScore: r.practicalScore,
+      combinedScore: r.combinedScore,
       timeTakenSeconds: r.timeTakenSeconds,
       isPassed: r.isPassed,
       submittedAt: r.session.submittedAt?.toISOString() ?? null,
@@ -301,6 +309,9 @@ export async function GET(request: Request) {
           highestScore,
           lowestScore,
           avgTimeTaken,
+          theoryWeight,
+          practicalWeight,
+          compositePassScore,
         },
         rankings,
         results: rankings,

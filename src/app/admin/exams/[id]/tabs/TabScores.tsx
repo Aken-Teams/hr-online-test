@@ -107,7 +107,7 @@ export default function TabScores({ examId }: Props) {
               <tbody>
                 {scores.map((s) => (
                   <tr key={s.sessionId} className="border-b border-stone-50">
-                    <td className="py-2 pr-3">{s.employeeNo}</td>
+                    <td className="py-2 pr-3">{s.employeeNo?.startsWith('AUTO_') ? '-' : s.employeeNo}</td>
                     <td className="py-2 pr-3 font-medium">{s.name}</td>
                     <td className="py-2 pr-3 text-stone-600">{s.department}</td>
                     <td className="py-2 pr-3 text-stone-600">{s.process ?? '-'}</td>

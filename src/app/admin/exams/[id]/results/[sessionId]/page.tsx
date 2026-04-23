@@ -48,8 +48,13 @@ interface SessionDetailData {
       { earnedPoints: number; maxPoints: number; count: number; correctCount: number }
     >;
     isFullyGraded: boolean;
+    practicalScore: number | null;
+    combinedScore: number | null;
   } | null;
   passScore: number;
+  theoryWeight?: number;
+  practicalWeight?: number;
+  compositePassScore?: number;
   unansweredCount: number;
   pendingGradingCount: number;
   correctAnswers: QuestionDetail[];
@@ -118,8 +123,9 @@ function ScoreRing({ score, max, size = 120 }: { score: number; max: number; siz
 /** Format TRUE_FALSE raw value to readable text */
 function formatTFAnswer(val: string | null): string {
   if (!val) return '（未作答）';
-  if (val === 'TRUE' || val === '是' || val === '对' || val === '√') return '✓ 正确（对）';
-  if (val === 'FALSE' || val === '否' || val === '错' || val === '×') return '✗ 错误（错）';
+  const v = val.toUpperCase();
+  if (v === 'TRUE' || val === '是' || val === '对' || val === '√') return '✓ 正确（对）';
+  if (v === 'FALSE' || val === '否' || val === '错' || val === '×') return '✗ 错误（错）';
   return val;
 }
 
@@ -162,29 +168,71 @@ function QuestionCard({ q, index }: { q: QuestionDetail; index: number }) {
           {q.questionContent}
         </p>
 
-        {/* TRUE_FALSE: show student answer vs correct answer */}
-        {isTrueFalse && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <p className="mb-1.5 text-xs font-medium text-stone-500">考生作答</p>
-              <div className={`rounded-lg border px-4 py-3 text-sm ${
-                !answered
-                  ? 'border-stone-200 bg-stone-50 text-stone-400'
-                  : q.isCorrect
-                    ? 'border-green-200 bg-green-50 text-green-800'
-                    : 'border-red-200 bg-red-50 text-red-700'
-              }`}>
-                {formatTFAnswer(q.yourAnswer)}
+        {/* TRUE_FALSE: option-style layout like choice questions */}
+        {isTrueFalse && (() => {
+          const correctVal = q.correctAnswer?.toUpperCase();
+          const yourVal = q.yourAnswer?.toUpperCase();
+          const isCorrectTrue = correctVal === 'TRUE' || q.correctAnswer === '是' || q.correctAnswer === '对' || q.correctAnswer === '√';
+          const choseTrue = yourVal === 'TRUE' || q.yourAnswer === '是' || q.yourAnswer === '对' || q.yourAnswer === '√';
+          const choseFalse = yourVal === 'FALSE' || q.yourAnswer === '否' || q.yourAnswer === '错' || q.yourAnswer === '×';
+
+          const tfOptions = [
+            { label: '正确（对）', value: true, isCorrectOpt: isCorrectTrue, isChosen: choseTrue },
+            { label: '错误（错）', value: false, isCorrectOpt: !isCorrectTrue, isChosen: choseFalse },
+          ];
+
+          return (
+            <>
+              <div className="flex items-center gap-4 text-sm">
+                <span className="text-stone-500">
+                  考生选择：
+                  <span className={`font-medium ${!answered ? 'text-stone-400' : q.isCorrect ? 'text-green-700' : 'text-red-600'}`}>
+                    {!answered ? '（未作答）' : choseTrue ? '正确（对）' : '错误（错）'}
+                  </span>
+                </span>
+                <span className="text-stone-500">
+                  正确答案：
+                  <span className="font-medium text-green-700">{isCorrectTrue ? '正确（对）' : '错误（错）'}</span>
+                </span>
               </div>
-            </div>
-            <div>
-              <p className="mb-1.5 text-xs font-medium text-stone-500">正确答案</p>
-              <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                {formatTFAnswer(q.correctAnswer)}
+              <div className="space-y-1.5">
+                {tfOptions.map((o) => {
+                  let bg = 'bg-white';
+                  let border = 'border-stone-200';
+                  let text = 'text-stone-600';
+
+                  if (o.isCorrectOpt && o.isChosen) {
+                    bg = 'bg-green-50'; border = 'border-green-300'; text = 'text-green-800';
+                  } else if (o.isCorrectOpt) {
+                    bg = 'bg-green-50'; border = 'border-green-200'; text = 'text-green-700';
+                  } else if (o.isChosen) {
+                    bg = 'bg-red-50'; border = 'border-red-200'; text = 'text-red-700';
+                  }
+
+                  return (
+                    <div
+                      key={o.label}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${bg} ${border} ${text}`}
+                    >
+                      <span className="font-medium">{o.value ? '✓' : '✗'}</span>
+                      <span className="flex-1">{o.label}</span>
+                      {o.isCorrectOpt && (
+                        <svg className="h-4 w-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      )}
+                      {o.isChosen && !o.isCorrectOpt && (
+                        <svg className="h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          </div>
-        )}
+            </>
+          );
+        })()}
 
         {/* Choice options */}
         {isChoice && q.options && q.options.length > 0 && (
@@ -380,62 +428,104 @@ export default function SessionDetailPage() {
       />
 
       {/* Score overview */}
-      {r && (
-        <Card>
-          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-8">
-            {/* Score ring + pass info */}
-            <div className="flex items-center gap-4 sm:gap-5">
-              <ScoreRing score={r.totalScore} max={r.maxPossibleScore} size={100} />
-              <div className="flex flex-col gap-1.5">
-                <Badge variant={r.isPassed ? 'success' : 'danger'}>
-                  {r.isPassed ? '通过' : '未通过'}
-                </Badge>
-                <p className="text-xs text-stone-500">
-                  及格线 <span className="font-semibold text-stone-700">{data.passScore}</span> 分
-                </p>
-                {r.gradeLabel && (
-                  <span className="text-xs text-stone-400">{r.gradeLabel}</span>
-                )}
+      {r && (() => {
+        const hasPractical = r.practicalScore != null;
+        const hasCombined = r.combinedScore != null;
+        const compositePass = hasCombined ? r.combinedScore! >= (data.compositePassScore ?? 90) : null;
+        const displayPassed = compositePass ?? r.isPassed;
+        const ringScore = hasCombined ? r.combinedScore! : r.totalScore;
+        const ringMax = hasCombined ? 100 : r.maxPossibleScore;
+
+        return (
+          <Card>
+            <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-8">
+              {/* Score ring + pass info */}
+              <div className="flex items-center gap-4 sm:gap-5">
+                <ScoreRing score={ringScore} max={ringMax} size={100} />
+                <div className="flex flex-col gap-1.5">
+                  <Badge variant={displayPassed ? 'success' : 'danger'}>
+                    {displayPassed ? '通过' : '未通过'}
+                  </Badge>
+                  {hasCombined ? (
+                    <p className="text-xs text-stone-500">
+                      综合及格线 <span className="font-semibold text-stone-700">{data.compositePassScore ?? 90}</span> 分
+                    </p>
+                  ) : (
+                    <p className="text-xs text-stone-500">
+                      及格线 <span className="font-semibold text-stone-700">{data.passScore}</span> 分
+                    </p>
+                  )}
+                  {r.gradeLabel && (
+                    <span className="text-xs text-stone-400">{r.gradeLabel}</span>
+                  )}
+                </div>
               </div>
+
+              {/* Divider */}
+              <div className="hidden sm:block w-px self-stretch bg-stone-200" />
+
+              {/* Stats grid */}
+              {hasPractical ? (
+                <div className="grid w-full flex-1 grid-cols-2 gap-2.5 sm:grid-cols-5 sm:gap-3">
+                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                    <p className="text-xs text-stone-500">线上分 <span className="text-stone-400">({Math.round((data.theoryWeight ?? 0.4) * 100)}%)</span></p>
+                    <p className="mt-0.5 text-lg font-bold text-stone-800">
+                      {r.totalScore}<span className="text-sm font-normal text-stone-400"> / {r.maxPossibleScore}</span>
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                    <p className="text-xs text-stone-500">实操分 <span className="text-stone-400">({Math.round((data.practicalWeight ?? 0.6) * 100)}%)</span></p>
+                    <p className="mt-0.5 text-lg font-bold text-stone-800">{r.practicalScore ?? '--'}</p>
+                  </div>
+                  <div className="rounded-lg bg-teal-50 px-3 py-2.5 text-center">
+                    <p className="text-xs font-medium text-teal-600">综合分</p>
+                    <p className="mt-0.5 text-lg font-bold text-teal-700">{r.combinedScore ?? '--'}</p>
+                  </div>
+                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                    <p className="text-xs text-stone-500">正确 / 总题</p>
+                    <p className="mt-0.5 text-lg font-bold text-stone-800">{r.correctCount} / {totalQ}</p>
+                  </div>
+                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                    <p className="text-xs text-stone-500">用时</p>
+                    <p className="mt-0.5 text-lg font-bold text-stone-800">
+                      {r.timeTakenSeconds > 0 ? formatTime(r.timeTakenSeconds) : '--'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid w-full flex-1 grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                    <p className="text-xs text-stone-500">正确率</p>
+                    <p className="mt-0.5 text-lg font-bold text-stone-800">{correctPct}%</p>
+                  </div>
+                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                    <p className="text-xs text-stone-500">正确 / 总题数</p>
+                    <p className="mt-0.5 text-lg font-bold text-stone-800">{r.correctCount} / {totalQ}</p>
+                  </div>
+                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                    <p className="text-xs text-stone-500">用时</p>
+                    <p className="mt-0.5 text-lg font-bold text-stone-800">
+                      {r.timeTakenSeconds > 0 ? formatTime(r.timeTakenSeconds) : '--'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                    <p className="text-xs text-stone-500">未答题</p>
+                    <p className="mt-0.5 text-lg font-bold text-stone-800">{data.unansweredCount}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Divider */}
-            <div className="hidden sm:block w-px self-stretch bg-stone-200" />
-
-            {/* Stats grid */}
-            <div className="grid w-full flex-1 grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-              <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                <p className="text-xs text-stone-500">正确率</p>
-                <p className="mt-0.5 text-lg font-bold text-stone-800">{correctPct}%</p>
-              </div>
-              <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                <p className="text-xs text-stone-500">正确 / 总题数</p>
-                <p className="mt-0.5 text-lg font-bold text-stone-800">
-                  {r.correctCount} / {totalQ}
+            {data.pendingGradingCount > 0 && (
+              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2">
+                <p className="text-sm text-amber-700">
+                  尚有 {data.pendingGradingCount} 道主观题待人工评分
                 </p>
               </div>
-              <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                <p className="text-xs text-stone-500">用时</p>
-                <p className="mt-0.5 text-lg font-bold text-stone-800">
-                  {r.timeTakenSeconds > 0 ? formatTime(r.timeTakenSeconds) : '--'}
-                </p>
-              </div>
-              <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                <p className="text-xs text-stone-500">未答题</p>
-                <p className="mt-0.5 text-lg font-bold text-stone-800">{data.unansweredCount}</p>
-              </div>
-            </div>
-          </div>
-
-          {data.pendingGradingCount > 0 && (
-            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2">
-              <p className="text-sm text-amber-700">
-                尚有 {data.pendingGradingCount} 道主观题待人工评分
-              </p>
-            </div>
-          )}
-        </Card>
-      )}
+            )}
+          </Card>
+        );
+      })()}
 
       {/* Category breakdown */}
       {r?.categoryScores && Object.keys(r.categoryScores).length > 0 && (

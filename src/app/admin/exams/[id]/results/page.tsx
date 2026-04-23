@@ -30,6 +30,7 @@ interface ResultSummary {
   averageScore: number;
   passRate: number;
   highestScore: number;
+  compositePassScore?: number;
 }
 
 interface ResultRow {
@@ -40,6 +41,8 @@ interface ResultRow {
   totalScore: number | null;
   autoScore: number;
   manualScore: number | null;
+  practicalScore: number | null;
+  combinedScore: number | null;
   isPassed: boolean | null;
   timeTakenSeconds: number;
   status?: string;
@@ -170,6 +173,9 @@ export default function ExamResultsPage() {
     );
   }
 
+  // Check if any result has practical/combined scores
+  const hasCombined = results.some((r) => r.combinedScore != null);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -276,22 +282,38 @@ export default function ExamResultsPage() {
                     </span>
                     <span className="text-sm font-medium text-stone-800">{row.employeeName}</span>
                   </div>
-                  {row.isPassed != null ? (
-                    <Badge variant={row.isPassed ? 'success' : 'danger'}>
-                      {row.isPassed ? '合格' : '不合格'}
-                    </Badge>
-                  ) : (
-                    <Badge variant="default">待定</Badge>
-                  )}
+                  {(() => {
+                    const cp = hasCombined && row.combinedScore != null
+                      ? row.combinedScore >= (summary?.compositePassScore ?? 90)
+                      : null;
+                    const dp = cp ?? row.isPassed;
+                    return dp != null ? (
+                      <Badge variant={dp ? 'success' : 'danger'}>
+                        {dp ? '合格' : '不合格'}
+                      </Badge>
+                    ) : (
+                      <Badge variant="default">待定</Badge>
+                    );
+                  })()}
                 </div>
                 <p className="mt-1 text-xs text-stone-500">{row.department}</p>
-                <div className="mt-1.5 flex items-center justify-between text-xs">
+                <div className="mt-1.5 flex items-center gap-3 text-xs">
                   <span className="text-stone-500">
-                    得分:{' '}
+                    {hasCombined ? '线上' : '得分'}:{' '}
                     <span className="font-semibold text-stone-800">
                       {row.totalScore != null ? row.totalScore : row.autoScore ?? '--'}
                     </span>
                   </span>
+                  {hasCombined && (
+                    <>
+                      <span className="text-stone-500">
+                        实操: <span className="font-semibold text-stone-800">{row.practicalScore ?? '--'}</span>
+                      </span>
+                      <span className="text-stone-500">
+                        综合: <span className="font-bold text-teal-700">{row.combinedScore ?? '--'}</span>
+                      </span>
+                    </>
+                  )}
                 </div>
                 <div className="mt-1.5 flex items-center justify-between text-xs text-stone-400">
                   <div className="flex flex-wrap gap-1">
@@ -327,7 +349,9 @@ export default function ExamResultsPage() {
                   <TableHead>排名</TableHead>
                   <TableHead>姓名</TableHead>
                   <TableHead>部门</TableHead>
-                  <TableHead>得分</TableHead>
+                  <TableHead>{hasCombined ? '线上分' : '得分'}</TableHead>
+                  {hasCombined && <TableHead>实操分</TableHead>}
+                  {hasCombined && <TableHead>综合分</TableHead>}
                   <TableHead>是否通过</TableHead>
                   <TableHead>异常行为</TableHead>
                   <TableHead>用时</TableHead>
@@ -335,51 +359,68 @@ export default function ExamResultsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.map((row) => (
-                  <TableRow key={row.sessionId}>
-                    <TableCell className="font-medium">{row.rank}</TableCell>
-                    <TableCell className="font-medium">{row.employeeName}</TableCell>
-                    <TableCell>{row.department}</TableCell>
-                    <TableCell className="font-semibold">
-                      {row.totalScore != null ? row.totalScore : row.autoScore ?? '--'}
-                    </TableCell>
-                    <TableCell>
-                      {row.isPassed != null ? (
-                        <Badge variant={row.isPassed ? 'success' : 'danger'}>
-                          {row.isPassed ? '合格' : '不合格'}
-                        </Badge>
-                      ) : (
-                        <Badge variant="default">待定</Badge>
+                {results.map((row) => {
+                  const compositePass = hasCombined && row.combinedScore != null
+                    ? row.combinedScore >= (summary?.compositePassScore ?? 90)
+                    : null;
+                  const displayPassed = compositePass ?? row.isPassed;
+
+                  return (
+                    <TableRow key={row.sessionId}>
+                      <TableCell className="font-medium">{row.rank}</TableCell>
+                      <TableCell className="font-medium">{row.employeeName}</TableCell>
+                      <TableCell>{row.department}</TableCell>
+                      <TableCell className="font-semibold">
+                        {row.totalScore != null ? row.totalScore : row.autoScore ?? '--'}
+                      </TableCell>
+                      {hasCombined && (
+                        <TableCell className="font-semibold">
+                          {row.practicalScore ?? <span className="text-stone-300">—</span>}
+                        </TableCell>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {(row.tabSwitchCount ?? 0) > 0 && (
-                          <Badge variant="danger">
-                            切屏{row.tabSwitchCount}次
+                      {hasCombined && (
+                        <TableCell className="font-bold text-teal-700">
+                          {row.combinedScore ?? <span className="text-stone-300">—</span>}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        {displayPassed != null ? (
+                          <Badge variant={displayPassed ? 'success' : 'danger'}>
+                            {displayPassed ? '合格' : '不合格'}
                           </Badge>
+                        ) : (
+                          <Badge variant="default">待定</Badge>
                         )}
-                        {row.isAutoSubmitted && (
-                          <Badge variant="warning">超时自动提交</Badge>
-                        )}
-                        {(row.tabSwitchCount ?? 0) === 0 && !row.isAutoSubmitted && (
-                          <span className="text-sm text-stone-400">正常</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-stone-500">
-                      {row.timeTakenSeconds > 0 ? formatDuration(row.timeTakenSeconds) : '--'}
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/admin/exams/${examId}/results/${row.sessionId}`}
-                        className="text-sm font-medium text-teal-600 hover:text-teal-700"
-                      >
-                        详细
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {(row.tabSwitchCount ?? 0) > 0 && (
+                            <Badge variant="danger">
+                              切屏{row.tabSwitchCount}次
+                            </Badge>
+                          )}
+                          {row.isAutoSubmitted && (
+                            <Badge variant="warning">超时自动提交</Badge>
+                          )}
+                          {(row.tabSwitchCount ?? 0) === 0 && !row.isAutoSubmitted && (
+                            <span className="text-sm text-stone-400">正常</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-stone-500">
+                        {row.timeTakenSeconds > 0 ? formatDuration(row.timeTakenSeconds) : '--'}
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/admin/exams/${examId}/results/${row.sessionId}`}
+                          className="text-sm font-medium text-teal-600 hover:text-teal-700"
+                        >
+                          详细
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

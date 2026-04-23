@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Upload, Users, Loader2, Search, Trash2 } from 'lucide-react';
+import { Upload, Users, Loader2, Search, Trash2, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
 interface Participant {
@@ -20,12 +20,28 @@ interface Props {
   examId: string;
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  NOT_STARTED: '未考',
+  IN_PROGRESS: '进行中',
+  COMPLETED: '已完成',
+  SUBMITTED: '已完成',
+  AUTO_SUBMITTED: '已完成',
+};
+
+function getStatusLabel(status: string) {
+  return STATUS_LABELS[status] ?? status;
+}
+
 export default function TabParticipants({ examId }: Props) {
   const { toast } = useToast();
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterDept, setFilterDept] = useState('');
+  const [filterProcess, setFilterProcess] = useState('');
+  const [filterLevel, setFilterLevel] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -90,14 +106,65 @@ export default function TabParticipants({ examId }: Props) {
     }
   }
 
-  const filtered = participants.filter((p) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    const name = (p.user?.name ?? '').toLowerCase();
-    const dept = (p.department || p.user?.department || '').toLowerCase();
-    const process = (p.process ?? '').toLowerCase();
-    return name.includes(q) || dept.includes(q) || process.includes(q);
-  });
+  // Extract unique filter options
+  const filterOptions = useMemo(() => {
+    const depts = new Set<string>();
+    const processes = new Set<string>();
+    const levels = new Set<string>();
+    const statuses = new Set<string>();
+
+    for (const p of participants) {
+      const dept = p.department || p.user?.department;
+      if (dept) depts.add(dept);
+      if (p.process) processes.add(p.process);
+      if (p.level) levels.add(p.level);
+      const sl = getStatusLabel(p.sessionStatus);
+      statuses.add(sl);
+    }
+
+    return {
+      departments: [...depts].sort(),
+      processes: [...processes].sort(),
+      levels: [...levels].sort(),
+      statuses: [...statuses],
+    };
+  }, [participants]);
+
+  const hasActiveFilters = filterDept || filterProcess || filterLevel || filterStatus;
+
+  const filtered = useMemo(() => {
+    return participants.filter((p) => {
+      // Text search
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const name = (p.user?.name ?? '').toLowerCase();
+        const dept = (p.department || p.user?.department || '').toLowerCase();
+        const process = (p.process ?? '').toLowerCase();
+        if (!name.includes(q) && !dept.includes(q) && !process.includes(q)) return false;
+      }
+
+      // Dropdown filters
+      if (filterDept) {
+        const dept = p.department || p.user?.department || '';
+        if (dept !== filterDept) return false;
+      }
+      if (filterProcess && (p.process ?? '') !== filterProcess) return false;
+      if (filterLevel && (p.level ?? '') !== filterLevel) return false;
+      if (filterStatus && getStatusLabel(p.sessionStatus) !== filterStatus) return false;
+
+      return true;
+    });
+  }, [participants, searchQuery, filterDept, filterProcess, filterLevel, filterStatus]);
+
+  function clearFilters() {
+    setFilterDept('');
+    setFilterProcess('');
+    setFilterLevel('');
+    setFilterStatus('');
+    setSearchQuery('');
+  }
+
+  const selectClass = 'rounded-md border border-stone-200 bg-white py-1.5 pl-2.5 pr-7 text-sm text-stone-700 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 appearance-none bg-[url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2712%27%20height%3D%2712%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%2378716c%27%20stroke-width%3D%272%27%3E%3Cpath%20d%3D%27M6%209l6%206%206-6%27%2F%3E%3C%2Fsvg%3E")] bg-[length:12px] bg-[right_6px_center] bg-no-repeat';
 
   return (
     <div className="space-y-6">
@@ -119,14 +186,14 @@ export default function TabParticipants({ examId }: Props) {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Action bar */}
+            {/* Action bar: search + buttons */}
             <div className="flex flex-wrap items-center gap-2">
               {participants.length > 0 && (
                 <div className="relative flex-1 min-w-[180px] max-w-xs">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
                   <input
                     type="text"
-                    placeholder="搜索姓名、部门、工序..."
+                    placeholder="搜索姓名..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full rounded-md border border-stone-200 bg-white py-1.5 pl-8 pr-3 text-sm text-stone-700 placeholder:text-stone-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
@@ -147,11 +214,74 @@ export default function TabParticipants({ examId }: Props) {
               </div>
             </div>
 
+            {/* Filter row */}
+            {participants.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {filterOptions.departments.length > 1 && (
+                  <select
+                    value={filterDept}
+                    onChange={(e) => setFilterDept(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">全部部门</option>
+                    {filterOptions.departments.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                )}
+                {filterOptions.processes.length > 1 && (
+                  <select
+                    value={filterProcess}
+                    onChange={(e) => setFilterProcess(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">全部工序</option>
+                    {filterOptions.processes.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                )}
+                {filterOptions.levels.length > 1 && (
+                  <select
+                    value={filterLevel}
+                    onChange={(e) => setFilterLevel(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">全部等级</option>
+                    {filterOptions.levels.map((l) => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                )}
+                {filterOptions.statuses.length > 1 && (
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">全部状态</option>
+                    {filterOptions.statuses.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                )}
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-stone-500 hover:bg-stone-100 hover:text-stone-700"
+                  >
+                    <X className="h-3 w-3" />
+                    清除筛选
+                  </button>
+                )}
+              </div>
+            )}
+
             {participants.length === 0 ? (
               <p className="text-sm text-stone-400 text-center py-8">尚未导入应考人员</p>
             ) : (
               <>
-                {searchQuery && (
+                {(searchQuery || hasActiveFilters) && (
                   <p className="text-xs text-stone-400">
                     筛选结果 {filtered.length} / {participants.length} 人
                   </p>
@@ -180,16 +310,12 @@ export default function TabParticipants({ examId }: Props) {
                               className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                                 p.sessionStatus === 'NOT_STARTED'
                                   ? 'bg-stone-100 text-stone-600'
-                                  : p.sessionStatus === 'COMPLETED' || p.sessionStatus === 'SUBMITTED'
+                                  : p.sessionStatus === 'COMPLETED' || p.sessionStatus === 'SUBMITTED' || p.sessionStatus === 'AUTO_SUBMITTED'
                                     ? 'bg-green-100 text-green-700'
                                     : 'bg-amber-100 text-amber-700'
                               }`}
                             >
-                              {p.sessionStatus === 'NOT_STARTED'
-                                ? '未考'
-                                : p.sessionStatus === 'COMPLETED' || p.sessionStatus === 'SUBMITTED'
-                                  ? '已完成'
-                                  : '进行中'}
+                              {getStatusLabel(p.sessionStatus)}
                             </span>
                           </td>
                           <td className="py-2">
@@ -205,6 +331,13 @@ export default function TabParticipants({ examId }: Props) {
                           </td>
                         </tr>
                       ))}
+                      {filtered.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-sm text-stone-400">
+                            没有符合条件的人员
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
