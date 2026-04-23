@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
-import { parseQuestionExcel, extractHeadersAndSamples } from '@/lib/excel';
+import { parseQuestionExcel, extractHeadersAndSamples, detectFailedSheets } from '@/lib/excel';
 import { identifyColumnsWithAI } from '@/lib/deepseek';
 import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 import { writeFile, unlink, mkdir } from 'fs/promises';
@@ -136,14 +136,21 @@ export async function POST(request: Request) {
     // Step 2: Parse question text data
     let rows = parseQuestionExcel(buffer);
 
-    // AI fallback: if rule-based parsing returned 0 rows, try AI column identification
-    if (rows.length === 0) {
-      const extracted = extractHeadersAndSamples(buffer);
-      if (extracted) {
-        const aiMapping = await identifyColumnsWithAI(extracted.headers, extracted.sampleRows);
-        if (aiMapping) {
-          rows = parseQuestionExcel(buffer, aiMapping);
+    // AI fallback: check for sheets that have data but parsed 0 rows.
+    const failedSheets = detectFailedSheets(buffer);
+    if (failedSheets.length > 0) {
+      let aiMapping: Record<string, string> = {};
+      for (const failedSheet of failedSheets) {
+        const extracted = extractHeadersAndSamples(buffer, 3, failedSheet);
+        if (extracted) {
+          const mapping = await identifyColumnsWithAI(extracted.headers, extracted.sampleRows);
+          if (mapping) {
+            aiMapping = { ...aiMapping, ...mapping };
+          }
         }
+      }
+      if (Object.keys(aiMapping).length > 0) {
+        rows = parseQuestionExcel(buffer, aiMapping);
       }
     }
 
@@ -270,6 +277,12 @@ export async function POST(request: Request) {
       { timeout: 60000 }
     );
 
+    // Count by question type
+    const byType: Record<string, number> = {};
+    for (const r of rows) {
+      byType[r.type] = (byType[r.type] || 0) + 1;
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -278,6 +291,7 @@ export async function POST(request: Request) {
         skipped,
         duplicates,
         imagesAttached,
+        byType,
         errors: errors.length > 0 ? errors.slice(0, 20) : undefined,
       },
     });

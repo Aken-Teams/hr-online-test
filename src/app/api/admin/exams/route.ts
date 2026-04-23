@@ -33,11 +33,11 @@ export async function GET(request: Request) {
       prisma.exam.findMany({
         where,
         include: {
-          questionRules: true,
           _count: {
             select: {
               sessions: true,
               assignments: true,
+              importedQuestions: true,
             },
           },
         },
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
         openAt: exam.openAt,
         closeAt: exam.closeAt,
         maxAttempts: exam.maxAttempts,
-        questionCount: exam.questionRules.length,
+        questionCount: exam._count.importedQuestions,
         sessionCount: exam._count.sessions,
         createdAt: exam.createdAt,
       };

@@ -98,10 +98,10 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
       <Card title="导入应考人员">
         <div className="space-y-4">
           <p className="text-sm text-stone-600">
-            上传应考名单 Excel 文件，需包含列：<code className="text-xs bg-stone-100 px-1 py-0.5 rounded">工号、姓名、报考工序、报考等级</code>
+            上传应考名单 Excel 文件，需包含列：<code className="text-xs bg-stone-100 px-1 py-0.5 rounded">姓名、报考工序、报考等级</code>
           </p>
           <p className="text-xs text-stone-500">
-            可选列：身份证后6位（用于自动建立新用户账号）
+            可选列：部门、身份证后6位（验证码）、工号
           </p>
 
           {!examId ? (
@@ -166,7 +166,6 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-100 text-left text-xs text-stone-500">
-                  <th className="py-2 pr-3 font-medium">工号</th>
                   <th className="py-2 pr-3 font-medium">姓名</th>
                   <th className="py-2 pr-3 font-medium">部门</th>
                   <th className="py-2 pr-3 font-medium">工序</th>
@@ -178,20 +177,25 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
               <tbody>
                 {participants.map((p) => (
                   <tr key={p.id} className="border-b border-stone-50">
-                    <td className="py-2 pr-3 text-stone-600">{p.user?.employeeNo ?? '-'}</td>
                     <td className="py-2 pr-3 font-medium">{p.user?.name ?? '-'}</td>
-                    <td className="py-2 pr-3 text-stone-600">{p.user?.department ?? p.department ?? '-'}</td>
+                    <td className="py-2 pr-3 text-stone-600">{p.department || p.user?.department || '-'}</td>
                     <td className="py-2 pr-3 text-stone-600">{p.process ?? '-'}</td>
                     <td className="py-2 pr-3 text-stone-600">{p.level ?? '-'}</td>
                     <td className="py-2 pr-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        p.sessionStatus === 'NOT_STARTED'
-                          ? 'bg-stone-100 text-stone-600'
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                          p.sessionStatus === 'NOT_STARTED'
+                            ? 'bg-stone-100 text-stone-600'
+                            : p.sessionStatus === 'COMPLETED' || p.sessionStatus === 'SUBMITTED'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-amber-100 text-amber-700'
+                        }`}
+                      >
+                        {p.sessionStatus === 'NOT_STARTED'
+                          ? '未考'
                           : p.sessionStatus === 'COMPLETED' || p.sessionStatus === 'SUBMITTED'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {p.sessionStatus === 'NOT_STARTED' ? '未考' : p.sessionStatus === 'COMPLETED' || p.sessionStatus === 'SUBMITTED' ? '已完成' : '进行中'}
+                            ? '已完成'
+                            : '进行中'}
                       </span>
                     </td>
                     <td className="py-2">

@@ -326,34 +326,83 @@ export function parseQuestionExcel(
 }
 
 // ============================================================
+// Detect sheets with parsing failures (for AI fallback)
+// ============================================================
+
+/**
+ * Identify sheets that have data but produced zero parsed rows.
+ * Returns sheet names that need AI assistance.
+ */
+export function detectFailedSheets(buffer: Buffer, customColumnMap?: Record<string, string>): string[] {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const parsed = parseQuestionExcel(buffer, customColumnMap);
+
+  const successSheets = new Set(parsed.map((r) => r._sheetName).filter(Boolean));
+
+  const failed: string[] = [];
+  for (const sheetName of workbook.SheetNames) {
+    const detectedType = detectTypeFromSheetName(sheetName);
+    if (!detectedType) continue;
+    if (successSheets.has(sheetName)) continue;
+
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) continue;
+    const data = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    if (data.length > 1) {
+      failed.push(sheetName);
+    }
+  }
+
+  return failed;
+}
+
+// ============================================================
 // Extract Headers + Sample Rows (for AI fallback)
 // ============================================================
 
 /**
  * Extract the raw column headers and first few sample rows from an Excel file.
  * Used to feed AI-based column identification when rule-based parsing fails.
+ *
+ * @param sheetNameFilter  Optional — only extract from this sheet.
  */
 export function extractHeadersAndSamples(
   buffer: Buffer,
-  maxSamples = 3
+  maxSamples = 3,
+  sheetNameFilter?: string
 ): { headers: string[]; sampleRows: Record<string, string>[] } | null {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) return null;
+  const targetSheet = sheetNameFilter || workbook.SheetNames[0];
+  if (!targetSheet) return null;
 
-  const sheet = workbook.Sheets[sheetName];
+  const sheet = workbook.Sheets[targetSheet];
   if (!sheet) return null;
 
-  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+  let rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: '',
   });
+
+  // Handle first-row-skip: if a header is very long or starts with "目的",
+  // re-parse with range:1 so the actual headers are picked up.
+  if (rawRows.length > 0) {
+    const keys = Object.keys(rawRows[0]);
+    if (keys.some((k) => k.length > 50 || k.startsWith('目的'))) {
+      rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+        defval: '',
+        range: 1,
+      });
+    }
+  }
+
   if (rawRows.length === 0) return null;
 
-  const headers = Object.keys(rawRows[0]);
+  const headers = Object.keys(rawRows[0]).filter(k => !k.startsWith('__'));
   const sampleRows = rawRows.slice(0, maxSamples).map((row) => {
     const mapped: Record<string, string> = {};
     for (const [key, value] of Object.entries(row)) {
-      mapped[key] = String(value ?? '').substring(0, 200);
+      if (!key.startsWith('__')) {
+        mapped[key] = String(value ?? '').substring(0, 200);
+      }
     }
     return mapped;
   });
@@ -636,24 +685,46 @@ const PARTICIPANT_COLUMN_MAP: Record<string, string> = {
   '工号': 'employeeNo',
   '员工编号': 'employeeNo',
   '编号': 'employeeNo',
+  '工號': 'employeeNo',
   '姓名': 'name',
   '名字': 'name',
   '报考工序': 'process',
   '工序': 'process',
+  '報考工序': 'process',
   '报考等级': 'level',
   '等级': 'level',
   '级别': 'level',
-  '身份证后6位': 'idCardLast6',
-  '身份证後6位': 'idCardLast6',
+  '報考等級': 'level',
+  '等級': 'level',
+  '級別': 'level',
+  '身份证后6位': 'verificationCode',
+  '身份证後6位': 'verificationCode',
+  '验证码': 'verificationCode',
+  '驗證碼': 'verificationCode',
+  '密码': 'verificationCode',
+  '密碼': 'verificationCode',
   '部门': 'department',
   '部門': 'department',
+  '所属部门': 'department',
+  '所屬部門': 'department',
 };
+
+function mapParticipantColumn(key: string, customMap?: Record<string, string>): string {
+  const trimmed = key.trim().replace(/（/g, '(').replace(/）/g, ')');
+  if (customMap?.[trimmed]) return customMap[trimmed];
+  return PARTICIPANT_COLUMN_MAP[trimmed] || trimmed;
+}
 
 /**
  * Parse a participant roster Excel file and return structured rows.
- * Expected columns: 工号, 姓名, 报考工序, 报考等级
+ * Required: 姓名, 报考工序, 报考等级
+ * Optional: 工号, 部门, 身份证后6位/验证码
+ * Supports first-row-skip for title rows.
  */
-export function parseParticipantExcel(buffer: Buffer): ParticipantImportRow[] {
+export function parseParticipantExcel(
+  buffer: Buffer,
+  customColumnMap?: Record<string, string>
+): ParticipantImportRow[] {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   const results: ParticipantImportRow[] = [];
 
@@ -663,29 +734,92 @@ export function parseParticipantExcel(buffer: Buffer): ParticipantImportRow[] {
   const sheet = workbook.Sheets[sheetName];
   if (!sheet) return results;
 
-  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+  let rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: '',
   });
+
+  if (rawRows.length === 0) return results;
+
+  // First-row-skip: if headers are long/garbage (title row merged into header),
+  // the actual headers are in the first data row. Re-parse with range:1.
+  const firstRowKeys = Object.keys(rawRows[0] as Record<string, unknown>);
+  const mappedKeys = firstRowKeys.map((k) => mapParticipantColumn(k, customColumnMap));
+  const hasNameCol = mappedKeys.includes('name');
+  const hasProcessCol = mappedKeys.includes('process');
+
+  if (!hasNameCol || !hasProcessCol) {
+    // Check if first data row looks like actual headers
+    const hasLongHeader = firstRowKeys.some(
+      (k) => k.length > 30 || k.startsWith('__EMPTY')
+    );
+    if (hasLongHeader) {
+      rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+        defval: '',
+        range: 1,
+      });
+    }
+  }
 
   for (const raw of rawRows) {
     const row: Record<string, string> = {};
     for (const [key, value] of Object.entries(raw)) {
-      const trimmedKey = key.trim();
-      const mapped = PARTICIPANT_COLUMN_MAP[trimmedKey] || trimmedKey;
+      const mapped = mapParticipantColumn(key, customColumnMap);
       row[mapped] = String(value ?? '').trim();
     }
 
-    const employeeNo = row.employeeNo;
     const name = row.name;
     const process = row.process;
     const level = row.level;
 
-    if (!employeeNo || !name || !process || !level) continue;
+    // name, process, level are required; employeeNo and department are optional
+    if (!name || !process || !level) continue;
 
-    results.push({ employeeNo, name, process, level });
+    results.push({
+      ...(row.employeeNo ? { employeeNo: row.employeeNo } : {}),
+      name,
+      department: row.department || undefined,
+      process,
+      level,
+      verificationCode: row.verificationCode || undefined,
+    });
   }
 
   return results;
+}
+
+/**
+ * Extract headers and sample rows from participant Excel for AI identification.
+ */
+export function extractParticipantHeadersAndSamples(
+  buffer: Buffer,
+  sampleCount = 3
+): { headers: string[]; sampleRows: Record<string, string>[] } | null {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return null;
+
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) return null;
+
+  // Try with range:1 first (skip title row), fallback to range:0
+  let rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '', range: 1 });
+  if (rawRows.length === 0) {
+    rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+  }
+  if (rawRows.length === 0) return null;
+
+  const headers = Object.keys(rawRows[0] as Record<string, unknown>).filter(
+    (k) => !k.startsWith('__')
+  );
+  const sampleRows = rawRows.slice(0, sampleCount).map((r) => {
+    const row: Record<string, string> = {};
+    for (const h of headers) {
+      row[h] = String((r as Record<string, unknown>)[h] ?? '').substring(0, 100);
+    }
+    return row;
+  });
+
+  return { headers, sampleRows };
 }
 
 // ============================================================

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
+import { QUESTION_TYPE_LABELS } from '@/lib/constants';
 
 type Category = 'BASIC' | 'PROFESSIONAL';
 
@@ -15,6 +16,7 @@ interface FileResult {
   rows: number;
   created: number;
   duplicates: number;
+  byType?: Record<string, number>;
   error?: string;
 }
 
@@ -147,9 +149,18 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
                   {r.error ? (
                     <p className="text-xs text-red-600 mt-0.5">{r.error}</p>
                   ) : (
-                    <p className="text-xs text-stone-500 mt-0.5">
-                      {r.rows} 题解析，{r.created} 题导入，{r.duplicates} 题重复跳过
-                    </p>
+                    <div className="mt-0.5">
+                      <p className="text-xs text-stone-500">
+                        {r.rows} 题解析，{r.created} 题导入，{r.duplicates} 题重复跳过
+                      </p>
+                      {r.byType && Object.keys(r.byType).length > 0 && (
+                        <p className="text-xs text-stone-400 mt-0.5">
+                          {Object.entries(r.byType)
+                            .map(([type, count]) => `${QUESTION_TYPE_LABELS[type as keyof typeof QUESTION_TYPE_LABELS] || type} ${count}`)
+                            .join('、')}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
                 {r.error ? (

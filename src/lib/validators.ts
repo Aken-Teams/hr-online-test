@@ -192,18 +192,18 @@ export const employeeImportBatchSchema = z.array(employeeImportSchema);
 // ============================================================
 
 export const participantImportSchema = z.object({
-  employeeNo: z
-    .string()
-    .min(1, '工号不能为空'),
+  employeeNo: z.string().optional(),
   name: z
     .string()
     .min(1, '姓名不能为空'),
+  department: z.string().optional(),
   process: z
     .string()
     .min(1, '工序不能为空'),
   level: z
     .string()
     .min(1, '等级不能为空'),
+  verificationCode: z.string().optional(),
 });
 
 export type ParticipantImportInput = z.infer<typeof participantImportSchema>;

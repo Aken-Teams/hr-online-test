@@ -279,10 +279,12 @@ export interface MyResultItem {
 
 /** Row structure for participant Excel import */
 export interface ParticipantImportRow {
-  employeeNo: string;
+  employeeNo?: string;
   name: string;
+  department?: string;
   process: string;
   level: string;
+  verificationCode?: string;
 }
 
 export interface EmployeeImportRow {

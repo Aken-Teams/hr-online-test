@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
-import { parseParticipantExcel } from '@/lib/excel';
+import { parseParticipantExcel, extractParticipantHeadersAndSamples } from '@/lib/excel';
 import { hashPassword } from '@/lib/auth';
+import { identifyColumnsWithAI } from '@/lib/deepseek';
 
 /**
  * GET /api/admin/exams/[id]/participants
@@ -65,8 +66,8 @@ export async function GET(
 /**
  * POST /api/admin/exams/[id]/participants
  * Import participants from an Excel file.
- * Expected columns: 工号, 姓名, 报考工序, 报考等级
- * Also accepts optional 身份证后6位 column.
+ * Required columns: 姓名, 报考工序, 报考等级
+ * Optional columns: 工号, 部门, 身份证后6位/验证码
  */
 export async function POST(
   request: Request,
@@ -99,33 +100,28 @@ export async function POST(
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const rows = parseParticipantExcel(buffer);
+    let rows = parseParticipantExcel(buffer);
+
+    // AI fallback: if parsing returns 0 rows, try AI column identification
+    if (rows.length === 0) {
+      const extracted = extractParticipantHeadersAndSamples(buffer);
+      if (extracted) {
+        const aiMapping = await identifyColumnsWithAI(
+          extracted.headers,
+          extracted.sampleRows,
+          'participant'
+        );
+        if (aiMapping) {
+          rows = parseParticipantExcel(buffer, aiMapping);
+        }
+      }
+    }
 
     if (rows.length === 0) {
       return NextResponse.json(
-        { success: false, error: '文件中未找到有效数据' },
+        { success: false, error: '文件中未找到有效数据（需要至少包含：姓名、工序、等级）' },
         { status: 400 }
       );
-    }
-
-    // Also try to extract idCardLast6 from the raw Excel for user creation
-    const XLSX = await import('xlsx');
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]!];
-    const rawRows = sheet
-      ? XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
-      : [];
-    const idCardMap = new Map<string, string>();
-    for (const raw of rawRows) {
-      const row: Record<string, string> = {};
-      for (const [key, value] of Object.entries(raw)) {
-        row[key.trim()] = String(value ?? '').trim();
-      }
-      const empNo = row['工号'] || row['员工编号'] || '';
-      const idCard = row['身份证后6位'] || row['身份证後6位'] || '';
-      if (empNo && idCard) {
-        idCardMap.set(empNo, idCard);
-      }
     }
 
     // Match rows to users and create assignments
@@ -137,34 +133,70 @@ export async function POST(
     };
 
     for (const row of rows) {
-      // Find user by employeeNo
-      let user = await prisma.user.findUnique({
-        where: { employeeNo: row.employeeNo },
-      });
+      let user = null;
 
-      // If user doesn't exist, create one with basic info
+      // Strategy 1: Find by employeeNo if provided
+      if (row.employeeNo) {
+        user = await prisma.user.findUnique({
+          where: { employeeNo: row.employeeNo },
+        });
+      }
+
+      // Strategy 2: Find by name + department
+      if (!user && row.department) {
+        user = await prisma.user.findFirst({
+          where: {
+            name: row.name,
+            department: row.department,
+          },
+        });
+      }
+
+      // Strategy 3: Find by name only (if unique)
       if (!user) {
-        const idCardLast6 = idCardMap.get(row.employeeNo);
-        const hashedPassword = idCardLast6 ? await hashPassword(idCardLast6) : null;
+        const matches = await prisma.user.findMany({
+          where: { name: row.name },
+          take: 2,
+        });
+        if (matches.length === 1) {
+          user = matches[0];
+        }
+      }
+
+      // Create user if not found
+      if (!user) {
+        const hashedPassword = row.verificationCode
+          ? await hashPassword(row.verificationCode)
+          : null;
+
+        // Auto-generate employeeNo if not provided
+        const employeeNo = row.employeeNo || `AUTO_${row.name}_${Date.now()}`;
 
         try {
           user = await prisma.user.create({
             data: {
-              employeeNo: row.employeeNo,
+              employeeNo,
               name: row.name,
-              department: '未分配',
+              department: row.department || '未分配',
               role: '未分配',
               idCardLast6: hashedPassword,
             },
           });
           results.usersCreated++;
         } catch {
-          results.errors.push(`工号 ${row.employeeNo} (${row.name}) 创建用户失败`);
+          results.errors.push(`${row.name} 创建用户失败`);
           continue;
         }
+      } else if (row.verificationCode && !user.idCardLast6) {
+        // Update verification code if user exists but has no password
+        const hashedPassword = await hashPassword(row.verificationCode);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { idCardLast6: hashedPassword },
+        });
       }
 
-      // Check if assignment already exists for this exam + user + process + level
+      // Check if assignment already exists
       const existing = await prisma.examAssignment.findFirst({
         where: {
           examId,
@@ -184,7 +216,7 @@ export async function POST(
         data: {
           examId,
           userId: user.id,
-          department: user.department,
+          department: row.department || user.department,
           role: user.role,
           process: row.process,
           level: row.level,

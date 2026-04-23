@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
-import { parseQuestionExcel, parseQuestionFilename, extractHeadersAndSamples } from '@/lib/excel';
+import { parseQuestionExcel, parseQuestionFilename, extractHeadersAndSamples, detectFailedSheets } from '@/lib/excel';
 import { identifyColumnsWithAI } from '@/lib/deepseek';
 import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 
@@ -66,6 +66,7 @@ export async function POST(
         rows: number;
         created: number;
         duplicates: number;
+        byType?: Record<string, number>;
         error?: string;
       }>,
     };
@@ -97,15 +98,30 @@ export async function POST(
       const buffer = Buffer.from(await file.arrayBuffer());
       let rows = parseQuestionExcel(buffer);
 
-      // AI fallback: if rule-based parsing returned 0 rows, try AI column identification
-      if (rows.length === 0) {
-        const extracted = extractHeadersAndSamples(buffer);
-        if (extracted) {
-          const aiMapping = await identifyColumnsWithAI(extracted.headers, extracted.sampleRows);
-          if (aiMapping) {
-            rows = parseQuestionExcel(buffer, aiMapping);
+      // AI fallback: check for sheets that have data but parsed 0 rows.
+      // For each failed sheet, extract headers and ask AI to identify columns,
+      // then re-parse with the AI-provided mapping merged in.
+      const failedSheets = detectFailedSheets(buffer);
+      if (failedSheets.length > 0) {
+        let aiMapping: Record<string, string> = {};
+        for (const failedSheet of failedSheets) {
+          const extracted = extractHeadersAndSamples(buffer, 3, failedSheet);
+          if (extracted) {
+            const mapping = await identifyColumnsWithAI(extracted.headers, extracted.sampleRows);
+            if (mapping) {
+              aiMapping = { ...aiMapping, ...mapping };
+            }
           }
         }
+        if (Object.keys(aiMapping).length > 0) {
+          rows = parseQuestionExcel(buffer, aiMapping);
+        }
+      }
+
+      // Count by question type
+      const byType: Record<string, number> = {};
+      for (const r of rows) {
+        byType[r.type] = (byType[r.type] || 0) + 1;
       }
 
       let fileCreated = 0;
@@ -187,6 +203,7 @@ export async function POST(
         rows: rows.length,
         created: fileCreated,
         duplicates: fileDuplicates,
+        byType,
       });
     }
 

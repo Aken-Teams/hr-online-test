@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { ArrowLeft, FileSpreadsheet, CheckCircle, XCircle, Loader2, Upload, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
+import { QUESTION_TYPE_LABELS } from '@/lib/constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,6 +23,7 @@ interface FileResult {
   skipped?: number;
   totalRows?: number;
   imagesAttached?: number;
+  byType?: Record<string, number>;
   error?: string;
 }
 
@@ -132,6 +134,7 @@ export default function QuestionImportPage() {
           skipped: json.data?.skipped ?? 0,
           totalRows: json.data?.totalRows ?? 0,
           imagesAttached: json.data?.imagesAttached ?? 0,
+          byType: json.data?.byType,
         };
         setFileResults((prev) => new Map(prev).set(file.name, result));
         totalCreated += result.created!;
@@ -254,19 +257,28 @@ export default function QuestionImportPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-stone-400">
-                      {(f.size / 1024).toFixed(1)} KB
-                      {result?.status === 'done' && (
-                        <span className="ml-2 text-green-600">
-                          {result.totalRows} 题解析，{result.created} 题导入
-                          {(result.duplicates ?? 0) > 0 && `，${result.duplicates} 题重复`}
-                          {(result.skipped ?? 0) > 0 && `，${result.skipped} 题跳过`}
-                        </span>
+                    <div className="text-xs text-stone-400">
+                      <p>
+                        {(f.size / 1024).toFixed(1)} KB
+                        {result?.status === 'done' && (
+                          <span className="ml-2 text-green-600">
+                            {result.totalRows} 题解析，{result.created} 题导入
+                            {(result.duplicates ?? 0) > 0 && `，${result.duplicates} 题重复`}
+                            {(result.skipped ?? 0) > 0 && `，${result.skipped} 题跳过`}
+                          </span>
+                        )}
+                        {result?.status === 'error' && (
+                          <span className="ml-2 text-red-600">{result.error}</span>
+                        )}
+                      </p>
+                      {result?.status === 'done' && result.byType && Object.keys(result.byType).length > 0 && (
+                        <p className="text-stone-400 mt-0.5">
+                          {Object.entries(result.byType)
+                            .map(([type, count]) => `${QUESTION_TYPE_LABELS[type as keyof typeof QUESTION_TYPE_LABELS] || type} ${count}`)
+                            .join('、')}
+                        </p>
                       )}
-                      {result?.status === 'error' && (
-                        <span className="ml-2 text-red-600">{result.error}</span>
-                      )}
-                    </p>
+                    </div>
                   </div>
 
                   {/* Status indicator */}
