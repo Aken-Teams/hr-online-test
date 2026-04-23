@@ -97,42 +97,39 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
     <div className="space-y-6">
       <Card title="导入应考人员">
         <div className="space-y-4">
-          <p className="text-sm text-stone-600">
-            上传应考名单 Excel 文件，需包含列：<code className="text-xs bg-stone-100 px-1 py-0.5 rounded">姓名、报考工序、报考等级</code>
-          </p>
-          <p className="text-xs text-stone-500">
-            可选列：部门、身份证后6位（验证码）、工号
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-stone-600">
+                上传应考名单 Excel 文件，需包含列：<code className="text-xs bg-stone-100 px-1 py-0.5 rounded">姓名、报考工序、报考等级</code>
+              </p>
+              <p className="mt-1 text-xs text-stone-500">
+                可选列：部门、身份证后6位（验证码）、工号
+              </p>
+            </div>
 
-          {!examId ? (
-            <div className="rounded-lg border-2 border-dashed border-amber-300 bg-amber-50 p-4 text-center">
-              <p className="text-sm text-amber-700">请先完成步骤 1-2 并保存草稿后再导入人员</p>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".xls,.xlsx"
-                className="hidden"
-                onChange={handleUpload}
-              />
-              <Button
-                variant="secondary"
-                onClick={() => fileRef.current?.click()}
-                loading={uploading}
-              >
-                <Upload className="h-4 w-4" />
-                上传名单
-              </Button>
-              {uploading && (
-                <span className="flex items-center gap-1 text-sm text-stone-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  导入中...
-                </span>
-              )}
-            </div>
-          )}
+            {!examId ? (
+              <p className="shrink-0 text-xs text-amber-600">请先保存草稿</p>
+            ) : (
+              <div className="flex shrink-0 items-center gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".xls,.xlsx"
+                  className="hidden"
+                  onChange={handleUpload}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => fileRef.current?.click()}
+                  loading={uploading}
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploading ? '导入中...' : '上传名单'}
+                </Button>
+              </div>
+            )}
+          </div>
 
           {importResult && (
             <div className="rounded-lg bg-teal-50 border border-teal-200 p-3 text-sm text-teal-800">

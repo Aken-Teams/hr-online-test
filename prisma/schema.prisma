@@ -70,7 +70,7 @@ model Question {
   role            String
   points          Int          @default(2)
   difficulty      Int          @default(1)
-  correctAnswer   String?      @map("correct_answer")
+  correctAnswer   String?      @map("correct_answer") @db.Text
   isMultiSelect   Boolean      @default(false) @map("is_multi_select")
   referenceAnswer String?      @map("reference_answer") @db.Text
   gradingRubric   String?      @map("grading_rubric") @db.Text

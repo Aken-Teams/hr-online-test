@@ -93,43 +93,40 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
     <div className="space-y-6">
       <Card title="导入题库">
         <div className="space-y-4">
-          <p className="text-sm text-stone-600">
-            上传题库 Excel 文件，系统会自动解析题目内容。
-          </p>
-          <p className="text-xs text-stone-500">
-            选择文件后需先分类（基本知识/专业知识），确认后再上传。
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-stone-600">
+                上传题库 Excel 文件，系统会自动解析题目内容。
+              </p>
+              <p className="mt-1 text-xs text-stone-500">
+                选择文件后需先分类（基本知识/专业知识），确认后再上传。
+              </p>
+            </div>
 
-          {!examId ? (
-            <div className="rounded-lg border-2 border-dashed border-amber-300 bg-amber-50 p-4 text-center">
-              <p className="text-sm text-amber-700">请先完成步骤 1-2 并保存草稿后再导入题库</p>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".xls,.xlsx"
-                multiple
-                className="hidden"
-                onChange={handleFileSelect}
-              />
-              <Button
-                variant="secondary"
-                onClick={() => fileRef.current?.click()}
-                loading={uploading}
-              >
-                <Upload className="h-4 w-4" />
-                选择文件上传
-              </Button>
-              {uploading && (
-                <span className="flex items-center gap-1 text-sm text-stone-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  导入中...
-                </span>
-              )}
-            </div>
-          )}
+            {!examId ? (
+              <p className="shrink-0 text-xs text-amber-600">请先保存草稿</p>
+            ) : (
+              <div className="flex shrink-0 items-center gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".xls,.xlsx"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => fileRef.current?.click()}
+                  loading={uploading}
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploading ? '导入中...' : '选择文件上传'}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </Card>
 

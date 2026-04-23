@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
 import { parseQuestionExcel, extractHeadersAndSamples, detectFailedSheets } from '@/lib/excel';
@@ -208,26 +209,29 @@ export async function POST(request: Request) {
     );
 
     // Step 6: Bulk create questions
-    let created = 0;
-    let skipped = 0;
     let duplicates = 0;
-    const errors: string[] = [];
 
-    await prisma.$transaction(
-      async (tx) => {
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
+    // Filter duplicates and prepare batch data
+    const validRows: { id: string; row: typeof rows[0] }[] = [];
+    for (const row of rows) {
+      const fingerprint = `${row.type}||${row.department}||${row.content.trim()}`;
+      if (existingSet.has(fingerprint)) {
+        duplicates++;
+        continue;
+      }
+      existingSet.add(fingerprint);
+      validRows.push({ id: randomUUID(), row });
+    }
 
-        // Duplicate check: same type + department + content
-        const fingerprint = `${row.type}||${row.department}||${row.content.trim()}`;
-        if (existingSet.has(fingerprint)) {
-          duplicates++;
-          continue;
-        }
+    const created = validRows.length;
 
-        try {
-          await tx.question.create({
-            data: {
+    if (validRows.length > 0) {
+      await prisma.$transaction(
+        async (tx) => {
+          // Batch create all questions at once
+          await tx.question.createMany({
+            data: validRows.map(({ id, row }) => ({
+              id,
               type: row.type,
               content: row.content,
               level: row.level,
@@ -238,44 +242,41 @@ export async function POST(request: Request) {
               referenceAnswer: row.referenceAnswer ?? null,
               sourceFile: file.name,
               category,
-              options: row.options
-                ? {
-                    create: row.options.map((opt, idx) => ({
-                      label: opt.label,
-                      content: opt.content,
-                      imageUrl: opt.imageUrl ?? null,
-                      sortOrder: idx,
-                    })),
-                  }
-                : undefined,
+            })),
+          });
+
+          // Batch create all options at once
+          const allOptions = validRows.flatMap(({ id, row }) =>
+            (row.options || []).map((opt, idx) => ({
+              questionId: id,
+              label: opt.label,
+              content: opt.content,
+              imageUrl: opt.imageUrl ?? null,
+              sortOrder: idx,
+            }))
+          );
+          if (allOptions.length > 0) {
+            await tx.questionOption.createMany({ data: allOptions });
+          }
+
+          await tx.auditLog.create({
+            data: {
+              adminId: admin.adminId,
+              action: 'QUESTION_IMPORTED',
+              details: {
+                fileName: file.name,
+                totalRows: rows.length,
+                created,
+                skipped: 0,
+                duplicates,
+                imagesAttached,
+              },
             },
           });
-          created++;
-          existingSet.add(fingerprint);
-        } catch (err) {
-          skipped++;
-          const message = err instanceof Error ? err.message : '未知错误';
-          errors.push(`第 ${i + 1} 行: ${message}`);
-        }
-      }
-
-      await tx.auditLog.create({
-        data: {
-          adminId: admin.adminId,
-          action: 'QUESTION_IMPORTED',
-          details: {
-            fileName: file.name,
-            totalRows: rows.length,
-            created,
-            skipped,
-            duplicates,
-            imagesAttached,
-          },
         },
-      });
-      },
-      { timeout: 60000 }
-    );
+        { timeout: 60000 }
+      );
+    }
 
     // Count by question type
     const byType: Record<string, number> = {};
@@ -288,11 +289,10 @@ export async function POST(request: Request) {
       data: {
         totalRows: rows.length,
         created,
-        skipped,
+        skipped: 0,
         duplicates,
         imagesAttached,
         byType,
-        errors: errors.length > 0 ? errors.slice(0, 20) : undefined,
       },
     });
   } catch (error) {

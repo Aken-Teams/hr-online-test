@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
 import { parseQuestionExcel, parseQuestionFilename, extractHeadersAndSamples, detectFailedSheets } from '@/lib/excel';
@@ -124,7 +125,6 @@ export async function POST(
         byType[r.type] = (byType[r.type] || 0) + 1;
       }
 
-      let fileCreated = 0;
       let fileDuplicates = 0;
 
       if (rows.length === 0) {
@@ -148,18 +148,25 @@ export async function POST(
         category = isBasic ? 'BASIC' : 'PROFESSIONAL';
       }
 
-      await prisma.$transaction(
-        async (tx) => {
-        for (const row of rows) {
-          const fingerprint = `${row.type}||${row.content.trim()}`;
-          if (existingSet.has(fingerprint)) {
-            fileDuplicates++;
-            continue;
-          }
+      // Filter duplicates and prepare batch data
+      const validRows: { id: string; row: typeof rows[0] }[] = [];
+      for (const row of rows) {
+        const fingerprint = `${row.type}||${row.content.trim()}`;
+        if (existingSet.has(fingerprint)) {
+          fileDuplicates++;
+          continue;
+        }
+        existingSet.add(fingerprint);
+        validRows.push({ id: randomUUID(), row });
+      }
 
-          try {
-            await tx.question.create({
-              data: {
+      if (validRows.length > 0) {
+        await prisma.$transaction(
+          async (tx) => {
+            // Batch create all questions at once
+            await tx.question.createMany({
+              data: validRows.map(({ id, row }) => ({
+                id,
                 type: row.type,
                 content: row.content,
                 level: parsed?.level || row.level,
@@ -172,27 +179,28 @@ export async function POST(
                 process: parsed?.process || null,
                 category,
                 examSourceId: examId,
-                options: row.options
-                  ? {
-                      create: row.options.map((opt, idx) => ({
-                        label: opt.label,
-                        content: opt.content,
-                        imageUrl: opt.imageUrl ?? null,
-                        sortOrder: idx,
-                      })),
-                    }
-                  : undefined,
-              },
+              })),
             });
-            fileCreated++;
-            existingSet.add(fingerprint);
-          } catch {
-            totalResults.skipped++;
-          }
-        }
-        },
-        { timeout: 60000 }
-      );
+
+            // Batch create all options at once
+            const allOptions = validRows.flatMap(({ id, row }) =>
+              (row.options || []).map((opt, idx) => ({
+                questionId: id,
+                label: opt.label,
+                content: opt.content,
+                imageUrl: opt.imageUrl ?? null,
+                sortOrder: idx,
+              }))
+            );
+            if (allOptions.length > 0) {
+              await tx.questionOption.createMany({ data: allOptions });
+            }
+          },
+          { timeout: 60000 }
+        );
+      }
+
+      const fileCreated = validRows.length;
 
       totalResults.totalRows += rows.length;
       totalResults.created += fileCreated;

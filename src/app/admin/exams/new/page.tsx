@@ -43,6 +43,7 @@ export default function CreateExamPage() {
     rows: number;
     created: number;
     duplicates: number;
+    byType?: Record<string, number>;
     error?: string;
   }>>([]);
 
@@ -55,10 +56,6 @@ export default function CreateExamPage() {
     [rules]
   );
 
-  const questionImportCount = useMemo(
-    () => questionResults.reduce((sum, r) => sum + r.created, 0),
-    [questionResults]
-  );
 
   /**
    * Save the exam as draft (called when transitioning from step 2 to step 3).
@@ -260,8 +257,8 @@ export default function CreateExamPage() {
         <Step5Confirm
           step1={step1}
           rules={rules}
-          questionImportCount={questionImportCount}
-          participantCount={participants.length}
+          questionResults={questionResults}
+          participants={participants}
         />
       )}
 
