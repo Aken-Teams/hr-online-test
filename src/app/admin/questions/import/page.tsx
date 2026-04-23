@@ -1,36 +1,25 @@
 'use client';
 
-import { useState, useRef, useCallback, type DragEvent } from 'react';
+import { useState, useRef, type DragEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft } from 'lucide-react';
-import { Badge } from '@/components/ui/Badge';
-import { Progress } from '@/components/ui/Progress';
-import { EmptyState } from '@/components/shared/EmptyState';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/ui/Table';
+import { ArrowLeft, FileSpreadsheet, CheckCircle, XCircle, Loader2, Upload, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { QUESTION_TYPE_LABELS } from '@/lib/constants';
-import type { QuestionType } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface PreviewRow {
-  type: string;
-  content: string;
-  department: string;
-  level: string;
-  correctAnswer: string;
+interface FileResult {
+  status: 'pending' | 'uploading' | 'done' | 'error';
+  created?: number;
+  duplicates?: number;
+  skipped?: number;
+  totalRows?: number;
+  imagesAttached?: number;
+  error?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,91 +31,93 @@ export default function QuestionImportPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<PreviewRow[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileResults, setFileResults] = useState<Map<string, FileResult>>(new Map());
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{
-    success: number;
-    failed: number;
-  } | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  function handleFileSelect(selectedFile: File | null) {
-    if (!selectedFile) return;
-
-    const validTypes = [
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      '.xls',
-      '.xlsx',
-    ];
-    const ext = selectedFile.name.split('.').pop()?.toLowerCase();
-    if (ext !== 'xls' && ext !== 'xlsx') {
-      toast('请上传 .xls 或 .xlsx 格式的文件', 'warning');
-      return;
+  function addFiles(newFiles: FileList | File[]) {
+    const validFiles: File[] = [];
+    for (const f of Array.from(newFiles)) {
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      if (ext !== 'xls' && ext !== 'xlsx') {
+        toast(`${f.name}: 仅支持 .xls 和 .xlsx 格式`, 'warning');
+        continue;
+      }
+      // Skip duplicates by name
+      if (files.some((existing) => existing.name === f.name)) continue;
+      validFiles.push(f);
     }
-
-    setFile(selectedFile);
-    setPreview([]);
-    setImportResult(null);
-    uploadPreview(selectedFile);
-  }
-
-  async function uploadPreview(selectedFile: File) {
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('preview', 'true');
-
-      const res = await fetch('/api/admin/questions/import', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error('解析文件失败');
-      const json = await res.json();
-      setPreview(json.data?.questions ?? []);
-    } catch {
-      toast('解析文件失败，请检查文件格式', 'error');
-    } finally {
-      setUploading(false);
+    if (validFiles.length > 0) {
+      setFiles((prev) => [...prev, ...validFiles]);
     }
   }
 
-  async function handleImport() {
-    if (!file) return;
+  function removeFile(name: string) {
+    setFiles((prev) => prev.filter((f) => f.name !== name));
+    setFileResults((prev) => {
+      const next = new Map(prev);
+      next.delete(name);
+      return next;
+    });
+  }
 
+  function clearAll() {
+    setFiles([]);
+    setFileResults(new Map());
+  }
+
+  async function handleImportAll() {
+    if (files.length === 0) return;
     setImporting(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('confirm', 'true');
 
-      const res = await fetch('/api/admin/questions/import', {
-        method: 'POST',
-        body: formData,
-      });
+    let totalCreated = 0;
+    let totalDuplicates = 0;
 
-      if (!res.ok) throw new Error('导入失败');
-      const json = await res.json();
-      const created = json.data?.created ?? json.data?.imported ?? 0;
-      const duplicates = json.data?.duplicates ?? 0;
-      const imagesAttached = json.data?.imagesAttached ?? 0;
-      setImportResult({
-        success: created,
-        failed: json.data?.failed ?? json.data?.skipped ?? 0,
-      });
-      const parts = [`成功导入 ${created} 道题目`];
-      if (imagesAttached > 0) parts.push(`含 ${imagesAttached} 个图片选项`);
-      if (duplicates > 0) parts.push(`${duplicates} 道重复已跳过`);
-      toast(parts.join('，'), 'success');
-    } catch {
-      toast('导入失败', 'error');
-    } finally {
-      setImporting(false);
+    for (const file of files) {
+      // Skip already-done files
+      const existing = fileResults.get(file.name);
+      if (existing?.status === 'done') continue;
+
+      setFileResults((prev) => new Map(prev).set(file.name, { status: 'uploading' }));
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch('/api/admin/questions/import', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || '导入失败');
+
+        const result: FileResult = {
+          status: 'done',
+          created: json.data?.created ?? 0,
+          duplicates: json.data?.duplicates ?? 0,
+          skipped: json.data?.skipped ?? 0,
+          totalRows: json.data?.totalRows ?? 0,
+          imagesAttached: json.data?.imagesAttached ?? 0,
+        };
+        setFileResults((prev) => new Map(prev).set(file.name, result));
+        totalCreated += result.created!;
+        totalDuplicates += result.duplicates!;
+      } catch (err) {
+        setFileResults((prev) =>
+          new Map(prev).set(file.name, {
+            status: 'error',
+            error: err instanceof Error ? err.message : '导入失败',
+          })
+        );
+      }
     }
+
+    setImporting(false);
+    const parts = [`全部完成：共导入 ${totalCreated} 题`];
+    if (totalDuplicates > 0) parts.push(`${totalDuplicates} 题重复已跳过`);
+    toast(parts.join('，'), totalCreated > 0 ? 'success' : 'info');
   }
 
   function handleDragOver(e: DragEvent) {
@@ -142,13 +133,17 @@ export default function QuestionImportPage() {
   function handleDrop(e: DragEvent) {
     e.preventDefault();
     setDragOver(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) handleFileSelect(dropped);
+    if (e.dataTransfer.files.length > 0) {
+      addFiles(e.dataTransfer.files);
+    }
   }
 
-  function truncate(text: string, max: number) {
-    return text.length > max ? text.slice(0, max) + '...' : text;
-  }
+  const pendingCount = files.filter((f) => {
+    const r = fileResults.get(f.name);
+    return !r || r.status === 'pending' || r.status === 'error';
+  }).length;
+
+  const doneCount = files.filter((f) => fileResults.get(f.name)?.status === 'done').length;
 
   return (
     <div className="space-y-6">
@@ -176,129 +171,101 @@ export default function QuestionImportPage() {
               : 'border-stone-300 bg-stone-50/30 hover:border-gray-400'
           }`}
         >
-          <svg
-            className="h-10 w-10 text-stone-400 mb-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-            />
-          </svg>
+          <Upload className="h-10 w-10 text-stone-400 mb-3" />
           <p className="text-sm font-medium text-stone-700">
             拖拽文件到此处，或点击选择文件
           </p>
-          <p className="mt-1 text-xs text-stone-500">支持 .xls 和 .xlsx 格式</p>
+          <p className="mt-1 text-xs text-stone-500">支持 .xls 和 .xlsx 格式，可同时选择多个文件</p>
           <input
             ref={fileInputRef}
             type="file"
             accept=".xls,.xlsx"
+            multiple
             className="hidden"
-            onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                addFiles(e.target.files);
+              }
+              e.target.value = '';
+            }}
           />
         </div>
-
-        {file && (
-          <div className="mt-4 flex items-center gap-3 text-sm">
-            <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-stone-700">{file.name}</span>
-            <span className="text-stone-400">({(file.size / 1024).toFixed(1)} KB)</span>
-          </div>
-        )}
-
-        {uploading && (
-          <div className="mt-4">
-            <p className="text-sm text-stone-500 mb-2">解析中...</p>
-            <Progress value={50} color="teal" />
-          </div>
-        )}
       </Card>
 
-      {/* Preview table */}
-      {preview.length > 0 && !importResult && (
-        <Card title={`预览（共 ${preview.length} 道题目）`}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>题型</TableHead>
-                <TableHead>题目</TableHead>
-                <TableHead>部门</TableHead>
-                <TableHead>级别</TableHead>
-                <TableHead>正确答案</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {preview.slice(0, 50).map((row, idx) => (
-                <TableRow key={idx}>
-                  <TableCell>
-                    <Badge variant="info">
-                      {QUESTION_TYPE_LABELS[row.type as QuestionType] ?? row.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="max-w-sm">
-                    <span className="text-sm" title={row.content}>
-                      {truncate(row.content, 80)}
-                    </span>
-                  </TableCell>
-                  <TableCell>{row.department}</TableCell>
-                  <TableCell>{row.level}</TableCell>
-                  <TableCell className="text-sm text-stone-500 max-w-32 truncate">
-                    {row.correctAnswer || '--'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {preview.length > 50 && (
-            <p className="mt-3 text-sm text-stone-500">
-              仅显示前 50 条，共 {preview.length} 道题目
-            </p>
-          )}
+      {/* File list */}
+      {files.length > 0 && (
+        <Card
+          title={`已选文件（${files.length} 个${doneCount > 0 ? `，${doneCount} 个已完成` : ''}）`}
+        >
+          <div className="space-y-2">
+            {files.map((f) => {
+              const result = fileResults.get(f.name);
+              return (
+                <div
+                  key={f.name}
+                  className="flex items-center gap-3 rounded-lg border border-stone-100 bg-stone-50/50 px-4 py-2.5"
+                >
+                  <FileSpreadsheet className="h-5 w-5 shrink-0 text-stone-400" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-stone-800 truncate">{f.name}</p>
+                    <p className="text-xs text-stone-400">
+                      {(f.size / 1024).toFixed(1)} KB
+                      {result?.status === 'done' && (
+                        <span className="ml-2 text-green-600">
+                          {result.totalRows} 题解析，{result.created} 题导入
+                          {(result.duplicates ?? 0) > 0 && `，${result.duplicates} 题重复`}
+                          {(result.skipped ?? 0) > 0 && `，${result.skipped} 题跳过`}
+                        </span>
+                      )}
+                      {result?.status === 'error' && (
+                        <span className="ml-2 text-red-600">{result.error}</span>
+                      )}
+                    </p>
+                  </div>
 
-          <div className="mt-4 flex items-center justify-end">
-            <Button onClick={handleImport} loading={importing}>
-              确认导入 ({preview.length} 道)
-            </Button>
-          </div>
-        </Card>
-      )}
+                  {/* Status indicator */}
+                  {result?.status === 'uploading' && (
+                    <Loader2 className="h-5 w-5 text-teal-500 animate-spin shrink-0" />
+                  )}
+                  {result?.status === 'done' && (
+                    <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+                  )}
+                  {result?.status === 'error' && (
+                    <XCircle className="h-5 w-5 text-red-400 shrink-0" />
+                  )}
 
-      {/* Import result */}
-      {importResult && (
-        <Card title="导入结果">
-          <div className="space-y-3">
-            <div className="flex items-center gap-6">
-              <div>
-                <span className="text-sm text-stone-500">成功导入：</span>
-                <span className="ml-1 text-lg font-bold text-green-600">
-                  {importResult.success}
-                </span>
-              </div>
-              {importResult.failed > 0 && (
-                <div>
-                  <span className="text-sm text-stone-500">导入失败：</span>
-                  <span className="ml-1 text-lg font-bold text-red-600">
-                    {importResult.failed}
-                  </span>
+                  {/* Remove button (only when not importing) */}
+                  {!importing && result?.status !== 'uploading' && (
+                    <button
+                      onClick={() => removeFile(f.name)}
+                      className="p-1 text-stone-400 hover:text-red-500 transition-colors shrink-0"
+                      title="移除"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
-              onClick={() => {
-                setFile(null);
-                setPreview([]);
-                setImportResult(null);
-              }}
+              onClick={clearAll}
+              disabled={importing}
             >
-              继续导入
+              清空列表
+            </Button>
+            <Button
+              onClick={handleImportAll}
+              loading={importing}
+              disabled={pendingCount === 0}
+            >
+              {doneCount > 0 && pendingCount > 0
+                ? `继续导入 (${pendingCount} 个)`
+                : `导入全部 (${pendingCount} 个)`}
             </Button>
           </div>
         </Card>

@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 
 interface FileResult {
   filename: string;
-  parsed: { department: string; process: string; level: string; author: string } | null;
+  parsed: { department: string; process: string; level: string } | null;
   rows: number;
   created: number;
   duplicates: number;
@@ -60,10 +60,12 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
       <Card title="导入题库">
         <div className="space-y-4">
           <p className="text-sm text-stone-600">
-            上传题库 Excel 文件，文件名格式：<code className="text-xs bg-stone-100 px-1 py-0.5 rounded">部门--工序--级别--人名.xls</code>
+            上传题库 Excel 文件，文件名格式：<code className="text-xs bg-stone-100 px-1 py-0.5 rounded">部门工序级别.xls</code>
+            <span className="text-stone-400 mx-1">例：</span>
+            <code className="text-xs bg-stone-100 px-1 py-0.5 rounded">工务部SAWⅡ级.xls</code>
           </p>
           <p className="text-xs text-stone-500">
-            系统会从文件名自动解析部门、工序、级别信息。文件名包含「基本」关键字则标记为基本题，否则为专业题。
+            系统会自动从文件名解析部门、工序、级别。文件名含「基本」或「基础」关键字则标记为基本题，否则为专业题。
           </p>
 
           {!examId ? (

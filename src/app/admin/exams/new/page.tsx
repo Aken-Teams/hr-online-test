@@ -39,7 +39,7 @@ export default function CreateExamPage() {
   // Step 3 data (import results)
   const [questionResults, setQuestionResults] = useState<Array<{
     filename: string;
-    parsed: { department: string; process: string; level: string; author: string } | null;
+    parsed: { department: string; process: string; level: string } | null;
     rows: number;
     created: number;
     duplicates: number;
@@ -89,7 +89,7 @@ export default function CreateExamPage() {
         resultQueryOpenAt: step1.resultQueryOpenAt || null,
         resultQueryCloseAt: step1.resultQueryCloseAt || null,
         shuffleQuestions: step1.shuffleQuestions,
-        shuffleOptions: step1.shuffleQuestions,
+        shuffleOptions: step1.shuffleOptions,
         showCorrectAnswers: step1.showCorrectAnswers,
         showResultImmediately: true,
         isPracticeMode: step1.isPracticeMode,
@@ -153,7 +153,7 @@ export default function CreateExamPage() {
         resultQueryOpenAt: step1.resultQueryOpenAt || null,
         resultQueryCloseAt: step1.resultQueryCloseAt || null,
         shuffleQuestions: step1.shuffleQuestions,
-        shuffleOptions: step1.shuffleQuestions,
+        shuffleOptions: step1.shuffleOptions,
         showCorrectAnswers: step1.showCorrectAnswers,
         showResultImmediately: true,
         isPracticeMode: step1.isPracticeMode,

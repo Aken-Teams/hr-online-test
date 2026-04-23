@@ -34,6 +34,7 @@ export async function POST(
     });
 
     const shouldShuffleOptions = exam?.shuffleOptions ?? true;
+    const shouldShuffleQuestions = exam?.shuffleQuestions ?? true;
 
     if (!exam || !['PUBLISHED', 'ACTIVE'].includes(exam.status)) {
       return NextResponse.json(
@@ -178,7 +179,7 @@ export async function POST(
       },
     });
 
-    if (attemptCount >= exam.maxAttempts) {
+    if (!exam.isPracticeMode && attemptCount >= exam.maxAttempts) {
       return NextResponse.json(
         { success: false, error: `已达最大作答次数 (${exam.maxAttempts})` },
         { status: 403 }
@@ -206,7 +207,9 @@ export async function POST(
     );
 
     // Create ExamQuestion records + ExamSession in a transaction
-    const questionOrder = generatedQuestions.map((q) => q.questionId);
+    const questionOrder = shouldShuffleQuestions
+      ? shuffle(generatedQuestions.map((q) => q.questionId))
+      : generatedQuestions.map((q) => q.questionId);
 
     const session = await prisma.$transaction(async (tx) => {
       // Create ExamQuestion records (if not existing from previous attempts)

@@ -540,27 +540,63 @@ export interface ParsedQuestionFilename {
   department: string;
   process: string;
   level: string;
-  author: string;
 }
 
 /**
- * Parse a question bank filename to extract metadata.
- * Expected format: "部門--工序--級別--人名.xls"
- * e.g. "生产部--SAW--Ⅰ级--张三.xls"
+ * Parse a question bank filename to extract department, process, and level.
+ *
+ * Supports two formats:
+ * 1. Concatenated: "部门名工序级别.xls"
+ *    e.g. "工务部SAWⅡ级.xls", "资材部仓管Ⅰ级.xls",
+ *         "制程品管部SAW&DB&WB&QCgateⅠ级.xls"
+ * 2. Separator:   "部门--工序--级别.xls"  (backward compat)
+ *
+ * Returns null if the filename cannot be reliably parsed.
  */
 export function parseQuestionFilename(filename: string): ParsedQuestionFilename | null {
-  // Remove extension
-  const name = filename.replace(/\.(xls|xlsx)$/i, '');
-  const parts = name.split('--');
+  // Remove extension and trailing annotations (" -修改", " 的複本" etc.)
+  let name = filename
+    .replace(/\.(xls|xlsx)$/i, '')
+    .replace(/\s+[-—].*$/, '')
+    .replace(/\s+的[複复]本.*$/, '')
+    .trim();
 
-  if (parts.length < 4) return null;
+  // --- Format 1: "--" separator (backward compat) ---
+  const sepParts = name.split('--');
+  if (sepParts.length >= 3) {
+    return {
+      department: sepParts[0].trim(),
+      process: sepParts[1].trim(),
+      level: sepParts[2].trim(),
+    };
+  }
 
-  return {
-    department: parts[0].trim(),
-    process: parts[1].trim(),
-    level: parts[2].trim(),
-    author: parts[3].trim(),
-  };
+  // --- Format 2: Concatenated "部门工序级别" ---
+  // Step 1: Extract level (Ⅰ级/Ⅱ级/Ⅲ级) from end
+  const levelMatch = name.match(/([ⅠⅡⅢ][级級])$/);
+  if (!levelMatch) return null;
+
+  const level = levelMatch[1];
+  const beforeLevel = name.slice(0, -level.length);
+  if (!beforeLevel) return null;
+
+  // Step 2: Split department from process using known suffix markers.
+  // Lazy (.+?) finds the FIRST occurrence of a dept suffix, so
+  // "制程品管部SAW" → dept="制程品管部", process="SAW".
+  // Longer suffixes listed first to avoid partial matches.
+  const deptMatch = beforeLevel.match(
+    /^(.+?(?:委员会|中心|部|处|室|科|组))(.+)$/
+  );
+  if (deptMatch && deptMatch[1] && deptMatch[2]) {
+    return {
+      department: deptMatch[1],
+      process: deptMatch[2],
+      level,
+    };
+  }
+
+  // No department marker found — can't reliably split
+  return null;
 }
 
 // ============================================================

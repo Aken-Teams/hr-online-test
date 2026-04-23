@@ -193,7 +193,8 @@ export async function POST(request: Request) {
     let duplicates = 0;
     const errors: string[] = [];
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(
+      async (tx) => {
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
 
@@ -251,7 +252,9 @@ export async function POST(request: Request) {
           },
         },
       });
-    });
+      },
+      { timeout: 60000 }
+    );
 
     return NextResponse.json({
       success: true,

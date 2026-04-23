@@ -399,7 +399,7 @@ function InstructionsPage() {
               </p>
             </div>
             <div className="rounded-lg bg-stone-50 px-3 py-2.5 md:px-4 md:py-3">
-              <p className="text-xs text-stone-500">及格分数</p>
+              <p className="text-xs text-stone-500">线上理论及格分</p>
               <p className="mt-0.5 text-sm font-medium text-stone-800">
                 {exam.passScore} 分
               </p>

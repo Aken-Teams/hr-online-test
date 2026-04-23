@@ -5,12 +5,15 @@ import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Tabs';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Send } from 'lucide-react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { Dialog } from '@/components/ui/Dialog';
 import { useToast } from '@/components/ui/Toast';
+import { QUESTION_TYPE_LABELS } from '@/lib/constants';
 import type { QuestionType, ExamData } from '@/types/exam';
 import TabBasicInfo from './tabs/TabBasicInfo';
 import TabParticipants from './tabs/TabParticipants';
+import TabQuestions from './tabs/TabQuestions';
 import TabScores from './tabs/TabScores';
 
 interface QuestionRule {
@@ -23,6 +26,7 @@ interface QuestionRule {
 
 const TABS = [
   { key: 'basic', label: '基本信息' },
+  { key: 'questions', label: '题库管理' },
   { key: 'participants', label: '应考人员' },
   { key: 'scores', label: '成绩管理' },
 ];
@@ -59,6 +63,7 @@ export default function EditExamPage() {
 
   // Settings
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
+  const [shuffleOptions, setShuffleOptions] = useState(true);
   const [showCorrectAnswers, setShowCorrectAnswers] = useState(false);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const [tabSwitchLimit, setTabSwitchLimit] = useState(3);
@@ -67,6 +72,12 @@ export default function EditExamPage() {
   // Exam status
   const [examStatus, setExamStatus] = useState<string>('DRAFT');
   const isFullyEditable = ['DRAFT', 'PUBLISHED'].includes(examStatus);
+
+  // Publish
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [questionCount, setQuestionCount] = useState(0);
+  const [participantCount, setParticipantCount] = useState(0);
 
   // Question rules
   const [rules, setRules] = useState<QuestionRule[]>([]);
@@ -95,6 +106,7 @@ export default function EditExamPage() {
       setTimeLimitMinutes(exam.timeLimitMinutes);
       setPassScore(exam.passScore);
       setShuffleQuestions(exam.shuffleQuestions);
+      setShuffleOptions(exam.shuffleOptions);
       setShowCorrectAnswers(exam.showCorrectAnswers);
       setIsPracticeMode(exam.isPracticeMode);
       setTabSwitchLimit(exam.tabSwitchLimit);
@@ -126,9 +138,27 @@ export default function EditExamPage() {
     }
   }, [examId, toast]);
 
+  const fetchCounts = useCallback(async () => {
+    try {
+      const [qRes, pRes] = await Promise.all([
+        fetch(`/api/admin/exams/${examId}/questions`),
+        fetch(`/api/admin/exams/${examId}/participants`),
+      ]);
+      if (qRes.ok) {
+        const qJson = await qRes.json();
+        setQuestionCount(qJson.data?.total ?? 0);
+      }
+      if (pRes.ok) {
+        const pJson = await pRes.json();
+        setParticipantCount(Array.isArray(pJson.data) ? pJson.data.length : 0);
+      }
+    } catch { /* non-critical */ }
+  }, [examId]);
+
   useEffect(() => {
     fetchExam();
-  }, [fetchExam]);
+    fetchCounts();
+  }, [fetchExam, fetchCounts]);
 
   async function handleSave() {
     if (!title.trim()) {
@@ -153,7 +183,7 @@ export default function EditExamPage() {
         resultQueryOpenAt: resultQueryOpenAt || null,
         resultQueryCloseAt: resultQueryCloseAt || null,
         shuffleQuestions,
-        shuffleOptions: shuffleQuestions,
+        shuffleOptions,
         showCorrectAnswers,
         showResultImmediately: true,
         isPracticeMode,
@@ -183,6 +213,37 @@ export default function EditExamPage() {
     }
   }
 
+  async function handlePublishClick() {
+    await fetchCounts();
+    setShowPublishDialog(true);
+  }
+
+  async function handlePublish() {
+    setPublishing(true);
+    try {
+      const res = await fetch(`/api/admin/exams/${examId}/publish`, { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '发布失败');
+      toast('考试已发布', 'success');
+      setShowPublishDialog(false);
+      setExamStatus(json.data?.status || 'PUBLISHED');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '发布失败', 'error');
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  const totalQuestions = rules.reduce((sum, r) => sum + r.count, 0);
+
+  const publishWarnings: string[] = [];
+  if (!title.trim()) publishWarnings.push('考试标题未填写');
+  if (rules.length === 0) publishWarnings.push('未设置题目规则');
+  if (questionCount === 0) publishWarnings.push('尚未导入任何题目');
+  if (participantCount === 0) publishWarnings.push('尚未导入应考人员');
+  if (!openAt) publishWarnings.push('未设置考试开放时间');
+  if (!closeAt) publishWarnings.push('未设置考试截止时间');
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -197,10 +258,18 @@ export default function EditExamPage() {
       <PageHeader
         title="编辑考试"
         actions={
-          <Button variant="outline" onClick={() => router.push('/admin/exams')}>
-            <ArrowLeft className="h-4 w-4" />
-            返回列表
-          </Button>
+          <div className="flex items-center gap-2">
+            {examStatus === 'DRAFT' && (
+              <Button onClick={handlePublishClick}>
+                <Send className="h-4 w-4" />
+                发布考试
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => router.push('/admin/exams')}>
+              <ArrowLeft className="h-4 w-4" />
+              返回列表
+            </Button>
+          </div>
         }
       />
 
@@ -231,6 +300,7 @@ export default function EditExamPage() {
           resultQueryOpenAt={resultQueryOpenAt} setResultQueryOpenAt={setResultQueryOpenAt}
           resultQueryCloseAt={resultQueryCloseAt} setResultQueryCloseAt={setResultQueryCloseAt}
           shuffleQuestions={shuffleQuestions} setShuffleQuestions={setShuffleQuestions}
+          shuffleOptions={shuffleOptions} setShuffleOptions={setShuffleOptions}
           showCorrectAnswers={showCorrectAnswers} setShowCorrectAnswers={setShowCorrectAnswers}
           isPracticeMode={isPracticeMode} setIsPracticeMode={setIsPracticeMode}
           tabSwitchLimit={tabSwitchLimit} setTabSwitchLimit={setTabSwitchLimit}
@@ -243,8 +313,92 @@ export default function EditExamPage() {
         />
       )}
 
+      {activeTab === 'questions' && <TabQuestions examId={examId} />}
       {activeTab === 'participants' && <TabParticipants examId={examId} />}
       {activeTab === 'scores' && <TabScores examId={examId} />}
+
+      {/* Publish confirmation dialog */}
+      <Dialog
+        open={showPublishDialog}
+        onClose={() => setShowPublishDialog(false)}
+        title="确认发布考试"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowPublishDialog(false)} disabled={publishing}>
+              取消
+            </Button>
+            <Button
+              onClick={handlePublish}
+              loading={publishing}
+              disabled={publishWarnings.some((w) => w.includes('未设置题目规则') || w.includes('尚未导入应考人员'))}
+            >
+              <Send className="h-4 w-4" />
+              确认发布
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {publishWarnings.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <div className="flex items-center gap-2 mb-1.5">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-medium text-amber-800">请注意</span>
+              </div>
+              <ul className="list-disc list-inside space-y-0.5">
+                {publishWarnings.map((w, i) => (
+                  <li key={i} className="text-xs text-amber-700">{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="space-y-2 text-sm">
+            <InfoRow label="考试标题" value={title || '(未填)'} />
+            <InfoRow label="考试时长" value={`${timeLimitMinutes} 分钟`} />
+            <InfoRow label="理论/实操权重" value={`${theoryWeight}% / ${practicalWeight}%`} />
+            <InfoRow label="综合合格分" value={`${compositePassScore} 分`} />
+            <InfoRow label="线上理论及格分" value={`${passScore} 分`} />
+            <InfoRow label="基本题比例" value={`${basicQuestionRatio}%`} />
+            <InfoRow
+              label="考试时间"
+              value={openAt && closeAt
+                ? `${new Date(openAt).toLocaleString('zh-CN')} — ${new Date(closeAt).toLocaleString('zh-CN')}`
+                : '(未设置)'}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3 text-center">
+              <p className="text-xs text-stone-500">题目规则</p>
+              <p className="text-lg font-bold text-stone-800">{totalQuestions} 题</p>
+              {rules.map((r, i) => (
+                <p key={i} className="text-xs text-stone-500">
+                  {QUESTION_TYPE_LABELS[r.questionType]} {r.count} 题 × {r.pointsPerQuestion} 分
+                </p>
+              ))}
+            </div>
+            <div className="rounded-lg border border-stone-100 bg-stone-50 p-3 text-center">
+              <p className="text-xs text-stone-500">已导入</p>
+              <p className="text-lg font-bold text-stone-800">{questionCount} 题</p>
+              <p className="text-xs text-stone-500">{participantCount} 人</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-stone-400">
+            发布后考试将变为「待开放」状态，指定员工可在考试时间内作答。
+          </p>
+        </div>
+      </Dialog>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="text-stone-500 shrink-0">{label}</span>
+      <span className="font-medium text-stone-800 text-right">{value}</span>
     </div>
   );
 }

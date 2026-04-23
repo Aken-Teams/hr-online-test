@@ -7,7 +7,7 @@ import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 /**
  * POST /api/admin/exams/[id]/import-questions
  * Import question bank files bound to a specific exam.
- * Parses filename format: "部門--工序--級別--人名.xls"
+ * Parses filename format: "部门工序级别.xls" (e.g. "工务部SAWⅡ级.xls")
  * Sets examSourceId + process + category on imported questions.
  */
 export async function POST(
@@ -102,11 +102,12 @@ export async function POST(
         continue;
       }
 
-      // Determine category: if filename contains "基本" -> BASIC, else PROFESSIONAL
-      const isBasic = file.name.includes('基本') || file.name.toLowerCase().includes('basic');
+      // Determine category: if filename contains "基本"/"基础" -> BASIC, else PROFESSIONAL
+      const isBasic = file.name.includes('基本') || file.name.includes('基础') || file.name.toLowerCase().includes('basic');
       const category = isBasic ? 'BASIC' : 'PROFESSIONAL';
 
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(
+        async (tx) => {
         for (const row of rows) {
           const fingerprint = `${row.type}||${row.content.trim()}`;
           if (existingSet.has(fingerprint)) {
@@ -147,7 +148,9 @@ export async function POST(
             totalResults.skipped++;
           }
         }
-      });
+        },
+        { timeout: 60000 }
+      );
 
       totalResults.totalRows += rows.length;
       totalResults.created += fileCreated;

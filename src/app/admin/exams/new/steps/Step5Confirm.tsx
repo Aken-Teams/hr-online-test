@@ -48,7 +48,10 @@ export default function Step5Confirm({ step1, rules, questionImportCount, partic
           <InfoRow label="理论权重 / 实操权重" value={`${step1.theoryWeight}% / ${step1.practicalWeight}%`} />
           <InfoRow label="综合合格分" value={`${step1.compositePassScore} 分`} />
           <InfoRow label="基本题比例" value={`${step1.basicQuestionRatio}%`} />
-          <InfoRow label="及格分(线上)" value={`${step1.passScore} 分`} />
+          <InfoRow label="线上理论及格分" value={`${step1.passScore} 分`} />
+          <InfoRow label="随机出题" value={step1.shuffleQuestions ? '是' : '否'} />
+          <InfoRow label="随机选项" value={step1.shuffleOptions ? '是' : '否'} />
+          <InfoRow label="练习模式" value={step1.isPracticeMode ? '是（不限次数）' : '否'} />
           <InfoRow
             label="考试时间"
             value={step1.openAt && step1.closeAt

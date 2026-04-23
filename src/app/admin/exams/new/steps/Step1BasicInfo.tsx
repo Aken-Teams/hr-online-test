@@ -19,6 +19,7 @@ export interface Step1Data {
   resultQueryOpenAt: string;
   resultQueryCloseAt: string;
   shuffleQuestions: boolean;
+  shuffleOptions: boolean;
   showCorrectAnswers: boolean;
   isPracticeMode: boolean;
   tabSwitchLimit: number;
@@ -39,6 +40,7 @@ export const DEFAULT_STEP1: Step1Data = {
   resultQueryOpenAt: '',
   resultQueryCloseAt: '',
   shuffleQuestions: true,
+  shuffleOptions: true,
   showCorrectAnswers: false,
   isPracticeMode: false,
   tabSwitchLimit: 3,
@@ -81,7 +83,7 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
                 min={1}
               />
               <Input
-                label="及格分"
+                label="线上理论及格分"
                 required
                 type="number"
                 value={data.passScore}
@@ -200,9 +202,10 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
           <div className="border-t border-stone-100 px-4 py-3 sm:px-6 sm:py-4 space-y-5">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <ToggleRow label="随机出题" description="题目顺序随机打乱" checked={data.shuffleQuestions} onChange={(v) => set('shuffleQuestions', v)} />
+              <ToggleRow label="随机选项" description="选项 A/B/C/D 顺序随机" checked={data.shuffleOptions} onChange={(v) => set('shuffleOptions', v)} />
               <ToggleRow label="显示正确答案" description="提交后展示正确答案" checked={data.showCorrectAnswers} onChange={(v) => set('showCorrectAnswers', v)} />
-              <ToggleRow label="练习模式" description="不计入正式成绩" checked={data.isPracticeMode} onChange={(v) => set('isPracticeMode', v)} />
-              <ToggleRow label="人脸验证" description="考前人脸识别" checked={data.enableFaceAuth} onChange={(v) => set('enableFaceAuth', v)} />
+              <ToggleRow label="练习模式" description="不限作答次数" checked={data.isPracticeMode} onChange={(v) => set('isPracticeMode', v)} />
+              {/* 人脸验证功能已隐藏 */}
             </div>
             <div className="flex items-center justify-between rounded-lg border border-stone-100 bg-stone-50/50 px-4 py-3">
               <div>

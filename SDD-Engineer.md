@@ -1,8 +1,9 @@
 # 智考雲 — 系統設計文件（工程師版）
 
-> **版本**：v1.0
+> **版本**：v2.0
 > **建立時間**：2026/04/21
-> **對應 PRD 版本**：v4.0
+> **更新時間**：2026/04/22
+> **對應 PRD 版本**：v5.0
 
 ---
 
@@ -70,16 +71,19 @@ sequenceDiagram
     E->>FE: 輸入姓名+工號+身份證後6位
     FE->>API: POST /api/auth/verify
     API->>DB: 查詢員工+比對密碼
-    DB-->>API: 員工資料+指派考試
-    API-->>FE: JWT Token（exam_token）
+    DB-->>API: 員工資料
+    API-->>FE: JWT Token（exam_token，不含 examId）
 
-    FE->>API: GET /api/exam/available
-    API-->>FE: 考試資訊
+    E->>FE: 進入儀表板 → 我的考試
+    FE->>API: GET /api/exam/my-exams
+    API->>DB: 查詢 ExamAssignment（含 process/level）
+    API-->>FE: 考試指派列表（多個工序）
 
-    E->>FE: 閱讀須知 → 開始答題
-    FE->>API: POST /api/exam/{id}/start
-    API->>DB: 建立 ExamSession + 隨機抽題
-    DB-->>API: 題目列表（questionOrder）
+    E->>FE: 選擇考試卡片 → 閱讀須知 → 開始答題
+    FE->>API: POST /api/exam/{id}/start（含 assignmentId）
+    API->>DB: 從 assignment 取 process+level
+    API->>API: generateQuestionSet（10% 基本題 + 90% 專業題）
+    API->>DB: 建立 ExamSession + 寫入 questionOrder
     API-->>FE: Session + 題目
 
     loop 每題作答
@@ -94,24 +98,30 @@ sequenceDiagram
     API->>API: 自動評分（scoring.ts）
     API->>DB: 寫入 ExamResult
     API-->>FE: 成績結果
+
+    E->>FE: 成績查詢
+    FE->>API: GET /api/exam/my-results
+    API-->>FE: 歷史成績列表（含綜合分）
 ```
 
 ### 2.3 出題邏輯架構
 
 ```mermaid
 flowchart TD
-    START[開始抽題] --> RULES[讀取 ExamQuestionRule]
+    START[開始抽題] --> INPUT[取得 examId + process + level<br/>從 ExamAssignment]
+    INPUT --> RULES[讀取 ExamQuestionRule + basicQuestionRatio]
     RULES --> LOOP{遍歷每條規則}
 
-    LOOP --> RATIO[計算 commonRatio 配比<br/>通用題數 vs 部門題數]
-    RATIO --> DEPT[從該部門題庫隨機抽取<br/>部門專業題]
-    DEPT --> CHECK{部門題庫足夠？}
+    LOOP --> SPLIT[計算基本題/專業題數量<br/>basicCount = count × basicQuestionRatio<br/>professionalCount = count - basicCount]
 
-    CHECK -->|是| COMMON[從通用題庫抽取<br/>通用基礎題]
-    CHECK -->|否| FILL[以通用題庫智慧補足]
-    FILL --> COMMON
+    SPLIT --> BASIC[抽取基本題<br/>category=BASIC，不分工序]
+    BASIC --> PROF[抽取專業題<br/>category=PROFESSIONAL<br/>process=考生工序，level=考生級別]
 
-    COMMON --> MERGE[合併去重]
+    PROF --> CHECK{專業題庫足夠？}
+    CHECK -->|是| MERGE[合併基本題+專業題]
+    CHECK -->|否| FILL[以基本題庫智慧補足]
+    FILL --> MERGE
+
     MERGE --> SHUFFLE[隨機排序題目+選項]
     SHUFFLE --> SAVE[寫入 questionOrder<br/>至 ExamSession]
 
@@ -142,6 +152,9 @@ erDiagram
     Exam ||--o{ ExamQuestion : "題目"
     Exam ||--o{ ExamAssignment : "指派"
     Exam ||--o{ ExamSession : "場次"
+    Exam ||--o{ Question : "匯入題庫"
+
+    ExamAssignment ||--o{ ExamSession : "場次"
 
     ExamSession ||--o{ Answer : "答案"
     ExamSession ||--|| ExamResult : "成績"
@@ -170,7 +183,7 @@ erDiagram
 
     Question {
         string id PK
-        enum type "7種題型"
+        enum type "SINGLE/MULTI/TRUE_FALSE"
         text content
         string level
         string department
@@ -179,6 +192,9 @@ erDiagram
         string correctAnswer
         boolean isMultiSelect
         boolean isActive
+        string process "工序 SAW/DB/WB"
+        string category "BASIC/PROFESSIONAL"
+        string examSourceId FK "關聯考試"
     }
 
     Exam {
@@ -193,7 +209,10 @@ erDiagram
         datetime resultQueryOpenAt
         datetime resultQueryCloseAt
         int tabSwitchLimit
-        boolean enableFaceAuth
+        float theoryWeight "預設0.4"
+        float practicalWeight "預設0.6"
+        int compositePassScore "預設90"
+        float basicQuestionRatio "預設0.1"
     }
 
     ExamQuestionRule {
@@ -205,10 +224,19 @@ erDiagram
         float commonRatio "0.0~1.0"
     }
 
+    ExamAssignment {
+        string id PK
+        string examId FK
+        string userId FK
+        string process "報考工序"
+        string level "報考級別"
+    }
+
     ExamSession {
         string id PK
         string examId FK
         string userId FK
+        string assignmentId FK "關聯指派"
         enum status "6種狀態"
         int tabSwitchCount
         json questionOrder "題目ID陣列"
@@ -254,6 +282,7 @@ erDiagram
 | User | `employeeNo` | 工號唯一 |
 | Admin | `username` | 帳號唯一 |
 | ExamSession | `[examId, userId, attemptNumber]` | 同一考試同一考生同一次數唯一 |
+| ExamSession | `[assignmentId, attemptNumber]` | 同一指派同一次數唯一 |
 | Answer | `[sessionId, questionId]` | 同一場次同一題唯一 |
 | ExamResult | `sessionId` | 一場次一成績 |
 
@@ -290,11 +319,13 @@ erDiagram
 | `/api/admin/exams/[id]/status` | PATCH | 手動狀態轉換 |
 | `/api/admin/exams/[id]/sessions` | GET/DELETE | 場次列表/清除 |
 | `/api/admin/exams/[id]/offline-scores` | GET/POST | 離線成績範本/匯入 |
-| `/api/admin/questions` | GET/POST | 題目列表/建立 |
+| `/api/admin/exams/[id]/participants` | GET/POST | 應考人員列表/匯入 |
+| `/api/admin/exams/[id]/import-questions` | POST | 匯入題庫（綁定考試） |
+| `/api/admin/questions` | GET/POST | 題目列表/建立（支援 examSourceId/process/category 篩選） |
 | `/api/admin/questions/[id]` | GET/PUT/DELETE | 題目詳情/更新/刪除 |
 | `/api/admin/questions/import` | POST | Excel 批次匯入題目 |
 | `/api/admin/employees` | GET/POST | 員工列表/建立 |
-| `/api/admin/employees/[id]` | PATCH | 更新員工（人臉特徵）|
+| `/api/admin/employees/[id]` | GET/PATCH | 員工詳情（含指派+歷史成績）/更新 |
 | `/api/admin/employees/import` | POST | Excel 批次匯入員工 |
 | `/api/admin/grading` | GET/POST | 閱卷列表/評分 |
 | `/api/admin/results/[sessionId]` | GET | 場次成績詳情 |
@@ -306,8 +337,10 @@ erDiagram
 
 | 路徑 | 方法 | 說明 |
 |------|------|------|
-| `/api/exam/available` | GET | 取得指派考試 |
-| `/api/exam/[id]/start` | POST | 開始考試 |
+| `/api/exam/available` | GET | 取得指派考試（向後相容） |
+| `/api/exam/my-exams` | GET | 我的考試列表（含工序/級別/狀態） |
+| `/api/exam/my-results` | GET | 我的歷史成績列表 |
+| `/api/exam/[id]/start` | POST | 開始考試（含 assignmentId） |
 | `/api/exam/[id]/questions` | GET | 載入題目 |
 | `/api/exam/answer` | POST | 儲存答案（Upsert）|
 | `/api/exam/[id]/submit` | POST | 交卷+自動評分 |
@@ -331,22 +364,22 @@ erDiagram
 ```mermaid
 graph LR
     subgraph 考生端 ["考生端 /(exam)"]
-        HOME[/ 首頁登入] --> VERIFY[/verify 驗證]
-        VERIFY --> INST[/instructions 須知]
+        HOME[/ 首頁登入] --> DASHBOARD[/dashboard 儀表板]
+        DASHBOARD --> MY_EXAMS[/my-exams 我的考試]
+        DASHBOARD --> SCORES[/scores 成績查詢]
+        MY_EXAMS --> INST[/instructions 須知]
         INST --> TEST[/test 考試]
         TEST --> RESULT[/result 成績]
-        RESULT --> CERT[/certificate 證書]
     end
 
     subgraph 管理端 [管理後台 /admin]
         LOGIN[/admin/login] --> DASH[/admin 儀表板]
         DASH --> EXAMS[/admin/exams 考試列表]
-        EXAMS --> NEW_EXAM[/admin/exams/new 建立]
-        EXAMS --> EDIT_EXAM[/admin/exams/id 編輯]
+        EXAMS --> NEW_EXAM[/admin/exams/new 建立精靈]
+        EXAMS --> EDIT_EXAM[/admin/exams/id 詳情Tabs]
         EXAMS --> MONITOR[/admin/exams/id/monitor 監控]
         EXAMS --> RESULTS[/admin/exams/id/results 成績]
         RESULTS --> SESSION[/admin/exams/id/results/sid 詳情]
-        EXAMS --> GRADING[/admin/exams/id/grading 閱卷]
 
         DASH --> QUESTIONS[/admin/questions 題庫]
         QUESTIONS --> NEW_Q[/admin/questions/new 新增]
@@ -354,7 +387,7 @@ graph LR
         QUESTIONS --> IMPORT_Q[/admin/questions/import 匯入]
 
         DASH --> EMPLOYEES[/admin/employees 員工]
-        EMPLOYEES --> IMPORT_E[/admin/employees/import 匯入]
+        EMPLOYEES --> EMP_DETAIL[/admin/employees/id 詳情]
 
         DASH --> REPORTS[/admin/reports 報表]
     end
@@ -420,10 +453,12 @@ flowchart LR
 ### 7.2 綜合成績計算
 
 ```
-線上理論成績 = 單選 + 多選 + 判斷（滿分 90 分）
-理論合計 = 線上理論成績 + 簡答成績（線下，滿分 10 分）
-綜合成績 = 理論合計 × 40% + 實操成績 × 60%
-合格標準 = 綜合成績 ≥ 90 分
+線上理論成績 = 單選 + 多選 + 判斷（自動評分）
+綜合成績 = 線上理論分 × theoryWeight + 實操分 × practicalWeight
+合格標準 = 綜合成績 ≥ compositePassScore
+
+預設值：theoryWeight=0.4, practicalWeight=0.6, compositePassScore=90
+所有權重與合格分可在建立考試時自訂。
 ```
 
 ---
@@ -465,40 +500,53 @@ stateDiagram-v2
 ```
 src/
 ├── app/
-│   ├── (exam)/            # 考生端頁面
+│   ├── (exam)/            # 考生端頁面（含側邊欄導覽）
+│   │   ├── layout.tsx     # 考生端 Layout（登入後顯示側邊欄）
 │   │   ├── page.tsx       # 首頁/登入
-│   │   ├── verify/        # 身份驗證
-│   │   ├── instructions/  # 考試須知
-│   │   ├── test/          # 考試作答
-│   │   ├── result/        # 成績查詢
+│   │   ├── dashboard/     # 儀表板（歡迎+快捷入口）
+│   │   ├── my-exams/      # 我的考試（多工序卡片列表）
+│   │   ├── scores/        # 成績查詢（歷史成績彙總）
+│   │   ├── verify/        # 身份驗證（全螢幕，無側邊欄）
+│   │   ├── instructions/  # 考試須知（接受 assignmentId）
+│   │   ├── test/          # 考試作答（全螢幕，無側邊欄）
+│   │   ├── result/        # 交卷結果
 │   │   └── certificate/   # 證書
 │   ├── admin/             # 管理後台頁面
 │   │   ├── page.tsx       # 儀表板
 │   │   ├── login/         # 管理員登入
 │   │   ├── exams/         # 考試管理
-│   │   ├── questions/     # 題庫管理
+│   │   │   ├── new/       # 建立精靈（5 步驟）
+│   │   │   │   └── steps/ # Step1~Step5 子元件
+│   │   │   └── [id]/      # 考試詳情（Tabs 介面）
+│   │   │       └── tabs/  # TabBasicInfo, TabParticipants, TabScores
+│   │   ├── questions/     # 題庫管理（含關聯考試篩選）
 │   │   ├── employees/     # 員工管理
+│   │   │   └── [id]/      # 員工詳情（基本信息+指派+成績）
 │   │   └── reports/       # 報表
 │   └── api/               # API 路由
-│       ├── auth/          # 認證
+│       ├── auth/          # 認證（verify 不再帶 examId）
 │       ├── admin/         # 管理後台 API
+│       │   ├── exams/[id]/participants/   # 應考人員管理
+│       │   └── exams/[id]/import-questions/  # 考試綁定題庫匯入
 │       ├── exam/          # 考生 API
+│       │   ├── my-exams/  # 我的考試列表
+│       │   └── my-results/  # 我的歷史成績
 │       └── upload/        # 檔案上傳
 ├── components/
-│   ├── ui/                # 基礎 UI 元件
-│   └── shared/            # 共用元件（Logo, AntiCheat, Watermark）
+│   ├── ui/                # 基礎 UI 元件（含 Stepper, Tabs）
+│   └── shared/            # 共用元件
 ├── hooks/                 # 自訂 Hooks
 ├── stores/                # Zustand 狀態管理
 ├── lib/                   # 工具函式
 │   ├── auth.ts            # JWT 驗證
 │   ├── prisma.ts          # Prisma 實例
 │   ├── scoring.ts         # 評分引擎
-│   ├── question-generator.ts  # 出題引擎
-│   ├── excel.ts           # Excel 解析/匯出
+│   ├── question-generator.ts  # 出題引擎（基本題+專業題雙軌）
+│   ├── excel.ts           # Excel 解析/匯出（含應考名單解析）
 │   ├── validators.ts      # Zod 驗證 Schema
-│   └── constants.ts       # 常數定義
+│   └── constants.ts       # 常數定義（含工序/分類常數）
 └── types/                 # TypeScript 型別
-    └── exam.ts
+    └── exam.ts            # 含 MyExamItem, MyResultItem 等
 ```
 
 ---
@@ -514,7 +562,9 @@ UPLOAD_DIR="./public/uploads"
 
 ---
 
-## 12. 本次功能調整紀錄
+## 12. 功能調整紀錄
+
+### v1.0（2026/04/21）
 
 | 項目 | 調整內容 | 原因 |
 |------|---------|------|
@@ -523,6 +573,23 @@ UPLOAD_DIR="./public/uploads"
 | 考試刪除 | 新增刪除功能（僅草稿/已發佈可刪） | 原系統缺少此功能 |
 | 員工匯入 | 增加預覽確認機制 | 避免誤匯入直接寫入資料庫 |
 
+### v2.0（2026/04/22）— 多工序考試架構重構
+
+| 項目 | 調整內容 | 原因 |
+|------|---------|------|
+| 多工序指派 | ExamAssignment 新增 process/level，同一考生可考多個工序 | 客戶需求：一場考試中員工考多個工序 |
+| 題目分類 | Question 新增 process、category（BASIC/PROFESSIONAL）、examSourceId | 區分基本題與專業題，按工序+級別出題 |
+| 出題邏輯 | 改為 10% 基本題 + 90% 專業題雙軌抽題 | 基本題不分工序，專業題按工序+級別 |
+| 考試權重 | Exam 新增 theoryWeight/practicalWeight/compositePassScore/basicQuestionRatio | 權重與合格分可調，不再寫死 |
+| 前台架構 | 登入→儀表板→我的考試/成績查詢（三頁面+側邊欄） | 原本登入直接進考試，改為多考試選擇 |
+| JWT 簡化 | auth/verify 不再帶 examId，登入只驗身份 | 登入不綁定單一考試 |
+| 考試建立 | 改為 5 步驟精靈（基本信息→規則→題庫→人員→確認） | 多步驟流程更清晰 |
+| 考試詳情 | 改為 Tabs 介面（基本信息/應考人員/成績） | 資訊分類展示更清楚 |
+| 員工詳情 | 新增員工詳情頁（基本信息/考試指派/歷史成績） | 管理者需查看員工考試歷程 |
+| 人臉功能 | UI 隱藏（代碼保留備用） | 暫不需要人臉辨識功能 |
+| 題庫篩選 | 新增關聯考試、工序、分類篩選 | 以考試為中心管理題庫 |
+| 成績顯示 | 成績未開放時所有分數統一隱藏 | 用戶要求全部隱藏，不先顯示線上分 |
+
 ---
 
-**文件狀態**：v1.0 — 初版建立
+**文件狀態**：v2.0 — 多工序考試架構重構

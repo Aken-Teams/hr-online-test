@@ -47,6 +47,8 @@ interface Props {
   setResultQueryCloseAt: (v: string) => void;
   shuffleQuestions: boolean;
   setShuffleQuestions: (v: boolean) => void;
+  shuffleOptions: boolean;
+  setShuffleOptions: (v: boolean) => void;
   showCorrectAnswers: boolean;
   setShowCorrectAnswers: (v: boolean) => void;
   isPracticeMode: boolean;
@@ -71,7 +73,8 @@ export default function TabBasicInfo(props: Props) {
     compositePassScore, setCompositePassScore, basicQuestionRatio, setBasicQuestionRatio,
     openAt, setOpenAt, closeAt, setCloseAt,
     resultQueryOpenAt, setResultQueryOpenAt, resultQueryCloseAt, setResultQueryCloseAt,
-    shuffleQuestions, setShuffleQuestions, showCorrectAnswers, setShowCorrectAnswers,
+    shuffleQuestions, setShuffleQuestions, shuffleOptions, setShuffleOptions,
+    showCorrectAnswers, setShowCorrectAnswers,
     isPracticeMode, setIsPracticeMode, tabSwitchLimit, setTabSwitchLimit,
     enableFaceAuth, setEnableFaceAuth,
     rules, setRules, totalScore, isFullyEditable, saving, onSave,
@@ -105,7 +108,7 @@ export default function TabBasicInfo(props: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Input label="时长(分钟)" type="number" value={timeLimitMinutes} onChange={(e) => setTimeLimitMinutes(Number(e.target.value))} min={1} />
-            <Input label="及格分" type="number" value={passScore} onChange={(e) => setPassScore(Number(e.target.value))} min={0} />
+            <Input label="线上理论及格分" type="number" value={passScore} onChange={(e) => setPassScore(Number(e.target.value))} min={0} />
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">总分</label>
               <div className="flex h-[38px] items-center rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm font-semibold">{totalScore}</div>
@@ -135,9 +138,10 @@ export default function TabBasicInfo(props: Props) {
       <Card title="考试设置">
         <div className="space-y-4">
           <ToggleRow label="随机出题" description="题目顺序随机打乱" checked={shuffleQuestions} onChange={setShuffleQuestions} />
+          <ToggleRow label="随机选项" description="选项 A/B/C/D 顺序随机" checked={shuffleOptions} onChange={setShuffleOptions} />
           <ToggleRow label="显示正确答案" description="提交后展示正确答案" checked={showCorrectAnswers} onChange={setShowCorrectAnswers} />
-          <ToggleRow label="练习模式" description="不计入正式成绩" checked={isPracticeMode} onChange={setIsPracticeMode} />
-          <ToggleRow label="人脸验证" description="考前人脸识别" checked={enableFaceAuth} onChange={setEnableFaceAuth} />
+          <ToggleRow label="练习模式" description="不限作答次数" checked={isPracticeMode} onChange={setIsPracticeMode} />
+          {/* 人脸验证功能已隐藏 */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-stone-700">切屏限制</p>
