@@ -306,25 +306,38 @@ function InstructionsPage() {
   }
 
   if (error) {
+    const isClosed = error.includes('已关闭') || error.includes('已结束');
     return (
       <div className="flex min-h-screen flex-col items-center justify-start px-4 pt-10 md:justify-center md:pt-0">
         <Logo size="sm" className="mb-4 md:mb-8" />
-        <div className="w-full max-w-md rounded-xl border border-red-200 bg-white p-8 text-center shadow-sm">
+        <div className={`w-full max-w-md rounded-xl border bg-white p-8 text-center shadow-sm ${isClosed ? 'border-stone-200' : 'border-red-200'}`}>
           <svg
-            className="mx-auto mb-4 h-12 w-12 text-red-400"
+            className={`mx-auto mb-4 h-12 w-12 ${isClosed ? 'text-stone-300' : 'text-red-400'}`}
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-            />
+            {isClosed ? (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            ) : (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+              />
+            )}
           </svg>
-          <h2 className="text-lg font-semibold text-stone-800">无法加载考试</h2>
-          <p className="mt-2 text-sm text-stone-500">{error}</p>
+          <h2 className="text-lg font-semibold text-stone-800">
+            {isClosed ? '考试已结束' : '无法加载考试'}
+          </h2>
+          <p className="mt-2 text-sm text-stone-500">
+            {isClosed ? '考试时间已截止，您未参加此考试' : error}
+          </p>
           <Button
             variant="secondary"
             className="mt-6"
@@ -434,7 +447,9 @@ function InstructionsPage() {
               </p>
               <p className="mt-1 text-xs text-stone-600">
                 {exam.closeAt && new Date(exam.closeAt) < new Date()
-                  ? '考试时间已截止，您可以查看考试成绩。'
+                  ? (exam.attemptCount && exam.attemptCount > 0
+                    ? '考试时间已截止，您可以查看考试成绩。'
+                    : '考试时间已截止，您未参加此考试。')
                   : `已达最大作答次数 (${exam.maxAttempts} 次)，无法再次参加。`}
               </p>
             </div>
@@ -455,20 +470,31 @@ function InstructionsPage() {
 
         {/* Footer */}
         <div className="border-t border-stone-100 px-4 py-3 md:px-6 md:py-4">
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={canStart ? handleStart : () => router.push(`/result?examId=${exam.id}`)}
-            loading={starting}
-            disabled={canStart && !windowOpen}
-            variant={canStart ? 'primary' : 'secondary'}
-          >
-            {!canStart
-              ? '查看考试结果'
-              : windowOpen
-                ? '开始答题'
-                : '考试未开放'}
-          </Button>
+          {!canStart && (!exam.attemptCount || exam.attemptCount === 0) ? (
+            <Button
+              size="lg"
+              variant="secondary"
+              className="w-full"
+              onClick={() => router.push('/my-exams')}
+            >
+              返回我的考试
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={canStart ? handleStart : () => router.push(`/result?examId=${exam.id}`)}
+              loading={starting}
+              disabled={canStart && !windowOpen}
+              variant={canStart ? 'primary' : 'secondary'}
+            >
+              {!canStart
+                ? '查看考试结果'
+                : windowOpen
+                  ? '开始答题'
+                  : '考试未开放'}
+            </Button>
+          )}
         </div>
       </div>
 

@@ -430,14 +430,7 @@ function ResultPage() {
 
     async function fetchResult() {
       try {
-        // 1) Try stored session ID first (set after manual submit)
-        const storedSessionId = localStorage.getItem('exam-result-session');
-        if (storedSessionId) {
-          await loadResult(storedSessionId);
-          return;
-        }
-
-        // 2) Try query params (from instructions page or my-exams navigation)
+        // 1) Query params take priority (from instructions page or my-exams)
         const qSessionId = searchParams.get('sessionId');
         const qExamId = searchParams.get('examId');
         if (qSessionId) {
@@ -446,6 +439,13 @@ function ResultPage() {
         }
         if (qExamId) {
           await loadResult(qExamId);
+          return;
+        }
+
+        // 2) Try stored session ID (set after manual submit)
+        const storedSessionId = localStorage.getItem('exam-result-session');
+        if (storedSessionId) {
+          await loadResult(storedSessionId);
           return;
         }
 
@@ -546,9 +546,15 @@ function ResultPage() {
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <Logo size="sm" className="mb-8" />
         <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
-          <h2 className="text-lg font-semibold text-stone-800">
+          <svg className="mx-auto mb-4 h-12 w-12 text-stone-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg>
+          <h2 className="text-base font-semibold text-stone-800 sm:text-lg">
             {error || '暂无成绩'}
           </h2>
+          <p className="mt-1.5 text-sm text-stone-500">
+            您尚未参加此考试，无法查看成绩
+          </p>
           <Button
             variant="secondary"
             className="mt-6"

@@ -275,6 +275,8 @@ export interface MyResultItem {
   isResultQueryOpen: boolean;
   resultQueryOpenAt: string | null;
   resultQueryCloseAt: string | null;
+  /** True if the employee was assigned but never took the exam */
+  missed?: boolean;
 }
 
 /** Row structure for participant Excel import */

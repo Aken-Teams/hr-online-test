@@ -22,7 +22,10 @@ interface MyExam {
   passScore: number;
   openAt: string | null;
   closeAt: string | null;
+  examStatus: string;
   sessionStatus: string;
+  sessionId: string | null;
+  canStart: boolean;
   isPracticeMode: boolean;
 }
 
@@ -58,22 +61,38 @@ export default function MyExamsPage() {
     fetchExams();
   }, [router, toast]);
 
-  function getStatusBadge(status: string) {
-    switch (status) {
+  function getStatusBadge(exam: MyExam) {
+    const isPastClose = exam.closeAt ? new Date(exam.closeAt) < new Date() : false;
+    const isClosed = exam.examStatus === 'CLOSED' || isPastClose;
+    const notTaken = exam.sessionStatus === 'NOT_STARTED';
+
+    // Exam closed and employee never took it
+    if (isClosed && notTaken) {
+      return <Badge variant="danger">未参加</Badge>;
+    }
+
+    switch (exam.sessionStatus) {
       case 'NOT_STARTED':
         return <Badge variant="default">未开始</Badge>;
       case 'IN_PROGRESS':
         return <Badge variant="warning">进行中</Badge>;
       case 'COMPLETED':
       case 'SUBMITTED':
+      case 'AUTO_SUBMITTED':
         return <Badge variant="success">已完成</Badge>;
       default:
-        return <Badge variant="default">{status}</Badge>;
+        return <Badge variant="default">{exam.sessionStatus}</Badge>;
     }
   }
 
   function handleGoExam(exam: MyExam) {
-    router.push(`/instructions?assignmentId=${exam.assignmentId}`);
+    const completed = ['COMPLETED', 'SUBMITTED', 'AUTO_SUBMITTED'].includes(exam.sessionStatus);
+    // If completed, go directly to result page with sessionId
+    if (completed && exam.sessionId) {
+      router.push(`/result?sessionId=${exam.sessionId}`);
+    } else {
+      router.push(`/instructions?assignmentId=${exam.assignmentId}`);
+    }
   }
 
   if (loading) return <LoadingSpinner />;
@@ -93,15 +112,19 @@ export default function MyExamsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {exams.map((exam) => {
-            const completed = exam.sessionStatus === 'COMPLETED' || exam.sessionStatus === 'SUBMITTED';
+            const completed = ['COMPLETED', 'SUBMITTED', 'AUTO_SUBMITTED'].includes(exam.sessionStatus);
             const inProgress = exam.sessionStatus === 'IN_PROGRESS';
+            const isPastClose = exam.closeAt ? new Date(exam.closeAt) < new Date() : false;
+            const isClosed = exam.examStatus === 'CLOSED' || isPastClose;
+            const notTaken = exam.sessionStatus === 'NOT_STARTED';
+            const missed = isClosed && notTaken;
 
             return (
-              <Card key={exam.assignmentId} className="flex flex-col">
+              <Card key={exam.assignmentId} className={`flex flex-col ${missed ? 'opacity-75' : ''}`}>
                 <div className="flex-1 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="text-sm font-semibold text-stone-800 leading-snug">{exam.title}</h3>
-                    {getStatusBadge(exam.sessionStatus)}
+                    {getStatusBadge(exam)}
                   </div>
 
                   {(exam.process || exam.level) && (
@@ -138,13 +161,15 @@ export default function MyExamsPage() {
                 </div>
 
                 <div className="mt-4 border-t border-stone-100 pt-3">
-                  {completed ? (
+                  {missed ? (
+                    <p className="text-center text-xs text-stone-400 py-1">考试已结束，您未参加此考试</p>
+                  ) : completed ? (
                     <Button variant="secondary" size="sm" className="w-full" onClick={() => handleGoExam(exam)}>
                       <CheckCircle2 className="h-4 w-4" />
-                      查看详情
+                      查看成绩
                     </Button>
                   ) : (
-                    <Button size="sm" className="w-full" onClick={() => handleGoExam(exam)}>
+                    <Button size="sm" className="w-full" disabled={!exam.canStart} onClick={() => handleGoExam(exam)}>
                       <Play className="h-4 w-4" />
                       {inProgress ? '继续考试' : '开始考试'}
                     </Button>
