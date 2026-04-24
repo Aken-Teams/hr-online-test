@@ -92,6 +92,7 @@ export default function EditExamPage() {
 
   // Batches
   const [batches, setBatches] = useState<BatchInput[]>([]);
+  const [existingBatchCount, setExistingBatchCount] = useState(0);
 
   const totalScore = useMemo(() => {
     return rules.reduce((sum, r) => sum + r.count * r.pointsPerQuestion, 0);
@@ -146,13 +147,13 @@ export default function EditExamPage() {
       // Load batches
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rawBatches: any[] = (json.data as any).batches || [];
-      setBatches(
-        rawBatches.map((b: { name: string; openAt: string; closeAt: string }) => ({
-          name: b.name,
-          openAt: toLocalDatetime(b.openAt),
-          closeAt: toLocalDatetime(b.closeAt),
-        }))
-      );
+      const loadedBatches = rawBatches.map((b: { name: string; openAt: string; closeAt: string }) => ({
+        name: b.name,
+        openAt: toLocalDatetime(b.openAt),
+        closeAt: toLocalDatetime(b.closeAt),
+      }));
+      setBatches(loadedBatches);
+      setExistingBatchCount(loadedBatches.length);
     } catch {
       toast('加载考试数据失败', 'error');
     } finally {
@@ -342,6 +343,7 @@ export default function EditExamPage() {
           enableFaceAuth={enableFaceAuth} setEnableFaceAuth={setEnableFaceAuth}
           rules={rules} setRules={setRules}
           batches={batches} setBatches={setBatches}
+          existingBatchCount={existingBatchCount}
           totalScore={totalScore}
           isFullyEditable={isFullyEditable}
           isArchived={isArchived}

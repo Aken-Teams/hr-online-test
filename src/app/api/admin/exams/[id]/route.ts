@@ -210,7 +210,7 @@ export async function PUT(
         return { exam: updated, restricted: false };
       }
 
-      // ACTIVE / CLOSED / ARCHIVED — only basic info, NOT question rules & assignments
+      // ACTIVE / CLOSED — only basic info, NOT question rules & assignments
       const updated = await tx.exam.update({
         where: { id },
         data: {
@@ -238,6 +238,45 @@ export async function PUT(
         },
         include: { questionRules: true },
       });
+
+      // Batches: keep existing ones intact, only allow adding new batches
+      if ('batches' in body) {
+        const incomingBatches: { name: string; openAt: string; closeAt: string }[] =
+          body.batches || [];
+        // Get existing batch IDs
+        const existingBatches = await tx.examBatch.findMany({
+          where: { examId: id },
+          select: { id: true, name: true, openAt: true, closeAt: true },
+        });
+        const existingNames = new Set(existingBatches.map((b) => b.name));
+        // Filter to only new batches (by name not matching any existing)
+        const newBatches = incomingBatches.filter((b) => !existingNames.has(b.name));
+        if (newBatches.length > 0) {
+          const examOpen = data.openAt ? new Date(data.openAt) : null;
+          const examClose = data.closeAt ? new Date(data.closeAt) : null;
+          for (const b of newBatches) {
+            const bOpen = new Date(b.openAt);
+            const bClose = new Date(b.closeAt);
+            if (examOpen && bOpen < examOpen) {
+              throw new Error(`梯次「${b.name}」的开始时间不能早于考试开放时间`);
+            }
+            if (examClose && bClose > examClose) {
+              throw new Error(`梯次「${b.name}」的结束时间不能晚于考试截止时间`);
+            }
+            if (bOpen >= bClose) {
+              throw new Error(`梯次「${b.name}」的开始时间必须早于结束时间`);
+            }
+          }
+          await tx.examBatch.createMany({
+            data: newBatches.map((b) => ({
+              examId: id,
+              name: b.name,
+              openAt: new Date(b.openAt),
+              closeAt: new Date(b.closeAt),
+            })),
+          });
+        }
+      }
 
       return { exam: updated, restricted: true };
     });

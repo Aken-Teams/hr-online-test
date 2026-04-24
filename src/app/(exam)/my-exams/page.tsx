@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/components/ui/Toast';
-import { Clock, Play, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Play, CheckCircle2, ChevronLeft, ChevronRight, Info, X } from 'lucide-react';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
 const PAGE_SIZE = 9;
@@ -319,6 +319,32 @@ export default function MyExamsPage() {
   );
 }
 
+function getBatchWindowInfo(exam: MyExam): { inWindow: boolean; message?: string } {
+  if (!exam.batches || exam.batches.length === 0) return { inWindow: true };
+  const now = new Date();
+  // Check if in any batch window
+  for (const b of exam.batches) {
+    if (now >= new Date(b.openAt) && now <= new Date(b.closeAt)) {
+      return { inWindow: true };
+    }
+  }
+  // Find next batch
+  const sorted = [...exam.batches].sort((a, b) => new Date(a.openAt).getTime() - new Date(b.openAt).getTime());
+  for (const b of sorted) {
+    if (new Date(b.openAt) > now) {
+      return { inWindow: false, message: `下一梯次「${b.name}」尚未开始` };
+    }
+  }
+  return { inWindow: false, message: '所有梯次已结束' };
+}
+
+function formatBatchTime(iso: string) {
+  return new Date(iso).toLocaleString('zh-CN', {
+    month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
 function ExamCard({
   exam,
   getStatusBadge,
@@ -328,13 +354,17 @@ function ExamCard({
   getStatusBadge: (exam: MyExam) => React.ReactNode;
   onGo: (exam: MyExam) => void;
 }) {
+  const [showBatchPopup, setShowBatchPopup] = useState(false);
   const cat = getExamCategory(exam);
   const completed = cat === 'completed';
   const missed = cat === 'missed';
   const inProgress = exam.sessionStatus === 'IN_PROGRESS';
+  const hasBatches = exam.batches && exam.batches.length > 0;
+  const batchInfo = hasBatches ? getBatchWindowInfo(exam) : { inWindow: true };
+  const notInBatchWindow = hasBatches && !batchInfo.inWindow && !completed && !missed;
 
   return (
-    <Card className={`flex flex-col ${missed ? 'opacity-75' : ''}`}>
+    <Card className={`flex flex-col overflow-visible ${missed ? 'opacity-75' : ''}`}>
       <div className="flex-1 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-sm font-semibold text-stone-800 leading-snug">{exam.title}</h3>
@@ -369,10 +399,76 @@ function ExamCard({
           <div>满分 {exam.totalScore} 分</div>
         </div>
 
-        {exam.batches && exam.batches.length > 0 && (
-          <p className="text-xs text-stone-400">
-            共 {exam.batches.length} 个梯次
-          </p>
+        {hasBatches && (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowBatchPopup(!showBatchPopup)}
+              className="inline-flex items-center gap-1 text-xs text-stone-400 hover:text-teal-600 transition-colors"
+            >
+              共 {exam.batches!.length} 个梯次
+              <Info className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Batch schedule popup — mobile: fixed bottom sheet, desktop: absolute upward */}
+            {showBatchPopup && (
+              <>
+                {/* Mobile: backdrop + bottom sheet */}
+                <div className="fixed inset-0 z-40 bg-black/20 sm:hidden" onClick={() => setShowBatchPopup(false)} />
+                <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-stone-200 bg-white shadow-2xl p-4 pb-6 sm:hidden animate-in slide-in-from-bottom">
+                  <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-stone-300" />
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-stone-700">梯次时间安排</h4>
+                    <button type="button" onClick={() => setShowBatchPopup(false)} className="rounded p-1 text-stone-400 hover:text-stone-600">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {exam.batches!.map((b) => {
+                      const now = new Date();
+                      const isActive = now >= new Date(b.openAt) && now <= new Date(b.closeAt);
+                      const isPast = now > new Date(b.closeAt);
+                      return (
+                        <div key={b.id} className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
+                          isActive ? 'bg-teal-50 text-teal-700 font-medium' :
+                          isPast ? 'text-stone-400 line-through' : 'text-stone-600'
+                        }`}>
+                          <span>{b.name}</span>
+                          <span className="text-xs">{formatBatchTime(b.openAt)} ~ {formatBatchTime(b.closeAt)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Desktop: absolute popup upward */}
+                <div className="hidden sm:block absolute bottom-full left-0 right-0 mb-1 z-10 rounded-lg border border-stone-200 bg-white shadow-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-semibold text-stone-700">梯次时间安排</h4>
+                    <button type="button" onClick={() => setShowBatchPopup(false)} className="rounded p-0.5 text-stone-400 hover:text-stone-600">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="space-y-1.5">
+                    {exam.batches!.map((b) => {
+                      const now = new Date();
+                      const isActive = now >= new Date(b.openAt) && now <= new Date(b.closeAt);
+                      const isPast = now > new Date(b.closeAt);
+                      return (
+                        <div key={b.id} className={`flex items-center justify-between rounded px-2 py-1.5 text-xs ${
+                          isActive ? 'bg-teal-50 text-teal-700 font-medium' :
+                          isPast ? 'text-stone-400 line-through' : 'text-stone-600'
+                        }`}>
+                          <span>{b.name}</span>
+                          <span>{formatBatchTime(b.openAt)} ~ {formatBatchTime(b.closeAt)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         )}
 
         {exam.description && (
@@ -388,6 +484,13 @@ function ExamCard({
             <CheckCircle2 className="h-4 w-4" />
             查看成绩
           </Button>
+        ) : notInBatchWindow ? (
+          <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+            <p className="text-xs text-amber-700">
+              {batchInfo.message || '目前不在梯次时间内'}
+            </p>
+          </div>
         ) : (
           <Button size="sm" className="w-full" disabled={!exam.canStart} onClick={() => onGo(exam)}>
             <Play className="h-4 w-4" />

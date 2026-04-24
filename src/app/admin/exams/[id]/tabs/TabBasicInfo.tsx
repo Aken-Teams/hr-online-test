@@ -63,6 +63,8 @@ interface Props {
   setRules: (rules: QuestionRule[]) => void;
   batches: BatchInput[];
   setBatches: (batches: BatchInput[]) => void;
+  /** Number of existing batches from server (before any local additions) */
+  existingBatchCount: number;
   totalScore: number;
   isFullyEditable: boolean;
   isArchived?: boolean;
@@ -82,7 +84,7 @@ export default function TabBasicInfo(props: Props) {
     showCorrectAnswers, setShowCorrectAnswers,
     isPracticeMode, setIsPracticeMode, tabSwitchLimit, setTabSwitchLimit,
     enableFaceAuth, setEnableFaceAuth,
-    rules, setRules, batches, setBatches, totalScore, isFullyEditable, isArchived, saving, onSave,
+    rules, setRules, batches, setBatches, existingBatchCount, totalScore, isFullyEditable, isArchived, saving, onSave,
   } = props;
 
   function addRule() {
@@ -149,53 +151,62 @@ export default function TabBasicInfo(props: Props) {
             梯次时间必须在考试开放时间（{new Date(openAt).toLocaleString('zh-CN')}）至截止时间（{new Date(closeAt).toLocaleString('zh-CN')}）之间
           </p>
         )}
-        <div className={`space-y-3 ${!isFullyEditable ? 'pointer-events-none opacity-60' : ''}`}>
-          {batches.map((batch, idx) => (
-            <div key={idx} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_1fr_40px] items-end">
-              <Input
-                label={idx === 0 ? '梯次名称' : undefined}
-                value={batch.name}
-                onChange={(e) => {
-                  const updated = [...batches];
-                  updated[idx] = { ...batch, name: e.target.value };
-                  setBatches(updated);
-                }}
-                placeholder={`第${idx + 1}梯次`}
-              />
-              <Input
-                label={idx === 0 ? '开始时间' : undefined}
-                type="datetime-local"
-                value={batch.openAt}
-                min={openAt || undefined}
-                max={closeAt || undefined}
-                onChange={(e) => {
-                  const updated = [...batches];
-                  updated[idx] = { ...batch, openAt: e.target.value };
-                  setBatches(updated);
-                }}
-              />
-              <Input
-                label={idx === 0 ? '结束时间' : undefined}
-                type="datetime-local"
-                value={batch.closeAt}
-                min={openAt || undefined}
-                max={closeAt || undefined}
-                onChange={(e) => {
-                  const updated = [...batches];
-                  updated[idx] = { ...batch, closeAt: e.target.value };
-                  setBatches(updated);
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setBatches(batches.filter((_, i) => i !== idx))}
-                className="flex h-[38px] items-center justify-center rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          {isFullyEditable && (
+        {!isFullyEditable && !isArchived && (
+          <p className="text-xs text-amber-600 mb-3">
+            考试进行中，已有梯次不可修改，但可新增梯次。
+          </p>
+        )}
+        <div className="space-y-3">
+          {batches.map((batch, idx) => {
+            const isExisting = idx < existingBatchCount;
+            const locked = isExisting && !isFullyEditable;
+            return (
+              <div key={idx} className={`grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_1fr_40px] items-end ${locked ? 'pointer-events-none opacity-60' : ''}`}>
+                <Input
+                  label={idx === 0 ? '梯次名称' : undefined}
+                  value={batch.name}
+                  onChange={(e) => {
+                    const updated = [...batches];
+                    updated[idx] = { ...batch, name: e.target.value };
+                    setBatches(updated);
+                  }}
+                  placeholder={`第${idx + 1}梯次`}
+                />
+                <Input
+                  label={idx === 0 ? '开始时间' : undefined}
+                  type="datetime-local"
+                  value={batch.openAt}
+                  min={openAt || undefined}
+                  max={closeAt || undefined}
+                  onChange={(e) => {
+                    const updated = [...batches];
+                    updated[idx] = { ...batch, openAt: e.target.value };
+                    setBatches(updated);
+                  }}
+                />
+                <Input
+                  label={idx === 0 ? '结束时间' : undefined}
+                  type="datetime-local"
+                  value={batch.closeAt}
+                  min={openAt || undefined}
+                  max={closeAt || undefined}
+                  onChange={(e) => {
+                    const updated = [...batches];
+                    updated[idx] = { ...batch, closeAt: e.target.value };
+                    setBatches(updated);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setBatches(batches.filter((_, i) => i !== idx))}
+                  className="flex h-[38px] items-center justify-center rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            );
+          })}
+          {!isArchived && (
             <button
               type="button"
               onClick={() => setBatches([...batches, { name: `第${batches.length + 1}梯次`, openAt: '', closeAt: '' }])}

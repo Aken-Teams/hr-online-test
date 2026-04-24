@@ -474,10 +474,16 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          {/* Footer */}
-          <a href="https://www.zh-aoi.com/" target="_blank" rel="noopener noreferrer" className="mt-6 block text-center text-xs text-stone-400 hover:text-teal-600 transition-colors">
-            Powered by 智合科技 © 2026
-          </a>
+          {/* Admin link + Footer */}
+          <div className="mt-6 text-center">
+            <a href="/admin/login" className="text-xs text-stone-400 hover:text-teal-600 transition-colors">
+              管理员入口
+            </a>
+            <span className="mx-2 text-stone-300">|</span>
+            <a href="https://www.zh-aoi.com/" target="_blank" rel="noopener noreferrer" className="text-xs text-stone-400 hover:text-teal-600 transition-colors">
+              Powered by 智合科技 © 2026
+            </a>
+          </div>
         </div>
       </div>
     </div>
