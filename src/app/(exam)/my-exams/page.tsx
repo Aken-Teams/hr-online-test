@@ -207,7 +207,7 @@ export default function MyExamsPage() {
       ) : (
         <>
           {/* Filter bar */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-4 sm:gap-2">
             <CustomSelect
               placeholder="全部考试"
               value={examFilter || effectiveExamFilter}
@@ -220,37 +220,39 @@ export default function MyExamsPage() {
                 })),
               ]}
             />
-            <CustomSelect
-              placeholder="全部工序"
-              value={processFilter}
-              onChange={(v) => setProcessFilter(v)}
-              disabled={processes.length === 0}
-              options={[
-                { value: '', label: '全部工序' },
-                ...processes.map((p) => ({ value: p, label: p })),
-              ]}
-            />
-            <CustomSelect
-              placeholder="全部等级"
-              value={levelFilter}
-              onChange={(v) => setLevelFilter(v)}
-              disabled={levels.length === 0}
-              options={[
-                { value: '', label: '全部等级' },
-                ...levels.map((l) => ({ value: l, label: l })),
-              ]}
-            />
-            <CustomSelect
-              placeholder="全部状态"
-              value={effectiveStatusFilter}
-              onChange={(v) => setStatusFilter(v)}
-              options={[
-                { value: '', label: '全部状态' },
-                { value: 'active', label: '进行中' },
-                { value: 'completed', label: '已完成' },
-                { value: 'missed', label: '未参加' },
-              ]}
-            />
+            <div className="grid grid-cols-3 gap-2 sm:contents">
+              <CustomSelect
+                placeholder="全部工序"
+                value={processFilter}
+                onChange={(v) => setProcessFilter(v)}
+                disabled={processes.length === 0}
+                options={[
+                  { value: '', label: '全部工序' },
+                  ...processes.map((p) => ({ value: p, label: p })),
+                ]}
+              />
+              <CustomSelect
+                placeholder="全部等级"
+                value={levelFilter}
+                onChange={(v) => setLevelFilter(v)}
+                disabled={levels.length === 0}
+                options={[
+                  { value: '', label: '全部等级' },
+                  ...levels.map((l) => ({ value: l, label: l })),
+                ]}
+              />
+              <CustomSelect
+                placeholder="全部状态"
+                value={effectiveStatusFilter}
+                onChange={(v) => setStatusFilter(v)}
+                options={[
+                  { value: '', label: '全部状态' },
+                  { value: 'active', label: '进行中' },
+                  { value: 'completed', label: '已完成' },
+                  { value: 'missed', label: '未参加' },
+                ]}
+              />
+            </div>
           </div>
 
           {/* Results count */}
