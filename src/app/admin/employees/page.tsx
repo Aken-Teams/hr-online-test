@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
 import { DEPARTMENTS } from '@/lib/constants';
+import { Download } from 'lucide-react';
+import { ExportDialog } from '@/components/shared/ExportDialog';
 import type { EmployeeData } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
@@ -45,6 +47,9 @@ export default function EmployeeListPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [examFilter, setExamFilter] = useState('');
   const [examOptions, setExamOptions] = useState<{ value: string; label: string }[]>([{ value: '', label: '全部考试' }]);
+
+  // Export
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Add employee dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -164,7 +169,13 @@ export default function EmployeeListPage() {
         title="员工管理"
         description="管理参加考试的员工信息"
         actions={
-          <Button onClick={() => setAddOpen(true)}>添加员工</Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              <Download className="h-4 w-4" />
+              导出员工
+            </Button>
+            <Button onClick={() => setAddOpen(true)}>添加员工</Button>
+          </div>
         }
       />
 
@@ -364,6 +375,25 @@ export default function EmployeeListPage() {
         </div>
       </Dialog>
 
+      <ExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title="导出员工"
+        description="选择关联考试导出对应员工，或导出全部员工。"
+        allowAll
+        onExport={async (examId) => {
+          const url = examId ? `/api/admin/employees/export?examId=${examId}` : '/api/admin/employees/export';
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('导出失败');
+          const blob = await res.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `员工名单-${new Date().toLocaleDateString('zh-CN')}.xlsx`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+          toast('导出成功', 'success');
+        }}
+      />
     </div>
   );
 }

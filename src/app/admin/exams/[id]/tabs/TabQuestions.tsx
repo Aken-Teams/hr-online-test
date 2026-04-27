@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2, Trash2, Search } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2, Trash2, Search, Download } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
 import { QUESTION_TYPE_LABELS, QUESTION_CATEGORY_LABELS } from '@/lib/constants';
@@ -207,6 +207,22 @@ export default function TabQuestions({ examId }: Props) {
     }
   }
 
+  async function handleExportQuestions() {
+    try {
+      const res = await fetch(`/api/admin/questions/export?examId=${examId}`);
+      if (!res.ok) throw new Error('导出失败');
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `题库-${new Date().toLocaleDateString('zh-CN')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast('导出成功', 'success');
+    } catch {
+      toast('导出失败', 'error');
+    }
+  }
+
   // Files that are being uploaded but not yet in importedFiles
   const uploadingFiles = Array.from(uploadStatuses.entries())
     .filter(([name]) => !importedFiles.some((f) => f.sourceFile === name))
@@ -275,6 +291,12 @@ export default function TabQuestions({ examId }: Props) {
                   <Button variant="outline" size="sm" onClick={handleDeleteAll}>
                     <Trash2 className="h-3.5 w-3.5" />
                     清空题库
+                  </Button>
+                )}
+                {totalCount > 0 && (
+                  <Button variant="outline" size="sm" onClick={handleExportQuestions}>
+                    <Download className="h-3.5 w-3.5" />
+                    导出题库
                   </Button>
                 )}
                 <Button

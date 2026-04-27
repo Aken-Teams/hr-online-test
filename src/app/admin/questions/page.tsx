@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
 import { QUESTION_TYPE_LABELS, QUESTION_CATEGORY_LABELS } from '@/lib/constants';
-import { Pencil, Trash2, ImageIcon } from 'lucide-react';
+import { Pencil, Trash2, ImageIcon, Download } from 'lucide-react';
+import { ExportDialog } from '@/components/shared/ExportDialog';
 import type { QuestionData, QuestionType, PaginatedResponse } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
@@ -83,6 +84,9 @@ export default function QuestionListPage() {
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Export
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Fetch exam list for filter dropdown
   useEffect(() => {
@@ -181,6 +185,10 @@ export default function QuestionListPage() {
         description={`共 ${total} 道题目`}
         actions={
           <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              <Download className="h-4 w-4" />
+              导出题库
+            </Button>
             <Button variant="secondary" onClick={() => router.push('/admin/questions/import')}>
               导入题库
             </Button>
@@ -410,6 +418,26 @@ export default function QuestionListPage() {
         confirmText="确认删除"
         variant="danger"
         loading={deleting}
+      />
+
+      <ExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title="导出题库"
+        description="选择要导出的考试题库，将生成 Excel 文件下载。"
+        allowAll
+        onExport={async (examId) => {
+          const url = examId ? `/api/admin/questions/export?examId=${examId}` : '/api/admin/questions/export';
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('导出失败');
+          const blob = await res.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `题库-${new Date().toLocaleDateString('zh-CN')}.xlsx`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+          toast('导出成功', 'success');
+        }}
       />
     </div>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Upload, Users, Loader2, Search, Trash2, X } from 'lucide-react';
+import { Upload, Users, Loader2, Search, Trash2, X, Download } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
 interface Participant {
@@ -103,6 +103,22 @@ export default function TabParticipants({ examId }: Props) {
       setParticipants([]);
     } catch (err) {
       toast(err instanceof Error ? err.message : '删除失败', 'error');
+    }
+  }
+
+  async function handleExport() {
+    try {
+      const res = await fetch(`/api/admin/participants/export?examId=${examId}`);
+      if (!res.ok) throw new Error('导出失败');
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `应考人员-${new Date().toLocaleDateString('zh-CN')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast('导出成功', 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '导出失败', 'error');
     }
   }
 
@@ -236,6 +252,10 @@ export default function TabParticipants({ examId }: Props) {
                   <Button variant="outline" size="sm" onClick={handleDeleteAll}>
                     <Trash2 className="h-3.5 w-3.5" />
                     清空名单
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleExport}>
+                    <Download className="h-3.5 w-3.5" />
+                    导出名单
                   </Button>
                   <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
                     <Upload className="h-3.5 w-3.5" />

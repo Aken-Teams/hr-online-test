@@ -937,3 +937,120 @@ export function generateResultsExcelV2(results: (ResultExportRow & { process?: s
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   return Buffer.from(buf);
 }
+
+// ============================================================
+// Generate Questions Export Excel
+// ============================================================
+
+export interface QuestionExportRow {
+  type: string;
+  content: string;
+  correctAnswer?: string | null;
+  options?: string[];
+  isMultiSelect?: boolean;
+  category: string;
+  process?: string | null;
+  department: string;
+  level: string;
+  points: number;
+}
+
+export function generateQuestionsExcel(rows: QuestionExportRow[]): Buffer {
+  const headers = [
+    '题型', '题目', '正确答案', 'A选项', 'B选项', 'C选项', 'D选项',
+    '可多选', '分类', '工序', '部门', '级别', '分值',
+  ];
+
+  const data = rows.map((r) => [
+    r.type,
+    r.content,
+    r.correctAnswer ?? '',
+    r.options?.[0] ?? '',
+    r.options?.[1] ?? '',
+    r.options?.[2] ?? '',
+    r.options?.[3] ?? '',
+    r.isMultiSelect ? '是' : '否',
+    r.category === 'BASIC' ? '基本题' : '专业题',
+    r.process ?? '',
+    r.department,
+    r.level,
+    r.points,
+  ]);
+
+  const wsData = [headers, ...data];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = headers.map((h) => ({ wch: Math.max(h.length * 2, 14) }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '题库');
+
+  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
+}
+
+// ============================================================
+// Generate Participants Export Excel
+// ============================================================
+
+export interface ParticipantExportRow {
+  employeeNo: string;
+  name: string;
+  department: string;
+  process: string;
+  level: string;
+  status: string;
+}
+
+export function generateParticipantsExcel(rows: ParticipantExportRow[]): Buffer {
+  const headers = ['工号', '姓名', '部门', '工序', '等级', '状态'];
+
+  const data = rows.map((r) => [
+    r.employeeNo,
+    r.name,
+    r.department,
+    r.process,
+    r.level,
+    r.status,
+  ]);
+
+  const wsData = [headers, ...data];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = headers.map((h) => ({ wch: Math.max(h.length * 2, 12) }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '应考人员');
+
+  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
+}
+
+// ============================================================
+// Generate Employees Export Excel
+// ============================================================
+
+export interface EmployeeExportRow {
+  employeeNo: string;
+  name: string;
+  department: string;
+  role: string;
+  isActive: boolean;
+}
+
+export function generateEmployeesExcel(rows: EmployeeExportRow[]): Buffer {
+  const headers = ['工号', '姓名', '部门', '岗位', '状态'];
+
+  const data = rows.map((r) => [
+    r.employeeNo,
+    r.name,
+    r.department,
+    r.role,
+    r.isActive ? '在职' : '离职',
+  ]);
+
+  const wsData = [headers, ...data];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = headers.map((h) => ({ wch: Math.max(h.length * 2, 12) }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '员工名单');
+
+  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
+}
