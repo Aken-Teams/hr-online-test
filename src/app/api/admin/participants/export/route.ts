@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminFromCookie } from '@/lib/auth';
+import { getAdminFromCookie, isBcryptHash, decryptValue } from '@/lib/auth';
 import { generateParticipantsExcel } from '@/lib/excel';
 import type { ParticipantExportRow } from '@/lib/excel';
 
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const assignments = await prisma.examAssignment.findMany({
       where: { examId },
       include: {
-        user: { select: { employeeNo: true, name: true, department: true } },
+        user: { select: { employeeNo: true, name: true, department: true, idCardLast6: true } },
         sessions: { select: { status: true } },
       },
     });
@@ -34,6 +34,12 @@ export async function GET(request: Request) {
       AUTO_SUBMITTED: '已交卷',
     };
 
+    function getVerifyCode(stored: string | null | undefined): string {
+      if (!stored) return '';
+      if (isBcryptHash(stored)) return '(旧格式，需重新导入)';
+      try { return decryptValue(stored); } catch { return '(解密失败)'; }
+    }
+
     const rows: ParticipantExportRow[] = assignments.map((a) => {
       const latestStatus = a.sessions[a.sessions.length - 1]?.status ?? 'NOT_STARTED';
       return {
@@ -42,6 +48,7 @@ export async function GET(request: Request) {
         department: a.user?.department ?? a.department ?? '',
         process: a.process ?? '',
         level: a.level ?? '',
+        verifyCode: getVerifyCode(a.user?.idCardLast6),
         status: statusMap[latestStatus] ?? '未考',
       };
     });

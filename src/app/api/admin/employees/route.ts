@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminFromCookie, hashPassword } from '@/lib/auth';
+import { getAdminFromCookie, encryptValue } from '@/lib/auth';
 import { employeeImportSchema } from '@/lib/validators';
 import { DEFAULT_PAGE_SIZE } from '@/lib/constants';
 
@@ -138,16 +138,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hash idCardLast6 if provided
-    const hashedIdCard = data.idCardLast6
-      ? await hashPassword(data.idCardLast6)
+    // Encrypt idCardLast6 if provided
+    const encryptedIdCard = data.idCardLast6
+      ? encryptValue(data.idCardLast6)
       : null;
 
     const user = await prisma.user.create({
       data: {
         employeeNo: data.employeeNo,
         name: data.name,
-        idCardLast6: hashedIdCard,
+        idCardLast6: encryptedIdCard,
         department: data.department,
         subDepartment: data.subDepartment ?? null,
         role: data.role,

@@ -997,11 +997,12 @@ export interface ParticipantExportRow {
   department: string;
   process: string;
   level: string;
+  verifyCode: string;
   status: string;
 }
 
 export function generateParticipantsExcel(rows: ParticipantExportRow[]): Buffer {
-  const headers = ['工号', '姓名', '部门', '工序', '等级', '状态'];
+  const headers = ['工号', '姓名', '部门', '工序', '等级', '验证码', '状态'];
 
   const data = rows.map((r) => [
     r.employeeNo,
@@ -1009,6 +1010,7 @@ export function generateParticipantsExcel(rows: ParticipantExportRow[]): Buffer 
     r.department,
     r.process,
     r.level,
+    r.verifyCode,
     r.status,
   ]);
 

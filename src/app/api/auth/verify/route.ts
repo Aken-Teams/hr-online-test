@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import { comparePassword, createEmployeeToken } from '@/lib/auth';
+import { verifyPassword, createEmployeeToken } from '@/lib/auth';
 import { employeeVerifySchema } from '@/lib/validators';
 
 export async function POST(request: Request) {
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Compare password (idCardLast6 is bcrypt hashed)
+    // Verify password (supports both bcrypt legacy and AES encrypted)
     if (!user.idCardLast6) {
       return NextResponse.json(
         { success: false, error: '该员工未设置密码，请联系管理员' },
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const isValid = await comparePassword(password, user.idCardLast6);
+    const isValid = await verifyPassword(password, user.idCardLast6);
     if (!isValid) {
       return NextResponse.json(
         { success: false, error: '密码错误' },

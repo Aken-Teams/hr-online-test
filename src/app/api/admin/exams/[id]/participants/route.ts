@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
 import { parseParticipantExcel, extractParticipantHeadersAndSamples } from '@/lib/excel';
-import { hashPassword } from '@/lib/auth';
+import { encryptValue } from '@/lib/auth';
 import { identifyColumnsWithAI } from '@/lib/deepseek';
 
 /**
@@ -158,17 +158,18 @@ export async function POST(
     // 3. First pass: match rows to existing users, collect new users to create
     type MatchedRow = { row: typeof rows[0]; user: typeof allUsers[0] };
     const matchedRows: MatchedRow[] = [];
-    const newUserRows: { row: typeof rows[0]; employeeNo: string; hashedPassword: string | null }[] = [];
+    const newUserRows: { row: typeof rows[0]; employeeNo: string; encryptedPassword: string | null }[] = [];
 
-    // Hash all verification codes in parallel
-    const rowsNeedingHash = rows.filter((r) => r.verificationCode);
-    const hashResults = await Promise.all(
-      rowsNeedingHash.map((r) => hashPassword(r.verificationCode!))
-    );
-    const hashMap = new Map<string, string>();
-    rowsNeedingHash.forEach((r, i) => {
-      hashMap.set(`${r.name}||${r.verificationCode}`, hashResults[i]);
-    });
+    // Encrypt all verification codes
+    const encryptMap = new Map<string, string>();
+    for (const r of rows) {
+      if (r.verificationCode) {
+        const key = `${r.name}||${r.verificationCode}`;
+        if (!encryptMap.has(key)) {
+          encryptMap.set(key, encryptValue(r.verificationCode));
+        }
+      }
+    }
 
     let autoIdx = 0;
     for (const row of rows) {
@@ -197,10 +198,10 @@ export async function POST(
         matchedRows.push({ row, user });
       } else {
         const employeeNo = row.employeeNo || `AUTO_${Date.now().toString(36)}_${autoIdx++}`;
-        const hashedPassword = row.verificationCode
-          ? hashMap.get(`${row.name}||${row.verificationCode}`) ?? null
+        const encryptedPassword = row.verificationCode
+          ? encryptMap.get(`${row.name}||${row.verificationCode}`) ?? null
           : null;
-        newUserRows.push({ row, employeeNo, hashedPassword });
+        newUserRows.push({ row, employeeNo, encryptedPassword });
       }
     }
 
@@ -210,12 +211,12 @@ export async function POST(
         // Batch create new users
         if (newUserRows.length > 0) {
           await tx.user.createMany({
-            data: newUserRows.map(({ row, employeeNo, hashedPassword }) => ({
+            data: newUserRows.map(({ row, employeeNo, encryptedPassword }) => ({
               employeeNo,
               name: row.name,
               department: row.department || '未分配',
               role: row.process || '未分配',
-              idCardLast6: hashedPassword,
+              idCardLast6: encryptedPassword,
             })),
             skipDuplicates: true,
           });
@@ -298,7 +299,7 @@ export async function POST(
         for (const { row, user } of matchedRows) {
           const updateData: Record<string, string> = {};
           if (row.verificationCode && !user.idCardLast6) {
-            updateData.idCardLast6 = hashMap.get(`${row.name}||${row.verificationCode}`) ?? '';
+            updateData.idCardLast6 = encryptMap.get(`${row.name}||${row.verificationCode}`) ?? '';
           }
           if (user.role === '未分配' && row.process) {
             updateData.role = row.process;

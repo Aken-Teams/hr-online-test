@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminFromCookie, hashPassword } from '@/lib/auth';
+import { getAdminFromCookie, encryptValue } from '@/lib/auth';
 import { parseEmployeeExcel } from '@/lib/excel';
 import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 
@@ -78,9 +78,9 @@ export async function POST(request: Request) {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       try {
-        // Hash idCardLast6 if provided
-        const hashedIdCard = row.idCardLast6
-          ? await hashPassword(row.idCardLast6)
+        // Encrypt idCardLast6 if provided
+        const encryptedIdCard = row.idCardLast6
+          ? encryptValue(row.idCardLast6)
           : undefined;
 
         const existing = await prisma.user.findUnique({
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
               subDepartment: row.subDepartment ?? null,
               role: row.role,
               hireDate: row.hireDate ? new Date(row.hireDate) : undefined,
-              ...(hashedIdCard ? { idCardLast6: hashedIdCard } : {}),
+              ...(encryptedIdCard ? { idCardLast6: encryptedIdCard } : {}),
             },
           });
           updated++;
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
             data: {
               employeeNo: row.employeeNo,
               name: row.name,
-              idCardLast6: hashedIdCard ?? null,
+              idCardLast6: encryptedIdCard ?? null,
               department: row.department,
               subDepartment: row.subDepartment ?? null,
               role: row.role,
