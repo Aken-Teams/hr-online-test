@@ -67,6 +67,7 @@ export async function POST(
 
     // Get assignmentId from request body (if provided)
     let assignmentId: string | null = null;
+    let assignmentDepartment: string | null = null;
     let assignmentProcess: string | null = null;
     let assignmentLevel: string | null = null;
     try {
@@ -87,6 +88,7 @@ export async function POST(
           { status: 404 }
         );
       }
+      assignmentDepartment = assignment.department;
       assignmentProcess = assignment.process;
       assignmentLevel = assignment.level;
     }
@@ -205,10 +207,10 @@ export async function POST(
       );
     }
 
-    // Generate question set (using assignment's process + level if available)
+    // Generate question set (using assignment's department/process/level if available)
     const { questions: generatedQuestions, warnings } = await generateQuestionSet(
       examId,
-      user.department,
+      assignmentDepartment || user.department,
       assignmentProcess,
       assignmentLevel
     );

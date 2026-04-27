@@ -131,10 +131,11 @@ async function pickQuestionsForRule(
     excludeIds: excludeArray,
   });
 
-  // Fetch PROFESSIONAL pool (filtered by process + level)
+  // Fetch PROFESSIONAL pool (filtered by department + process + level)
   const professionalPool = await fetchPool({
     type: questionType,
     category: 'PROFESSIONAL',
+    department: employeeDept,
     process: process || undefined,
     level: level || undefined,
     examSourceId: examId,
