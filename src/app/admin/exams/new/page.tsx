@@ -246,7 +246,7 @@ export default function CreateExamPage() {
 
       {/* Step content */}
       {currentStep === 0 && <Step1BasicInfo data={step1} onChange={setStep1} />}
-      {currentStep === 1 && <Step2QuestionRules rules={rules} onChange={setRules} />}
+      {currentStep === 1 && <Step2QuestionRules rules={rules} onChange={setRules} shuffleQuestions={step1.shuffleQuestions} />}
       {currentStep === 2 && (
         <Step3ImportQuestions examId={examId} results={questionResults} onResults={setQuestionResults} />
       )}
