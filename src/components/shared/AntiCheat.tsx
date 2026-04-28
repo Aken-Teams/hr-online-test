@@ -132,6 +132,8 @@ export function AntiCheat({ blockNavigation = false }: { blockNavigation?: boole
     };
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Skip blocking if exam is being submitted (allow navigation to result page)
+      if ((window as unknown as Record<string, boolean>).__examSubmitting) return;
       e.preventDefault();
     };
 

@@ -85,9 +85,54 @@ export async function GET() {
             attemptNumber: true,
             examId: true,
             assignmentId: true,
+            startedAt: true,
           },
         })
       : [];
+
+    // Auto-close expired IN_PROGRESS sessions
+    const examTimeLimits = new Map(assignments.map((a) => [a.exam.id, a.exam.timeLimitMinutes]));
+    const expiredSessionIds: string[] = [];
+    for (const s of allSessions) {
+      if (s.status === 'IN_PROGRESS' && s.startedAt) {
+        const limit = examTimeLimits.get(s.examId);
+        if (limit) {
+          const elapsed = Math.floor((now.getTime() - s.startedAt.getTime()) / 1000);
+          if (elapsed >= limit * 60) {
+            expiredSessionIds.push(s.id);
+            s.status = 'COMPLETED'; // update in-memory for correct display
+          }
+        }
+      }
+    }
+    // Also check assignment-level sessions
+    for (const a of assignments) {
+      const s = a.sessions[0];
+      if (s?.status === 'IN_PROGRESS') {
+        // Need startedAt — fetch it
+        const limit = a.exam.timeLimitMinutes;
+        const fullSession = await prisma.examSession.findUnique({
+          where: { id: s.id },
+          select: { startedAt: true },
+        });
+        if (fullSession?.startedAt) {
+          const elapsed = Math.floor((now.getTime() - fullSession.startedAt.getTime()) / 1000);
+          if (elapsed >= limit * 60) {
+            if (!expiredSessionIds.includes(s.id)) {
+              expiredSessionIds.push(s.id);
+            }
+            s.status = 'COMPLETED'; // update in-memory
+          }
+        }
+      }
+    }
+    // Batch update expired sessions in DB
+    if (expiredSessionIds.length > 0) {
+      await prisma.examSession.updateMany({
+        where: { id: { in: expiredSessionIds } },
+        data: { status: 'COMPLETED', submittedAt: now },
+      }).catch((e) => console.error('Auto-close expired sessions error:', e));
+    }
 
     // Build a map: examId → latest session WITHOUT assignmentId (backward compat only)
     // Sessions WITH assignmentId should only match via the a.sessions relation

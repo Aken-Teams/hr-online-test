@@ -51,6 +51,34 @@ export async function POST(
     const examId = session?.examId ?? id;
 
     if (!session) {
+      // Check if session was already submitted (idempotent support)
+      const completedSession = await prisma.examSession.findFirst({
+        where: {
+          OR: [
+            { id, userId: employee.userId },
+            { examId: id, userId: employee.userId },
+          ],
+          status: { in: ['COMPLETED', 'GRADING'] },
+        },
+        include: { exam: true },
+        orderBy: { submittedAt: 'desc' },
+      });
+
+      if (completedSession) {
+        const existingResult = await prisma.examResult.findUnique({
+          where: { sessionId: completedSession.id },
+        });
+        return NextResponse.json({
+          success: true,
+          data: {
+            sessionId: completedSession.id,
+            result: existingResult,
+            hasPendingGrading: completedSession.status === 'GRADING',
+            showResult: completedSession.exam.showResultImmediately,
+          },
+        });
+      }
+
       return NextResponse.json(
         { success: false, error: '没有进行中的考试会话' },
         { status: 404 }

@@ -36,8 +36,8 @@ export async function GET(request: Request) {
 
     function getVerifyCode(stored: string | null | undefined): string {
       if (!stored) return '';
-      if (isBcryptHash(stored)) return '(旧格式，需重新导入)';
-      try { return decryptValue(stored); } catch { return '(解密失败)'; }
+      if (isBcryptHash(stored)) return '';
+      try { return decryptValue(stored); } catch { return ''; }
     }
 
     const rows: ParticipantExportRow[] = assignments.map((a) => {

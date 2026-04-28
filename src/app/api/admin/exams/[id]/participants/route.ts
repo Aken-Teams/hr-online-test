@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
 import { parseParticipantExcel, extractParticipantHeadersAndSamples } from '@/lib/excel';
-import { encryptValue } from '@/lib/auth';
+import { encryptValue, isBcryptHash } from '@/lib/auth';
 import { identifyColumnsWithAI } from '@/lib/deepseek';
 
 /**
@@ -138,6 +138,20 @@ export async function POST(
       usersByName.set(u.name, list);
     }
 
+    // Filter out placeholder/invalid verification codes before encryption
+    const INVALID_CODES = ['(旧格式，需重新导入)', '(解密失败)', ''];
+    for (const r of rows) {
+      if (r.verificationCode && INVALID_CODES.includes(r.verificationCode.trim())) {
+        r.verificationCode = '';
+      }
+    }
+
+    const rowsWithCode = rows.filter((r) => r.verificationCode);
+    console.log(`[participants-import] Total rows: ${rows.length}, rows with verificationCode: ${rowsWithCode.length}`);
+    if (rowsWithCode.length > 0) {
+      console.log(`[participants-import] Sample codes:`, rowsWithCode.slice(0, 3).map((r) => ({ name: r.name, code: r.verificationCode?.substring(0, 2) + '***' })));
+    }
+
     // Encrypt all verification codes
     const encryptMap = new Map<string, string>();
     for (const r of rows) {
@@ -190,6 +204,8 @@ export async function POST(
       created: 0,
       replaced: 0,
       usersCreated: 0,
+      codesUpdated: 0,
+      codesCleared: 0,
       errors: [] as string[],
     };
 
@@ -288,9 +304,15 @@ export async function POST(
         // Update user fields where needed (verification code, role)
         const updatePromises: Promise<unknown>[] = [];
         for (const { row, user } of matchedRows) {
-          const updateData: Record<string, string> = {};
-          if (row.verificationCode && !user.idCardLast6) {
+          const updateData: Record<string, string | null> = {};
+          if (row.verificationCode) {
+            // New verification code provided → encrypt and store
             updateData.idCardLast6 = encryptMap.get(`${row.name}||${row.verificationCode}`) ?? '';
+            results.codesUpdated++;
+          } else if (user.idCardLast6 && isBcryptHash(user.idCardLast6)) {
+            // No new code but user has legacy bcrypt hash → clear it
+            updateData.idCardLast6 = null;
+            results.codesCleared++;
           }
           if (user.role === '未分配' && row.process) {
             updateData.role = row.process;
@@ -310,10 +332,17 @@ export async function POST(
       ? `覆盖导入 ${results.created} 人（替换 ${results.replaced} 人）`
       : `新增 ${results.created} 人`;
 
+    const codeParts: string[] = [];
+    if (results.usersCreated > 0) codeParts.push(`新建 ${results.usersCreated} 个用户`);
+    if (results.codesUpdated > 0) codeParts.push(`更新 ${results.codesUpdated} 个验证码`);
+    if (results.codesCleared > 0) codeParts.push(`清除 ${results.codesCleared} 个旧验证码`);
+
+    console.log(`[participants-import] Results:`, results);
+
     return NextResponse.json({
       success: true,
       data: results,
-      message: `${msg}${results.usersCreated > 0 ? `，新建 ${results.usersCreated} 个用户` : ''}`,
+      message: `${msg}${codeParts.length > 0 ? `，${codeParts.join('，')}` : ''}`,
     });
   } catch (error) {
     console.error('Import participants error:', error);

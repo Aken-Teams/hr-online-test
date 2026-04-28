@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { getEmployeeFromCookie } from '@/lib/auth';
 import { generateQuestionSet } from '@/lib/question-generator';
 import { isInExamTimeWindow } from '@/lib/exam-batch';
+import { autoGradeAnswer, calculateExamResult } from '@/lib/scoring';
+import { AUTO_GRADABLE_TYPES } from '@/lib/constants';
+import { Prisma } from '@prisma/client';
 
 /** Fisher-Yates shuffle (returns a new array) */
 function shuffle<T>(arr: T[]): T[] {
@@ -163,6 +166,126 @@ export async function POST(
       const startTime = existingSession.startedAt ?? now;
       const elapsedSeconds = Math.floor((now.getTime() - startTime.getTime()) / 1000);
       const timeRemaining = Math.max(0, exam.timeLimitMinutes * 60 - elapsedSeconds);
+
+      // If time has expired, auto-submit instead of resuming
+      if (timeRemaining <= 0) {
+        try {
+          const submitNow = new Date();
+
+          // Load exam questions for scoring
+          const sessionQuestionIds = (existingSession.questionOrder as string[] | null) ?? [];
+          const examQuestions = await prisma.examQuestion.findMany({
+            where: {
+              examId,
+              ...(sessionQuestionIds.length > 0 ? { questionId: { in: sessionQuestionIds } } : {}),
+            },
+            include: { question: true },
+          });
+
+          const questionMap = new Map(
+            examQuestions.map((eq) => [eq.questionId, {
+              id: eq.question.id,
+              type: eq.question.type,
+              correctAnswer: eq.question.correctAnswer,
+              isMultiSelect: eq.question.isMultiSelect,
+              points: eq.points,
+            }])
+          );
+
+          // Fetch existing answers
+          const existingAnswers = await prisma.answer.findMany({
+            where: { sessionId: existingSession.id },
+          });
+          const answeredIds = new Set(existingAnswers.map((a) => a.questionId));
+
+          let hasPendingGrading = false;
+
+          await prisma.$transaction(async (tx) => {
+            // Create blank answers for unanswered questions
+            const blankAnswers = [];
+            for (const [qid] of questionMap) {
+              if (!answeredIds.has(qid)) {
+                blankAnswers.push({ sessionId: existingSession.id, questionId: qid, answerContent: null, isFlagged: false });
+              }
+            }
+            if (blankAnswers.length > 0) {
+              await tx.answer.createMany({ data: blankAnswers });
+            }
+
+            // Re-fetch all answers after creating blanks
+            const allAnswers = await tx.answer.findMany({ where: { sessionId: existingSession.id } });
+
+            // Auto-grade
+            for (const answer of allAnswers) {
+              const q = questionMap.get(answer.questionId);
+              if (!q) continue;
+              if (AUTO_GRADABLE_TYPES.includes(q.type)) {
+                const result = autoGradeAnswer(q, answer.answerContent);
+                if (result) {
+                  await tx.answer.update({ where: { id: answer.id }, data: { isCorrect: result.isCorrect, earnedPoints: result.earnedPoints } });
+                  answer.isCorrect = result.isCorrect;
+                  answer.earnedPoints = result.earnedPoints;
+                }
+              } else if (!answer.answerContent || answer.answerContent.trim() === '') {
+                await tx.answer.update({ where: { id: answer.id }, data: { isCorrect: false, earnedPoints: 0 } });
+                answer.isCorrect = false;
+                answer.earnedPoints = 0;
+              } else {
+                hasPendingGrading = true;
+              }
+            }
+
+            // Calculate result
+            const examResult = calculateExamResult(
+              { id: existingSession.id, examId, startedAt: existingSession.startedAt!, submittedAt: submitNow },
+              allAnswers,
+              Array.from(questionMap.values()),
+              { passScore: exam.passScore, totalScore: exam.totalScore }
+            );
+
+            await tx.examResult.create({
+              data: {
+                sessionId: existingSession.id,
+                totalScore: examResult.totalScore,
+                autoScore: examResult.autoScore,
+                manualScore: examResult.manualScore,
+                maxPossibleScore: examResult.maxPossibleScore,
+                correctCount: examResult.correctCount,
+                totalQuestions: examResult.totalQuestions,
+                timeTakenSeconds: examResult.timeTakenSeconds,
+                isPassed: examResult.isPassed,
+                gradeLabel: examResult.gradeLabel,
+                categoryScores: (examResult.categoryScores as unknown as Prisma.InputJsonValue) ?? undefined,
+                isFullyGraded: examResult.isFullyGraded,
+                finalizedAt: examResult.isFullyGraded ? submitNow : null,
+              },
+            });
+
+            await tx.examSession.update({
+              where: { id: existingSession.id },
+              data: { status: hasPendingGrading ? 'GRADING' : 'COMPLETED', submittedAt: submitNow, lastActiveAt: submitNow },
+            });
+          }, { timeout: 15000 });
+
+          const result = await prisma.examResult.findUnique({ where: { sessionId: existingSession.id } });
+
+          return NextResponse.json({
+            success: true,
+            data: { sessionId: existingSession.id, examId, autoSubmitted: true, result },
+          });
+        } catch (e) {
+          console.error('Auto-submit expired session error:', e);
+          // Fallback: force-close the session without scoring
+          await prisma.examSession.update({
+            where: { id: existingSession.id },
+            data: { status: 'COMPLETED', submittedAt: new Date() },
+          }).catch(() => {});
+          return NextResponse.json({
+            success: true,
+            data: { sessionId: existingSession.id, examId, autoSubmitted: true, result: null },
+          });
+        }
+      }
 
       return NextResponse.json({
         success: true,

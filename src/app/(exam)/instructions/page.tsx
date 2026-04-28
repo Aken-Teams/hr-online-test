@@ -186,6 +186,14 @@ function InstructionsPage() {
             });
             const startData = await startRes.json();
             if (startRes.ok && startData.success && startData.data) {
+              // Server auto-submitted expired session
+              if (startData.data.autoSubmitted) {
+                if (startData.data.sessionId) {
+                  localStorage.setItem('exam-result-session', startData.data.sessionId);
+                }
+                router.replace('/result');
+                return;
+              }
               const { sessionId, questions, timeRemaining } = startData.data;
               setSession(
                 sessionId,
@@ -280,6 +288,15 @@ function InstructionsPage() {
 
       if (!res.ok || !data.success || !data.data) {
         toast(data.error || '启动考试失败', 'error');
+        return;
+      }
+
+      // If server auto-submitted an expired session, redirect to results
+      if ((data.data as Record<string, unknown>).autoSubmitted) {
+        const sid = (data.data as Record<string, unknown>).sessionId as string;
+        if (sid) localStorage.setItem('exam-result-session', sid);
+        toast('考试时间已到，已自动交卷', 'warning');
+        router.replace('/result');
         return;
       }
 

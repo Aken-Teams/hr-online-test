@@ -537,9 +537,19 @@ export default function TestPage() {
 
   // ---- Submit handler ------------------------------------------------------
 
+  // Navigate to result page — uses hard navigation to avoid race with store reset
+  const goToResult = useCallback(() => {
+    if (sessionId) {
+      localStorage.setItem('exam-result-session', sessionId);
+    }
+    // Disable AntiCheat's beforeunload blocker so navigation proceeds
+    (window as unknown as Record<string, boolean>).__examSubmitting = true;
+    window.location.replace('/result');
+    reset();
+  }, [sessionId, reset]);
+
   const handleSubmit = useCallback(async () => {
     if (!sessionId) return;
-    const token = localStorage.getItem('exam-token');
 
     try {
       const res = await fetch(`/api/exam/${sessionId}/submit`, {
@@ -553,33 +563,65 @@ export default function TestPage() {
         return;
       }
 
-      // Store result session id for the result page
-      localStorage.setItem('exam-result-session', sessionId);
-      reset();
-      router.push('/result');
+      goToResult();
     } catch {
       toast('网络错误，提交失败', 'error');
     }
-  }, [sessionId, reset, router, toast]);
+  }, [sessionId, goToResult, toast]);
+
+  // Auto-submit with retry (for timer expiry / force submit scenarios)
+  const autoSubmitWithRetry = useCallback(async () => {
+    if (!sessionId) return;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch(`/api/exam/${sessionId}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          goToResult();
+          return;
+        }
+
+        // If session already submitted or not found, go to result anyway
+        if (res.status === 404) {
+          goToResult();
+          return;
+        }
+      } catch {
+        // Network error — retry
+      }
+
+      // Wait before retry
+      if (attempt < 2) {
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
+
+    // All retries failed — force redirect to prevent being stuck
+    goToResult();
+  }, [sessionId, goToResult]);
 
   // Timer
-  const { formattedTime, start: startTimer } = useTimer(
+  const { formattedTime, timeRemaining: timerCountdown, start: startTimer } = useTimer(
     timeRemaining,
     () => {
-      // Auto-submit on expiry
+      // Auto-submit on expiry — with retry logic
       toast('考试时间已到，正在自动交卷...', 'warning');
-      handleSubmit();
+      autoSubmitWithRetry();
     },
   );
 
-  // Sync timer back to store every second for persistence
+  // Sync timer countdown back to store for persistence (across refreshes)
   useEffect(() => {
     const interval = setInterval(() => {
-      // The timer hook manages its own state; we sync to store for persistence
-      storeSetTimeRemaining(timeRemaining);
+      storeSetTimeRemaining(timerCountdown);
     }, 5000);
     return () => clearInterval(interval);
-  }, [timeRemaining, storeSetTimeRemaining]);
+  }, [timerCountdown, storeSetTimeRemaining]);
 
   // Start the timer on mount
   useEffect(() => {
@@ -587,6 +629,22 @@ export default function TestPage() {
       startTimer();
     }
   }, [sessionId, startTimer]);
+
+  // Auto-submit when user leaves the page (close tab, navigate away, etc.)
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const handleBeforeUnload = () => {
+      // Use sendBeacon for reliable fire-and-forget submission on page close
+      navigator.sendBeacon(
+        `/api/exam/${sessionId}/submit`,
+        new Blob([JSON.stringify({})], { type: 'application/json' })
+      );
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [sessionId]);
 
   // Tab detection
   const tabSwitchLimitRef = useState(3)[0]; // default; overridden if exam data available
@@ -627,14 +685,14 @@ export default function TestPage() {
   useEffect(() => {
     if (forceSubmitCountdown === null) return;
     if (forceSubmitCountdown <= 0) {
-      handleSubmit();
+      autoSubmitWithRetry();
       return;
     }
     const timer = setTimeout(() => {
       setForceSubmitCountdown((prev) => (prev !== null ? prev - 1 : null));
     }, 1000);
     return () => clearTimeout(timer);
-  }, [forceSubmitCountdown, handleSubmit]);
+  }, [forceSubmitCountdown, autoSubmitWithRetry]);
 
   // ---- UI state ------------------------------------------------------------
 
@@ -706,7 +764,7 @@ export default function TestPage() {
   const progressPercent = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
 
   // Timer color
-  const timerSeconds = timeRemaining;
+  const timerSeconds = timerCountdown;
   const timerColor =
     timerSeconds <= 300
       ? 'text-red-600'
