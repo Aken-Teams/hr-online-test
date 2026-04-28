@@ -42,7 +42,7 @@ export default function CreateExamPage() {
     parsed: { department: string; process: string; level: string } | null;
     rows: number;
     created: number;
-    duplicates: number;
+    replaced: number;
     byType?: Record<string, number>;
     error?: string;
   }>>([]);

@@ -11,7 +11,7 @@ interface FileResult {
   filename: string;
   rows: number;
   created: number;
-  duplicates: number;
+  replaced: number;
   byType?: Record<string, number>;
   error?: string;
 }

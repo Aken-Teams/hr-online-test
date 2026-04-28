@@ -15,7 +15,7 @@ interface FileResult {
   parsed: { department: string; process: string; level: string } | null;
   rows: number;
   created: number;
-  duplicates: number;
+  replaced: number;
   byType?: Record<string, number>;
   error?: string;
 }
@@ -148,7 +148,7 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
                   ) : (
                     <div className="mt-0.5">
                       <p className="text-xs text-stone-500">
-                        {r.rows} 题解析，{r.created} 题导入，{r.duplicates} 题重复跳过
+                        {r.rows} 题解析，{r.created} 题导入{r.replaced > 0 ? `（覆盖）` : ''}
                       </p>
                       {r.byType && Object.keys(r.byType).length > 0 && (
                         <p className="text-xs text-stone-400 mt-0.5">

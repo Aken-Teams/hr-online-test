@@ -23,7 +23,7 @@ interface ImportedFile {
 interface UploadStatus {
   status: 'uploading' | 'done' | 'error';
   created?: number;
-  duplicates?: number;
+  replaced?: number;
   rows?: number;
   byType?: Record<string, number>;
   error?: string;
@@ -137,7 +137,7 @@ export default function TabQuestions({ examId }: Props) {
             next.set(r.filename, {
               status: 'done',
               created: r.created,
-              duplicates: r.duplicates,
+              replaced: r.replaced,
               rows: r.rows,
               byType: r.byType,
             });
@@ -146,7 +146,10 @@ export default function TabQuestions({ examId }: Props) {
         return next;
       });
 
-      toast(`成功导入 ${json.data.created} 题`, 'success');
+      const msg = json.data.replaced > 0
+        ? `成功覆盖导入 ${json.data.created} 题（替换 ${json.data.replaced} 题）`
+        : `成功导入 ${json.data.created} 题`;
+      toast(msg, 'success');
       // Refresh imported files list from server
       fetchImportedFiles();
     } catch (err) {
@@ -402,8 +405,8 @@ export default function TabQuestions({ examId }: Props) {
                               </div>
                               <p className="text-xs text-stone-500 mt-0.5">
                                 {f.count} 题
-                                {uploadStatus?.status === 'done' && uploadStatus.duplicates
-                                  ? `，${uploadStatus.duplicates} 题重复跳过`
+                                {uploadStatus?.status === 'done' && uploadStatus.replaced
+                                  ? `，已覆盖`
                                   : ''}
                               </p>
                               {Object.keys(f.byType).length > 0 && (

@@ -66,8 +66,10 @@ export async function GET(
 /**
  * POST /api/admin/exams/[id]/participants
  * Import participants from an Excel file.
- * Required columns: 姓名, 报考工序, 报考等级
- * Optional columns: 工号, 部门, 身份证后6位/验证码
+ *
+ * Overwrite behavior: deletes all existing assignments for this exam,
+ * then recreates from the uploaded file. ExamSessions are preserved
+ * (assignmentId set to null). Only affects this exam's assignments.
  */
 export async function POST(
   request: Request,
@@ -124,41 +126,17 @@ export async function POST(
       );
     }
 
-    // ── Batch-optimized: pre-load all users & assignments ──
-
-    // 1. Load ALL users into lookup maps (single query)
+    // ── Pre-load all users for matching ──
     const allUsers = await prisma.user.findMany({
       select: { id: true, employeeNo: true, name: true, department: true, role: true, idCardLast6: true },
     });
     const userByEmpNo = new Map(allUsers.map((u) => [u.employeeNo, u]));
-    // Group by name for name-based matching
     const usersByName = new Map<string, typeof allUsers>();
     for (const u of allUsers) {
       const list = usersByName.get(u.name) || [];
       list.push(u);
       usersByName.set(u.name, list);
     }
-
-    // 2. Load existing assignments for this exam (single query)
-    const existingAssignments = await prisma.examAssignment.findMany({
-      where: { examId },
-      select: { userId: true, process: true, level: true },
-    });
-    const assignmentSet = new Set(
-      existingAssignments.map((a) => `${a.userId}||${a.process}||${a.level}`)
-    );
-
-    const results = {
-      created: 0,
-      skipped: 0,
-      usersCreated: 0,
-      errors: [] as string[],
-    };
-
-    // 3. First pass: match rows to existing users, collect new users to create
-    type MatchedRow = { row: typeof rows[0]; user: typeof allUsers[0] };
-    const matchedRows: MatchedRow[] = [];
-    const newUserRows: { row: typeof rows[0]; employeeNo: string; encryptedPassword: string | null }[] = [];
 
     // Encrypt all verification codes
     const encryptMap = new Map<string, string>();
@@ -171,6 +149,11 @@ export async function POST(
       }
     }
 
+    // Match rows to users, collect new users to create
+    type MatchedRow = { row: typeof rows[0]; user: typeof allUsers[0] };
+    const matchedRows: MatchedRow[] = [];
+    const newUserRows: { row: typeof rows[0]; employeeNo: string; encryptedPassword: string | null }[] = [];
+
     let autoIdx = 0;
     for (const row of rows) {
       let user: typeof allUsers[0] | undefined;
@@ -179,13 +162,11 @@ export async function POST(
       if (row.employeeNo) {
         user = userByEmpNo.get(row.employeeNo);
       }
-
       // Strategy 2: Find by name + department
       if (!user && row.department) {
         const candidates = usersByName.get(row.name);
         user = candidates?.find((u) => u.department === row.department);
       }
-
       // Strategy 3: Find by name (if unique)
       if (!user) {
         const candidates = usersByName.get(row.name);
@@ -205,10 +186,28 @@ export async function POST(
       }
     }
 
-    // 4. Batch create new users & assignments in a single transaction
+    const results = {
+      created: 0,
+      replaced: 0,
+      usersCreated: 0,
+      errors: [] as string[],
+    };
+
     await prisma.$transaction(
       async (tx) => {
-        // Batch create new users
+        // ── Step 1: Delete all existing assignments for this exam ──
+        const oldCount = await tx.examAssignment.count({ where: { examId } });
+
+        // Unlink sessions (set assignmentId = null) to preserve exam history
+        await tx.examSession.updateMany({
+          where: { assignmentId: { not: null }, assignment: { examId } },
+          data: { assignmentId: null },
+        });
+        // Delete old assignments
+        await tx.examAssignment.deleteMany({ where: { examId } });
+        results.replaced = oldCount;
+
+        // ── Step 2: Create new users (if any) ──
         if (newUserRows.length > 0) {
           await tx.user.createMany({
             data: newUserRows.map(({ row, employeeNo, encryptedPassword }) => ({
@@ -234,8 +233,8 @@ export async function POST(
         }
         const newUserByEmpNo = new Map(newlyCreatedUsers.map((u) => [u.employeeNo, u]));
 
-        // Build assignments to create
-        const assignmentsToCreate: {
+        // ── Step 3: Create all assignments ──
+        const assignments: {
           examId: string;
           userId: string;
           department: string;
@@ -244,15 +243,14 @@ export async function POST(
           level: string;
         }[] = [];
 
-        // From matched (existing) users
+        // Dedup: same userId + process should only appear once
+        const seen = new Set<string>();
+
         for (const { row, user } of matchedRows) {
-          const key = `${user.id}||${row.process}||${row.level}`;
-          if (assignmentSet.has(key)) {
-            results.skipped++;
-            continue;
-          }
-          assignmentSet.add(key);
-          assignmentsToCreate.push({
+          const key = `${user.id}||${row.process}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          assignments.push({
             examId,
             userId: user.id,
             department: row.department || user.department,
@@ -262,7 +260,6 @@ export async function POST(
           });
         }
 
-        // From newly created users
         for (const { row, employeeNo } of newUserRows) {
           const newUser = newUserByEmpNo.get(employeeNo);
           if (!newUser) {
@@ -270,13 +267,10 @@ export async function POST(
             results.usersCreated--;
             continue;
           }
-          const key = `${newUser.id}||${row.process}||${row.level}`;
-          if (assignmentSet.has(key)) {
-            results.skipped++;
-            continue;
-          }
-          assignmentSet.add(key);
-          assignmentsToCreate.push({
+          const key = `${newUser.id}||${row.process}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          assignments.push({
             examId,
             userId: newUser.id,
             department: row.department || newUser.department,
@@ -286,15 +280,12 @@ export async function POST(
           });
         }
 
-        // Batch create assignments
-        if (assignmentsToCreate.length > 0) {
-          await tx.examAssignment.createMany({
-            data: assignmentsToCreate,
-          });
-          results.created = assignmentsToCreate.length;
+        if (assignments.length > 0) {
+          await tx.examAssignment.createMany({ data: assignments });
+          results.created = assignments.length;
         }
 
-        // Batch update existing users that need field changes
+        // Update user fields where needed (verification code, role)
         const updatePromises: Promise<unknown>[] = [];
         for (const { row, user } of matchedRows) {
           const updateData: Record<string, string> = {};
@@ -315,10 +306,14 @@ export async function POST(
       { timeout: 60000 }
     );
 
+    const msg = results.replaced > 0
+      ? `覆盖导入 ${results.created} 人（替换 ${results.replaced} 人）`
+      : `新增 ${results.created} 人`;
+
     return NextResponse.json({
       success: true,
       data: results,
-      message: `成功导入 ${results.created} 人，跳过 ${results.skipped} 人（已存在）${results.usersCreated > 0 ? `，新建 ${results.usersCreated} 个用户` : ''}`,
+      message: `${msg}${results.usersCreated > 0 ? `，新建 ${results.usersCreated} 个用户` : ''}`,
     });
   } catch (error) {
     console.error('Import participants error:', error);

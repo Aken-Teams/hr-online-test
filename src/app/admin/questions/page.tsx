@@ -85,6 +85,11 @@ export default function QuestionListPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Bulk selection & delete
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
   // Export
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -173,6 +178,51 @@ export default function QuestionListPage() {
       setDeleting(false);
     }
   }, [deleteId, toast, fetchQuestions]);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === questions.length) return new Set();
+      return new Set(questions.map((q) => q.id));
+    });
+  }, [questions]);
+
+  // Clear selection when page/filters change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, typeFilter, deptFilter, levelFilter, categoryFilter, processFilter, examFilter, search]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setBulkDeleting(true);
+    try {
+      const res = await fetch('/api/admin/questions/batch-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [...selectedIds] }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '删除失败');
+      const msgs: string[] = [];
+      if (json.data.deleted > 0) msgs.push(`${json.data.deleted} 题已删除`);
+      if (json.data.deactivated > 0) msgs.push(`${json.data.deactivated} 题已停用（被考试引用）`);
+      toast(msgs.join('，'), 'success');
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      fetchQuestions();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '删除失败', 'error');
+    } finally {
+      setBulkDeleting(false);
+    }
+  }, [selectedIds, toast, fetchQuestions]);
 
   function truncate(text: string, max: number) {
     return text.length > max ? text.slice(0, max) + '...' : text;
@@ -267,6 +317,20 @@ export default function QuestionListPage() {
         />
       ) : (
         <>
+          {/* Bulk action bar */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-2.5">
+              <span className="text-sm text-red-700">已选中 {selectedIds.size} 题</span>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>取消选择</Button>
+                <Button variant="danger" size="sm" onClick={() => setBulkDeleteOpen(true)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  批量删除
+                </Button>
+              </div>
+            </div>
+          )}
+
           <Card>
             {/* Mobile: card list */}
             <div className="space-y-3 md:hidden">
@@ -276,6 +340,12 @@ export default function QuestionListPage() {
                   className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
                 >
                   <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-stone-300 text-teal-600 accent-teal-600"
+                      checked={selectedIds.has(q.id)}
+                      onChange={() => toggleSelect(q.id)}
+                    />
                     <Badge variant={TYPE_BADGE[q.type] ?? 'default'}>
                       {QUESTION_TYPE_LABELS[q.type] ?? q.type}
                     </Badge>
@@ -312,6 +382,14 @@ export default function QuestionListPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-stone-300 text-teal-600 accent-teal-600"
+                        checked={selectedIds.size === questions.length && questions.length > 0}
+                        onChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>题型</TableHead>
                     <TableHead>题目</TableHead>
                     <TableHead>关联考试</TableHead>
@@ -326,6 +404,14 @@ export default function QuestionListPage() {
                 <TableBody>
                   {questions.map((q) => (
                     <TableRow key={q.id}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-stone-300 text-teal-600 accent-teal-600"
+                          checked={selectedIds.has(q.id)}
+                          onChange={() => toggleSelect(q.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Badge variant={TYPE_BADGE[q.type] ?? 'default'}>
                           {QUESTION_TYPE_LABELS[q.type] ?? q.type}
@@ -418,6 +504,17 @@ export default function QuestionListPage() {
         confirmText="确认删除"
         variant="danger"
         loading={deleting}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="批量删除题目"
+        message={`确认删除选中的 ${selectedIds.size} 道题目？被考试引用的题目将自动停用而非删除。`}
+        confirmText={`删除 ${selectedIds.size} 题`}
+        variant="danger"
+        loading={bulkDeleting}
       />
 
       <ExportDialog

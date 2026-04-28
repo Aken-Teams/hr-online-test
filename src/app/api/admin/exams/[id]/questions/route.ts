@@ -110,12 +110,17 @@ export async function DELETE(
     const ids = questionIds.map((q) => q.id);
 
     if (ids.length > 0) {
-      // Delete exam-question mappings for these questions
-      await prisma.examQuestion.deleteMany({
-        where: { examId, questionId: { in: ids } },
+      // Cascade: delete all referencing records first
+      await prisma.answer.deleteMany({
+        where: { questionId: { in: ids } },
       });
-      // Delete options
+      await prisma.examQuestion.deleteMany({
+        where: { questionId: { in: ids } },
+      });
       await prisma.questionOption.deleteMany({
+        where: { questionId: { in: ids } },
+      });
+      await prisma.questionTag.deleteMany({
         where: { questionId: { in: ids } },
       });
       // Delete questions

@@ -9,8 +9,11 @@ import { MAX_UPLOAD_SIZE } from '@/lib/constants';
 /**
  * POST /api/admin/exams/[id]/import-questions
  * Import question bank files bound to a specific exam.
- * Parses filename format: "部门工序级别.xls" (e.g. "工务部SAWⅡ级.xls")
- * Sets examSourceId + process + category on imported questions.
+ *
+ * Overwrite behavior: for each uploaded file, all existing questions from that
+ * file (same sourceFile + examSourceId) are deleted first, then the new
+ * questions are created. This ensures the DB always matches the file contents.
+ * Only affects questions scoped to this exam (examSourceId).
  */
 export async function POST(
   request: Request,
@@ -20,7 +23,7 @@ export async function POST(
     const admin = await getAdminFromCookie();
     if (!admin) {
       return NextResponse.json(
-        { success: false, error: '未登录或��权限' },
+        { success: false, error: '未登录或无权限' },
         { status: 401 }
       );
     }
@@ -50,7 +53,7 @@ export async function POST(
 
     if (files.length === 0) {
       return NextResponse.json(
-        { success: false, error: '请上��文件' },
+        { success: false, error: '请上传文件' },
         { status: 400 }
       );
     }
@@ -59,27 +62,17 @@ export async function POST(
       totalFiles: files.length,
       totalRows: 0,
       created: 0,
-      duplicates: 0,
-      skipped: 0,
+      replaced: 0,
       fileResults: [] as Array<{
         filename: string;
         parsed: ReturnType<typeof parseQuestionFilename>;
         rows: number;
         created: number;
-        duplicates: number;
+        replaced: number;
         byType?: Record<string, number>;
         error?: string;
       }>,
     };
-
-    // Build existing question fingerprint set for dedup
-    const existingQuestions = await prisma.question.findMany({
-      where: { examSourceId: examId },
-      select: { content: true, type: true },
-    });
-    const existingSet = new Set(
-      existingQuestions.map((q) => `${q.type}||${q.content.trim()}`)
-    );
 
     for (const file of files) {
       if (file.size > MAX_UPLOAD_SIZE) {
@@ -88,7 +81,7 @@ export async function POST(
           parsed: null,
           rows: 0,
           created: 0,
-          duplicates: 0,
+          replaced: 0,
           error: '文件大小超过10MB',
         });
         continue;
@@ -99,23 +92,23 @@ export async function POST(
       const buffer = Buffer.from(await file.arrayBuffer());
       let rows = parseQuestionExcel(buffer);
 
-      // AI fallback: check for sheets that have data but parsed 0 rows.
-      // For each failed sheet, extract headers and ask AI to identify columns,
-      // then re-parse with the AI-provided mapping merged in.
-      const failedSheets = detectFailedSheets(buffer);
-      if (failedSheets.length > 0) {
-        let aiMapping: Record<string, string> = {};
-        for (const failedSheet of failedSheets) {
-          const extracted = extractHeadersAndSamples(buffer, 3, failedSheet);
-          if (extracted) {
-            const mapping = await identifyColumnsWithAI(extracted.headers, extracted.sampleRows);
-            if (mapping) {
-              aiMapping = { ...aiMapping, ...mapping };
+      // AI fallback: only when initial parse found 0 rows (avoid double-parsing)
+      if (rows.length === 0) {
+        const failedSheets = detectFailedSheets(buffer);
+        if (failedSheets.length > 0) {
+          let aiMapping: Record<string, string> = {};
+          for (const failedSheet of failedSheets) {
+            const extracted = extractHeadersAndSamples(buffer, 3, failedSheet);
+            if (extracted) {
+              const mapping = await identifyColumnsWithAI(extracted.headers, extracted.sampleRows);
+              if (mapping) {
+                aiMapping = { ...aiMapping, ...mapping };
+              }
             }
           }
-        }
-        if (Object.keys(aiMapping).length > 0) {
-          rows = parseQuestionExcel(buffer, aiMapping);
+          if (Object.keys(aiMapping).length > 0) {
+            rows = parseQuestionExcel(buffer, aiMapping);
+          }
         }
       }
 
@@ -125,15 +118,13 @@ export async function POST(
         byType[r.type] = (byType[r.type] || 0) + 1;
       }
 
-      let fileDuplicates = 0;
-
       if (rows.length === 0) {
         totalResults.fileResults.push({
           filename: file.name,
           parsed,
           rows: 0,
           created: 0,
-          duplicates: 0,
+          replaced: 0,
           error: '未解析到有效题目',
         });
         continue;
@@ -148,69 +139,81 @@ export async function POST(
         category = isBasic ? 'BASIC' : 'PROFESSIONAL';
       }
 
-      // Filter duplicates and prepare batch data
-      const validRows: { id: string; row: typeof rows[0] }[] = [];
-      for (const row of rows) {
-        const fingerprint = `${row.type}||${row.content.trim()}`;
-        if (existingSet.has(fingerprint)) {
-          fileDuplicates++;
-          continue;
-        }
-        existingSet.add(fingerprint);
-        validRows.push({ id: randomUUID(), row });
-      }
+      // Dedup within file (same type + content)
+      const seen = new Set<string>();
+      const uniqueRows = rows.filter((row) => {
+        const fp = `${row.type}||${row.content.trim()}`;
+        if (seen.has(fp)) return false;
+        seen.add(fp);
+        return true;
+      });
 
-      if (validRows.length > 0) {
-        await prisma.$transaction(
-          async (tx) => {
-            // Batch create all questions at once
-            await tx.question.createMany({
-              data: validRows.map(({ id, row }) => ({
-                id,
-                type: row.type,
-                content: row.content,
-                level: parsed?.level || row.level,
-                department: parsed?.department || row.department,
-                role: row.role,
-                correctAnswer: row.correctAnswer ?? null,
-                isMultiSelect: row.isMultiSelect ?? false,
-                referenceAnswer: row.referenceAnswer ?? null,
-                sourceFile: file.name,
-                process: parsed?.process || null,
-                category,
-                examSourceId: examId,
-              })),
-            });
+      let fileReplaced = 0;
 
-            // Batch create all options at once
-            const allOptions = validRows.flatMap(({ id, row }) =>
-              (row.options || []).map((opt, idx) => ({
-                questionId: id,
-                label: opt.label,
-                content: opt.content,
-                imageUrl: opt.imageUrl ?? null,
-                sortOrder: idx,
-              }))
-            );
-            if (allOptions.length > 0) {
-              await tx.questionOption.createMany({ data: allOptions });
-            }
-          },
-          { timeout: 60000 }
-        );
-      }
+      await prisma.$transaction(
+        async (tx) => {
+          // ── Step 1: Delete all existing questions from this file for this exam ──
+          const existingIds = (
+            await tx.question.findMany({
+              where: { examSourceId: examId, sourceFile: file.name },
+              select: { id: true },
+            })
+          ).map((q) => q.id);
 
-      const fileCreated = validRows.length;
+          if (existingIds.length > 0) {
+            // Cascade: delete referencing records first
+            await tx.answer.deleteMany({ where: { questionId: { in: existingIds } } });
+            await tx.examQuestion.deleteMany({ where: { questionId: { in: existingIds } } });
+            await tx.questionOption.deleteMany({ where: { questionId: { in: existingIds } } });
+            await tx.questionTag.deleteMany({ where: { questionId: { in: existingIds } } });
+            await tx.question.deleteMany({ where: { id: { in: existingIds } } });
+            fileReplaced = existingIds.length;
+          }
 
-      totalResults.totalRows += rows.length;
-      totalResults.created += fileCreated;
-      totalResults.duplicates += fileDuplicates;
+          // ── Step 2: Create all questions from file ──
+          const newQuestions = uniqueRows.map((row) => ({
+            id: randomUUID(),
+            type: row.type,
+            content: row.content,
+            level: parsed?.level || row.level,
+            department: parsed?.department || row.department,
+            role: row.role,
+            correctAnswer: row.correctAnswer ?? null,
+            isMultiSelect: row.isMultiSelect ?? false,
+            referenceAnswer: row.referenceAnswer ?? null,
+            sourceFile: file.name,
+            process: parsed?.process || null,
+            category,
+            examSourceId: examId,
+          }));
+
+          await tx.question.createMany({ data: newQuestions });
+
+          const allOptions = newQuestions.flatMap((q, qi) =>
+            (uniqueRows[qi].options || []).map((opt, idx) => ({
+              questionId: q.id,
+              label: opt.label,
+              content: opt.content,
+              imageUrl: opt.imageUrl ?? null,
+              sortOrder: idx,
+            }))
+          );
+          if (allOptions.length > 0) {
+            await tx.questionOption.createMany({ data: allOptions });
+          }
+        },
+        { timeout: 60000 }
+      );
+
+      totalResults.totalRows += uniqueRows.length;
+      totalResults.created += uniqueRows.length;
+      totalResults.replaced += fileReplaced;
       totalResults.fileResults.push({
         filename: file.name,
         parsed,
-        rows: rows.length,
-        created: fileCreated,
-        duplicates: fileDuplicates,
+        rows: uniqueRows.length,
+        created: uniqueRows.length,
+        replaced: fileReplaced,
         byType,
       });
     }
@@ -225,7 +228,7 @@ export async function POST(
           totalFiles: totalResults.totalFiles,
           totalRows: totalResults.totalRows,
           created: totalResults.created,
-          duplicates: totalResults.duplicates,
+          replaced: totalResults.replaced,
         },
       },
     });

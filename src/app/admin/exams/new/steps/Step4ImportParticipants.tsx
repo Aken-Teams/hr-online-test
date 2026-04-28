@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 
 export interface ParticipantResult {
   created: number;
-  skipped: number;
+  replaced: number;
   usersCreated: number;
   errors: string[];
 }
@@ -133,7 +133,7 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
 
           {importResult && (
             <div className="rounded-lg bg-teal-50 border border-teal-200 p-3 text-sm text-teal-800">
-              导入 {importResult.created} 人，跳过 {importResult.skipped} 人
+              导入 {importResult.created} 人{importResult.replaced > 0 ? `（覆盖）` : ''}
               {importResult.usersCreated > 0 && `，新建 ${importResult.usersCreated} 个用户`}
               {importResult.errors.length > 0 && (
                 <div className="mt-2 text-xs text-red-600">

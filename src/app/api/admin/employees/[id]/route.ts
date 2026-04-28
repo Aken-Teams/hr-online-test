@@ -211,3 +211,87 @@ export async function PATCH(
     );
   }
 }
+
+/**
+ * DELETE /api/admin/employees/[id]
+ * Soft-delete (deactivate) if employee has exam sessions,
+ * hard-delete if no exam history exists.
+ */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const admin = await getAdminFromCookie();
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: '未登录或无权限' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        _count: { select: { examSessions: true } },
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: '员工不存在' },
+        { status: 404 }
+      );
+    }
+
+    if (user._count.examSessions > 0) {
+      // Has exam history → soft-delete (deactivate)
+      await prisma.user.update({
+        where: { id },
+        data: { isActive: false },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          adminId: admin.adminId,
+          action: 'EMPLOYEE_DEACTIVATED',
+          details: { userId: id, name: user.name },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: { deleted: false, deactivated: true, message: '该员工有考试记录，已设为停用' },
+      });
+    }
+
+    // No exam history → hard-delete (remove assignments first)
+    await prisma.$transaction(async (tx) => {
+      await tx.examAssignment.deleteMany({ where: { userId: id } });
+      await tx.user.delete({ where: { id } });
+      await tx.auditLog.create({
+        data: {
+          adminId: admin.adminId,
+          action: 'EMPLOYEE_DELETED',
+          details: { userId: id, name: user.name },
+        },
+      });
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: { deleted: true, deactivated: false },
+    });
+  } catch (error) {
+    console.error('Delete employee error:', error);
+    return NextResponse.json(
+      { success: false, error: '服务器内部错误' },
+      { status: 500 }
+    );
+  }
+}

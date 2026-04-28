@@ -20,8 +20,9 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { DEPARTMENTS } from '@/lib/constants';
-import { Download } from 'lucide-react';
+import { Download, Trash2 } from 'lucide-react';
 import { ExportDialog } from '@/components/shared/ExportDialog';
 import type { EmployeeData } from '@/types/exam';
 
@@ -50,6 +51,10 @@ export default function EmployeeListPage() {
 
   // Export
   const [exportOpen, setExportOpen] = useState(false);
+
+  // Delete employee
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Add employee dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -163,6 +168,23 @@ export default function EmployeeListPage() {
     }
   }
 
+  const handleDelete = useCallback(async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/employees/${deleteId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '操作失败');
+      toast(json.data?.message || (json.data?.deleted ? '员工已删除' : '员工已停用'), 'success');
+      setDeleteId(null);
+      fetchEmployees();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '操作失败', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteId, toast, fetchEmployees]);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -235,9 +257,18 @@ export default function EmployeeListPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-stone-800">{emp.name}</span>
-                        <Badge variant={emp.isActive ? 'success' : 'default'}>
-                          {emp.isActive ? '在职' : '离职'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={emp.isActive ? 'success' : 'default'}>
+                            {emp.isActive ? '在职' : '离职'}
+                          </Badge>
+                          <button
+                            className="rounded p-1 text-stone-400 hover:bg-red-50 hover:text-red-500"
+                            onClick={(e) => { e.stopPropagation(); if (emp.id) setDeleteId(emp.id); }}
+                            title="删除"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                       <p className="mt-0.5 text-xs text-stone-500">
                         {emp.department}{emp.role ? ` · ${emp.role}` : ''}
@@ -257,6 +288,7 @@ export default function EmployeeListPage() {
                     <TableHead>部门</TableHead>
                     <TableHead>岗位</TableHead>
                     <TableHead>状态</TableHead>
+                    <TableHead className="w-20">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -273,6 +305,15 @@ export default function EmployeeListPage() {
                         <Badge variant={emp.isActive ? 'success' : 'default'}>
                           {emp.isActive ? '在职' : '离职'}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                          onClick={(e) => { e.stopPropagation(); if (emp.id) setDeleteId(emp.id); }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          删除
+                        </button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -393,6 +434,17 @@ export default function EmployeeListPage() {
           URL.revokeObjectURL(a.href);
           toast('导出成功', 'success');
         }}
+      />
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        title="删除员工"
+        message="有考试记录的员工将被停用（无法登录），无考试记录的员工将被永久删除。确认操作？"
+        confirmText="确认删除"
+        variant="danger"
+        loading={deleting}
       />
     </div>
   );
