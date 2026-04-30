@@ -18,7 +18,8 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
-import { Pencil, Send, Eye, ClipboardCheck, BarChart3, Square, Play, Archive, Trash2 } from 'lucide-react';
+import { Pencil, Send, Eye, ClipboardCheck, BarChart3, Square, Play, Archive, Trash2, RefreshCw } from 'lucide-react';
+import { Dialog } from '@/components/ui/Dialog';
 import type { ExamListItem } from '@/types/exam';
 
 // ---------------------------------------------------------------------------
@@ -63,6 +64,10 @@ export default function ExamListPage() {
   const [changingStatus, setChangingStatus] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [reopenId, setReopenId] = useState<string | null>(null);
+  const [reopenOpenAt, setReopenOpenAt] = useState('');
+  const [reopenCloseAt, setReopenCloseAt] = useState('');
+  const [reopening, setReopening] = useState(false);
 
   const fetchExams = useCallback(async () => {
     setLoading(true);
@@ -144,6 +149,41 @@ export default function ExamListPage() {
       setDeleting(false);
     }
   }, [deleteId, toast, fetchExams]);
+
+  function toDatetimeLocal(d: Date) {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function openReopenDialog(id: string) {
+    const now = new Date();
+    const closeDefault = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    setReopenOpenAt(toDatetimeLocal(now));
+    setReopenCloseAt(toDatetimeLocal(closeDefault));
+    setReopenId(id);
+  }
+
+  const handleReopen = useCallback(async () => {
+    if (!reopenId) return;
+    if (!reopenCloseAt) { toast('请设置截止时间', 'error'); return; }
+    setReopening(true);
+    try {
+      const res = await fetch(`/api/admin/exams/${reopenId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'ACTIVE', openAt: reopenOpenAt, closeAt: reopenCloseAt }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '操作失败');
+      toast('考试已重新开放', 'success');
+      setReopenId(null);
+      fetchExams();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '操作失败', 'error');
+    } finally {
+      setReopening(false);
+    }
+  }, [reopenId, reopenOpenAt, reopenCloseAt, toast, fetchExams]);
 
   function formatDateTime(dateStr: string | Date | null | undefined) {
     if (!dateStr) return '--';
@@ -271,7 +311,7 @@ export default function ExamListPage() {
                       <>
                         <button
                           className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
-                          onClick={() => setStatusAction({ id: exam.id, status: 'ACTIVE', label: '重新开放' })}
+                          onClick={() => openReopenDialog(exam.id)}
                         >
                           <Play className="h-3 w-3" />
                           重新开放
@@ -395,7 +435,7 @@ export default function ExamListPage() {
                             <>
                               <button
                                 className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-green-300 hover:bg-green-50 hover:text-green-700"
-                                onClick={() => setStatusAction({ id: exam.id, status: 'ACTIVE', label: '重新开放' })}
+                                onClick={() => openReopenDialog(exam.id)}
                               >
                                 <Play className="h-3 w-3" />
                                 重新开放
@@ -475,9 +515,7 @@ export default function ExamListPage() {
             ? '结束后考生将无法继续作答。确认结束此考试？'
             : statusAction?.status === 'ARCHIVED'
               ? '归档后考试将不再显示在活跃列表中。确认归档？'
-              : statusAction?.status === 'ACTIVE' && statusAction?.label === '重新开放'
-                ? '重新开放后考生可继续作答。确认重新开放？'
-                : '确认执行此操作？'
+              : '确认执行此操作？'
         }
         confirmText={`确认${statusAction?.label ?? '执行'}`}
         loading={changingStatus}
@@ -492,6 +530,45 @@ export default function ExamListPage() {
         confirmText="确认删除"
         loading={deleting}
       />
+
+      {/* Reopen dialog with new time range */}
+      <Dialog
+        open={reopenId !== null}
+        onClose={() => setReopenId(null)}
+        title="重新开放考试"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setReopenId(null)} disabled={reopening}>
+              取消
+            </Button>
+            <Button variant="primary" onClick={handleReopen} loading={reopening}>
+              确认重新开放
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4 text-sm">
+          <p className="text-gray-600">请设置本次开放的时间范围。</p>
+          <div className="space-y-1">
+            <label className="block font-medium text-gray-700">开放时间</label>
+            <input
+              type="datetime-local"
+              className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-teal-500 focus:outline-none"
+              value={reopenOpenAt}
+              onChange={(e) => setReopenOpenAt(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="block font-medium text-gray-700">截止时间</label>
+            <input
+              type="datetime-local"
+              className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-teal-500 focus:outline-none"
+              value={reopenCloseAt}
+              onChange={(e) => setReopenCloseAt(e.target.value)}
+            />
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

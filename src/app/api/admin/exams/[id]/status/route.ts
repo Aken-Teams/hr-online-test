@@ -31,7 +31,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { status: newStatus } = await request.json();
+    const { status: newStatus, openAt, closeAt } = await request.json();
 
     if (!newStatus) {
       return NextResponse.json(
@@ -94,9 +94,16 @@ export async function PATCH(
     }
 
     const updated = await prisma.$transaction(async (tx) => {
+      // When reopening (CLOSED → ACTIVE), update the time window too
+      const timeData: Record<string, Date | null> = {};
+      if (exam.status === 'CLOSED' && newStatus === 'ACTIVE') {
+        timeData.openAt = openAt ? new Date(openAt) : new Date();
+        timeData.closeAt = closeAt ? new Date(closeAt) : null;
+      }
+
       const result = await tx.exam.update({
         where: { id },
-        data: { status: newStatus },
+        data: { status: newStatus, ...timeData },
       });
 
       await tx.auditLog.create({
