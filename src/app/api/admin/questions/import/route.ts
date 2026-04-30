@@ -234,7 +234,7 @@ export async function POST(request: Request) {
               id,
               type: row.type,
               content: row.content,
-              level: row.level,
+              level: category === 'BASIC' ? '' : row.level,
               department: row.department,
               role: row.role,
               correctAnswer: row.correctAnswer ?? null,
