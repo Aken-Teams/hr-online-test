@@ -28,6 +28,7 @@ const SHEET_TYPE_MAP: Record<string, QuestionType> = {
   '填空题': 'FILL_BLANK',
   '案例分析': 'CASE_ANALYSIS',
   '案例分析题': 'CASE_ANALYSIS',
+  '案例': 'CASE_ANALYSIS',  // some files use shortened sheet name
   '实操': 'PRACTICAL',
   '实操题': 'PRACTICAL',
 };
@@ -144,7 +145,15 @@ function mapColumnName(header: string, customMap?: Record<string, string>): stri
     if (customMap[normalized]) return customMap[normalized];
   }
 
-  return COLUMN_MAP[normalized] || COLUMN_MAP[raw] || raw;
+  if (COLUMN_MAP[normalized]) return COLUMN_MAP[normalized];
+  if (COLUMN_MAP[raw]) return COLUMN_MAP[raw];
+
+  // Fuzzy match: option column header starting with [A-E]选项
+  // Handles corrupted headers like 'A选项(文本)E:B:F' where Excel cell ref leaked into name
+  const optFuzzy = normalized.match(/^([A-E])选项/);
+  if (optFuzzy) return `option${optFuzzy[1]}`;
+
+  return raw;
 }
 
 // ============================================================
@@ -303,7 +312,7 @@ export function parseQuestionExcel(
       const importRow: QuestionImportRow = {
         content,
         type: questionType,
-        level: row.level || '一级题库',
+        level: row.level || '',
         department: department || '全公司',
         role: role || '全员',
         correctAnswer,

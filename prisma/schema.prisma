@@ -7,27 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================
-// DOMAIN 1: IDENTITY
-// ============================================================
-
 model User {
-  id            String    @id @default(cuid())
-  employeeNo    String    @unique @map("employee_no")
-  name          String
-  idCardLast6   String?   @map("id_card_last6")
-  department    String
-  subDepartment String?   @map("sub_department")
-  role          String
-  photoUrl      String?   @map("photo_url")
-  faceDescriptor Json?    @map("face_descriptor")
-  hireDate      DateTime? @map("hire_date")
-  isActive      Boolean   @default(true) @map("is_active")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  examSessions    ExamSession[]
+  id              String           @id @default(cuid())
+  employeeNo      String           @unique @map("employee_no")
+  name            String
+  idCardLast6     String?          @map("id_card_last6")
+  department      String
+  subDepartment   String?          @map("sub_department")
+  role            String
+  photoUrl        String?          @map("photo_url")
+  faceDescriptor  Json?            @map("face_descriptor")
+  hireDate        DateTime?        @map("hire_date")
+  isActive        Boolean          @default(true) @map("is_active")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
   examAssignments ExamAssignment[]
+  examSessions    ExamSession[]
 
   @@index([department, role])
   @@index([name])
@@ -35,58 +30,46 @@ model User {
 }
 
 model Admin {
-  id           String    @id @default(cuid())
-  username     String    @unique
-  passwordHash String    @map("password_hash")
-  displayName  String    @map("display_name")
-  role         AdminRole @default(HR)
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
+  id            String     @id @default(cuid())
+  username      String     @unique
+  passwordHash  String     @map("password_hash")
+  displayName   String     @map("display_name")
+  role          AdminRole  @default(HR)
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
   gradedAnswers Answer[]   @relation("GradedBy")
   auditLogs     AuditLog[] @relation("AdminActor")
 
   @@map("admins")
 }
 
-enum AdminRole {
-  SUPER_ADMIN
-  HR
-  GRADER
-}
-
-// ============================================================
-// DOMAIN 2: QUESTION BANK
-// ============================================================
-
 model Question {
-  id              String       @id @default(cuid())
+  id              String           @id @default(cuid())
   type            QuestionType
-  content         String       @db.Text
+  content         String           @db.Text
   level           String
   department      String
-  subDepartment   String?      @map("sub_department")
+  subDepartment   String?          @map("sub_department")
   role            String
-  points          Int          @default(2)
-  difficulty      Int          @default(1)
-  correctAnswer   String?      @map("correct_answer") @db.Text
-  isMultiSelect   Boolean      @default(false) @map("is_multi_select")
-  referenceAnswer String?      @map("reference_answer") @db.Text
-  gradingRubric   String?      @map("grading_rubric") @db.Text
-  sourceFile      String?      @map("source_file")
-  process         String?                                           // 工序 (SAW, DB, WB, FA...)
-  category        String       @default("PROFESSIONAL")             // BASIC or PROFESSIONAL
-  examSourceId    String?      @map("exam_source_id")               // imported for which exam
-  isActive        Boolean      @default(true) @map("is_active")
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
-
-  options       QuestionOption[]
-  examQuestions ExamQuestion[]
-  answers       Answer[]
-  tags          QuestionTag[]
-  examSource    Exam?          @relation("ImportedQuestions", fields: [examSourceId], references: [id])
+  points          Int              @default(2)
+  difficulty      Int              @default(1)
+  correctAnswer   String?          @map("correct_answer") @db.Text
+  isMultiSelect   Boolean          @default(false) @map("is_multi_select")
+  referenceAnswer String?          @map("reference_answer") @db.Text
+  gradingRubric   String?          @map("grading_rubric") @db.Text
+  sourceFile      String?          @map("source_file")
+  isActive        Boolean          @default(true) @map("is_active")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  category        String           @default("PROFESSIONAL")
+  examSourceId    String?          @map("exam_source_id")
+  process         String?
+  answers         Answer[]
+  examQuestions   ExamQuestion[]
+  options         QuestionOption[]
+  tags            QuestionTag[]
+  examSource      Exam?            @relation("ImportedQuestions", fields: [examSourceId], references: [id])
 
   @@index([type, department, role, level])
   @@index([department, role])
@@ -97,92 +80,72 @@ model Question {
 }
 
 model QuestionOption {
-  id         String  @id @default(cuid())
-  questionId String  @map("question_id")
+  id         String   @id @default(cuid())
+  questionId String   @map("question_id")
   label      String
-  content    String  @db.Text
-  imageUrl   String? @map("image_url") @db.Text
-  sortOrder  Int     @default(0) @map("sort_order")
-
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  content    String   @db.Text
+  sortOrder  Int      @default(0) @map("sort_order")
+  imageUrl   String?  @map("image_url") @db.Text
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([questionId])
   @@map("question_options")
 }
 
 model QuestionTag {
-  id         String @id @default(cuid())
-  questionId String @map("question_id")
+  id         String   @id @default(cuid())
+  questionId String   @map("question_id")
   tag        String
-
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([questionId])
   @@index([tag])
   @@map("question_tags")
 }
 
-enum QuestionType {
-  SINGLE_CHOICE
-  MULTI_CHOICE
-  TRUE_FALSE
-  SHORT_ANSWER
-  FILL_BLANK
-  CASE_ANALYSIS
-  PRACTICAL
-}
-
-// ============================================================
-// DOMAIN 3: EXAM CONFIGURATION
-// ============================================================
-
 model Exam {
-  id                    String     @id @default(cuid())
+  id                    String             @id @default(cuid())
   title                 String
-  description           String?    @db.Text
-  timeLimitMinutes      Int        @map("time_limit_minutes")
-  passScore             Int        @map("pass_score")
-  totalScore            Int        @map("total_score")
-  isPracticeMode        Boolean    @default(false) @map("is_practice_mode")
-  shuffleQuestions       Boolean    @default(true) @map("shuffle_questions")
-  shuffleOptions        Boolean    @default(true) @map("shuffle_options")
-  maxAttempts           Int        @default(1) @map("max_attempts")
-  showResultImmediately Boolean    @default(true) @map("show_result_immediately")
-  showCorrectAnswers    Boolean    @default(true) @map("show_correct_answers")
-  openAt                DateTime?  @map("open_at")
-  closeAt               DateTime?  @map("close_at")
-  resultQueryOpenAt     DateTime?  @map("result_query_open_at")
-  resultQueryCloseAt    DateTime?  @map("result_query_close_at")
-  tabSwitchLimit        Int        @default(3) @map("tab_switch_limit")
-  enableFaceAuth        Boolean    @default(false) @map("enable_face_auth")
-  status                ExamStatus @default(DRAFT)
-  createdAt             DateTime   @default(now()) @map("created_at")
-  updatedAt             DateTime   @updatedAt @map("updated_at")
-
-  // Scoring weights
-  theoryWeight        Float      @default(0.4) @map("theory_weight")
-  practicalWeight     Float      @default(0.6) @map("practical_weight")
-  compositePassScore  Int        @default(90)  @map("composite_pass_score")
-  basicQuestionRatio  Float      @default(0.1) @map("basic_question_ratio")
-
-  questionRules      ExamQuestionRule[]
-  examQuestions      ExamQuestion[]
-  sessions           ExamSession[]
-  assignments        ExamAssignment[]
-  batches            ExamBatch[]
-  importedQuestions  Question[]         @relation("ImportedQuestions")
+  description           String?            @db.Text
+  timeLimitMinutes      Int                @map("time_limit_minutes")
+  passScore             Int                @map("pass_score")
+  totalScore            Int                @map("total_score")
+  isPracticeMode        Boolean            @default(false) @map("is_practice_mode")
+  shuffleQuestions      Boolean            @default(true) @map("shuffle_questions")
+  shuffleOptions        Boolean            @default(true) @map("shuffle_options")
+  maxAttempts           Int                @default(1) @map("max_attempts")
+  showResultImmediately Boolean            @default(true) @map("show_result_immediately")
+  showCorrectAnswers    Boolean            @default(true) @map("show_correct_answers")
+  openAt                DateTime?          @map("open_at")
+  closeAt               DateTime?          @map("close_at")
+  tabSwitchLimit        Int                @default(3) @map("tab_switch_limit")
+  enableFaceAuth        Boolean            @default(false) @map("enable_face_auth")
+  status                ExamStatus         @default(DRAFT)
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  resultQueryCloseAt    DateTime?          @map("result_query_close_at")
+  resultQueryOpenAt     DateTime?          @map("result_query_open_at")
+  basicQuestionRatio    Float              @default(0.1) @map("basic_question_ratio")
+  compositePassScore    Int                @default(90) @map("composite_pass_score")
+  practicalWeight       Float              @default(0.6) @map("practical_weight")
+  theoryWeight          Float              @default(0.4) @map("theory_weight")
+  assignments           ExamAssignment[]
+  batches               ExamBatch[]
+  questionRules         ExamQuestionRule[]
+  examQuestions         ExamQuestion[]
+  sessions              ExamSession[]
+  importedQuestions     Question[]         @relation("ImportedQuestions")
 
   @@index([status, openAt, closeAt])
   @@map("exams")
 }
 
 model ExamBatch {
-  id       String   @id @default(cuid())
-  examId   String   @map("exam_id")
+  id       String        @id @default(cuid())
+  examId   String        @map("exam_id")
   name     String
-  openAt   DateTime @map("open_at")
-  closeAt  DateTime @map("close_at")
-
+  openAt   DateTime      @map("open_at")
+  closeAt  DateTime      @map("close_at")
   exam     Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
   sessions ExamSession[]
 
@@ -199,40 +162,38 @@ model ExamQuestionRule {
   department        String?
   level             String?
   commonRatio       Float        @default(0) @map("common_ratio")
-
-  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  exam              Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
 
   @@index([examId])
   @@map("exam_question_rules")
 }
 
 model ExamQuestion {
-  id         String @id @default(cuid())
-  examId     String @map("exam_id")
-  questionId String @map("question_id")
-  sortOrder  Int    @map("sort_order")
+  id         String   @id @default(cuid())
+  examId     String   @map("exam_id")
+  questionId String   @map("question_id")
+  sortOrder  Int      @map("sort_order")
   points     Int
-
-  exam     Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
-  question Question @relation(fields: [questionId], references: [id])
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id])
 
   @@unique([examId, questionId])
   @@index([examId, sortOrder])
+  @@index([questionId], map: "exam_questions_question_id_fkey")
   @@map("exam_questions")
 }
 
 model ExamAssignment {
-  id         String  @id @default(cuid())
-  examId     String  @map("exam_id")
-  userId     String? @map("user_id")
+  id         String        @id @default(cuid())
+  examId     String        @map("exam_id")
+  userId     String?       @map("user_id")
   department String?
   role       String?
-  process    String?               // 報考工序 (SAW, DB, WB...)
-  level      String?               // 報考等級 (Ⅰ级, Ⅱ级)
-
-  exam     Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
-  user     User?         @relation(fields: [userId], references: [id])
-  sessions ExamSession[]
+  level      String?
+  process    String?
+  exam       Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user       User?         @relation(fields: [userId], references: [id])
+  sessions   ExamSession[]
 
   @@index([examId])
   @@index([userId])
@@ -241,43 +202,30 @@ model ExamAssignment {
   @@map("exam_assignments")
 }
 
-enum ExamStatus {
-  DRAFT
-  PUBLISHED
-  ACTIVE
-  CLOSED
-  ARCHIVED
-}
-
-// ============================================================
-// DOMAIN 4: EXAM EXECUTION
-// ============================================================
-
 model ExamSession {
-  id               String        @id @default(cuid())
-  examId           String        @map("exam_id")
-  userId           String        @map("user_id")
-  status           SessionStatus @default(NOT_STARTED)
-  attemptNumber    Int           @default(1) @map("attempt_number")
-  startedAt        DateTime?     @map("started_at")
-  submittedAt      DateTime?     @map("submitted_at")
-  lastActiveAt     DateTime?     @map("last_active_at")
-  ipAddress        String?       @map("ip_address")
-  userAgent        String?       @map("user_agent") @db.Text
-  tabSwitchCount   Int           @default(0) @map("tab_switch_count")
-  isAutoSubmitted  Boolean       @default(false) @map("is_auto_submitted")
-  autoSubmitReason String?       @map("auto_submit_reason")
-  questionOrder    Json?         @map("question_order")
-  assignmentId     String?       @map("assignment_id")
-  batchId          String?       @map("batch_id")
-
-  exam       Exam            @relation(fields: [examId], references: [id])
-  user       User            @relation(fields: [userId], references: [id])
-  assignment ExamAssignment? @relation(fields: [assignmentId], references: [id])
-  batch      ExamBatch?      @relation(fields: [batchId], references: [id])
-  answers    Answer[]
-  result     ExamResult?
-  auditLogs  AuditLog[]
+  id               String          @id @default(cuid())
+  examId           String          @map("exam_id")
+  userId           String          @map("user_id")
+  status           SessionStatus   @default(NOT_STARTED)
+  attemptNumber    Int             @default(1) @map("attempt_number")
+  startedAt        DateTime?       @map("started_at")
+  submittedAt      DateTime?       @map("submitted_at")
+  lastActiveAt     DateTime?       @map("last_active_at")
+  ipAddress        String?         @map("ip_address")
+  userAgent        String?         @map("user_agent") @db.Text
+  tabSwitchCount   Int             @default(0) @map("tab_switch_count")
+  isAutoSubmitted  Boolean         @default(false) @map("is_auto_submitted")
+  autoSubmitReason String?         @map("auto_submit_reason")
+  questionOrder    Json?           @map("question_order")
+  assignmentId     String?         @map("assignment_id")
+  batchId          String?         @map("batch_id")
+  answers          Answer[]
+  auditLogs        AuditLog[]
+  result           ExamResult?
+  assignment       ExamAssignment? @relation(fields: [assignmentId], references: [id])
+  batch            ExamBatch?      @relation(fields: [batchId], references: [id])
+  exam             Exam            @relation(fields: [examId], references: [id])
+  user             User            @relation(fields: [userId], references: [id])
 
   @@unique([examId, userId, attemptNumber])
   @@index([examId, status])
@@ -288,35 +236,21 @@ model ExamSession {
   @@map("exam_sessions")
 }
 
-enum SessionStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  SUBMITTED
-  AUTO_SUBMITTED
-  GRADING
-  COMPLETED
-}
-
-// ============================================================
-// DOMAIN 5: ANSWERS & GRADING
-// ============================================================
-
 model Answer {
-  id            String    @id @default(cuid())
-  sessionId     String    @map("session_id")
-  questionId    String    @map("question_id")
-  answerContent String?   @map("answer_content") @db.Text
-  isFlagged     Boolean   @default(false) @map("is_flagged")
-  answeredAt    DateTime? @map("answered_at")
-  isCorrect     Boolean?  @map("is_correct")
-  earnedPoints  Int?      @map("earned_points")
-  gradedBy      String?   @map("graded_by")
-  gradedAt      DateTime? @map("graded_at")
-  graderComment String?   @map("grader_comment") @db.Text
-
-  session  ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  question Question    @relation(fields: [questionId], references: [id])
-  grader   Admin?      @relation("GradedBy", fields: [gradedBy], references: [id])
+  id            String      @id @default(cuid())
+  sessionId     String      @map("session_id")
+  questionId    String      @map("question_id")
+  answerContent String?     @map("answer_content") @db.Text
+  isFlagged     Boolean     @default(false) @map("is_flagged")
+  answeredAt    DateTime?   @map("answered_at")
+  isCorrect     Boolean?    @map("is_correct")
+  earnedPoints  Int?        @map("earned_points")
+  gradedBy      String?     @map("graded_by")
+  gradedAt      DateTime?   @map("graded_at")
+  graderComment String?     @map("grader_comment") @db.Text
+  grader        Admin?      @relation("GradedBy", fields: [gradedBy], references: [id])
+  question      Question    @relation(fields: [questionId], references: [id])
+  session       ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, questionId])
   @@index([sessionId])
@@ -326,54 +260,80 @@ model Answer {
 }
 
 model ExamResult {
-  id               String    @id @default(cuid())
-  sessionId        String    @unique @map("session_id")
-  totalScore       Int?      @map("total_score")
-  autoScore        Int       @map("auto_score")
-  manualScore      Int?      @map("manual_score")
-  maxPossibleScore Int       @map("max_possible_score")
-  correctCount     Int       @map("correct_count")
-  totalQuestions   Int       @map("total_questions")
-  timeTakenSeconds Int       @map("time_taken_seconds")
-  isPassed         Boolean?  @map("is_passed")
-  gradeLabel       String?   @map("grade_label")
-  categoryScores   Json?     @map("category_scores")
-  isFullyGraded    Boolean   @default(false) @map("is_fully_graded")
-  finalizedAt      DateTime? @map("finalized_at")
-  // Offline score fields (imported by admin)
-  essayScore       Float?    @map("essay_score")
-  practicalScore   Float?    @map("practical_score")
-  combinedScore    Float?    @map("combined_score")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-
-  session ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id               String      @id @default(cuid())
+  sessionId        String      @unique @map("session_id")
+  totalScore       Int?        @map("total_score")
+  autoScore        Int         @map("auto_score")
+  manualScore      Int?        @map("manual_score")
+  maxPossibleScore Int         @map("max_possible_score")
+  correctCount     Int         @map("correct_count")
+  totalQuestions   Int         @map("total_questions")
+  timeTakenSeconds Int         @map("time_taken_seconds")
+  isPassed         Boolean?    @map("is_passed")
+  gradeLabel       String?     @map("grade_label")
+  categoryScores   Json?       @map("category_scores")
+  isFullyGraded    Boolean     @default(false) @map("is_fully_graded")
+  finalizedAt      DateTime?   @map("finalized_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  combinedScore    Float?      @map("combined_score")
+  essayScore       Float?      @map("essay_score")
+  practicalScore   Float?      @map("practical_score")
+  session          ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([isPassed])
   @@index([totalScore])
   @@map("exam_results")
 }
 
-// ============================================================
-// DOMAIN 6: AUDIT & MONITORING
-// ============================================================
-
 model AuditLog {
-  id        String      @id @default(cuid())
-  sessionId String?     @map("session_id")
-  adminId   String?     @map("admin_id")
+  id        String       @id @default(cuid())
+  sessionId String?      @map("session_id")
+  adminId   String?      @map("admin_id")
   action    AuditAction
   details   Json?
-  ipAddress String?     @map("ip_address")
-  timestamp DateTime    @default(now())
-
-  session ExamSession? @relation(fields: [sessionId], references: [id])
-  admin   Admin?       @relation("AdminActor", fields: [adminId], references: [id])
+  ipAddress String?      @map("ip_address")
+  timestamp DateTime     @default(now())
+  admin     Admin?       @relation("AdminActor", fields: [adminId], references: [id])
+  session   ExamSession? @relation(fields: [sessionId], references: [id])
 
   @@index([sessionId])
   @@index([action, timestamp])
   @@index([adminId])
   @@map("audit_logs")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  HR
+  GRADER
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTI_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+  FILL_BLANK
+  CASE_ANALYSIS
+  PRACTICAL
+}
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum SessionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+  GRADING
+  COMPLETED
 }
 
 enum AuditAction {

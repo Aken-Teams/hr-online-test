@@ -175,6 +175,9 @@ export async function POST(
             id: randomUUID(),
             type: row.type,
             content: row.content,
+            // For BASIC questions the Excel level is often non-standard (e.g. "质量").
+            // Use filename-parsed level first; fall back to row level only for PROFESSIONAL;
+            // always default to '一级题库' if nothing found.
             level: parsed?.level || row.level,
             department: parsed?.department || row.department,
             role: row.role,
