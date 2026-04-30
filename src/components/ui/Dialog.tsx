@@ -63,7 +63,9 @@ export function Dialog({ open, onClose, title, children, footer, className, cont
         <div className="border-b border-stone-100 px-4 py-3 sm:px-6 sm:py-4">
           <h2 className="text-base sm:text-lg font-semibold text-stone-800">{title}</h2>
         </div>
-        <div className={cn('max-h-[70vh] overflow-y-auto px-4 py-3 sm:px-6 sm:py-4', contentClassName)}>{children}</div>
+        <div className={cn('max-h-[70vh] overflow-y-auto px-4 py-3 sm:px-6 sm:py-4', contentClassName)}>
+          {children}
+        </div>
         {footer && (
           <div className="flex items-center justify-end gap-2 sm:gap-3 border-t border-stone-100 px-4 py-3 sm:px-6 sm:py-4">
             {footer}

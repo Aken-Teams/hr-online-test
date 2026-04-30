@@ -4,6 +4,10 @@ import { getAdminFromCookie } from '@/lib/auth';
 import { z } from 'zod';
 
 const updateEmployeeSchema = z.object({
+  name: z.string().min(1).optional(),
+  employeeNo: z.string().min(1).optional(),
+  department: z.string().min(1).optional(),
+  role: z.string().optional(),
   faceDescriptor: z.array(z.number()).length(128).optional(),
 });
 
@@ -186,9 +190,11 @@ export async function PATCH(
     }
 
     const data: Record<string, unknown> = {};
-    if (parsed.data.faceDescriptor) {
-      data.faceDescriptor = parsed.data.faceDescriptor;
-    }
+    if (parsed.data.name !== undefined) data.name = parsed.data.name;
+    if (parsed.data.employeeNo !== undefined) data.employeeNo = parsed.data.employeeNo;
+    if (parsed.data.department !== undefined) data.department = parsed.data.department;
+    if (parsed.data.role !== undefined) data.role = parsed.data.role;
+    if (parsed.data.faceDescriptor) data.faceDescriptor = parsed.data.faceDescriptor;
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json(
@@ -197,12 +203,13 @@ export async function PATCH(
       );
     }
 
-    await prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id },
       data,
+      select: { id: true, name: true, employeeNo: true, department: true, role: true },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error('Update employee error:', error);
     return NextResponse.json(

@@ -17,7 +17,10 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft } from 'lucide-react';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Dialog } from '@/components/ui/Dialog';
+import { ArrowLeft, Pencil } from 'lucide-react';
 
 interface Assignment {
   id: string;
@@ -74,6 +77,14 @@ export default function EmployeeDetailPage() {
   const { toast } = useToast();
   const [employee, setEmployee] = useState<EmployeeDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', employeeNo: '', department: '', role: '' });
+  const [saving, setSaving] = useState(false);
+  const [assignEditOpen, setAssignEditOpen] = useState(false);
+  const [assignEditTarget, setAssignEditTarget] = useState<Assignment | null>(null);
+  const [assignForm, setAssignForm] = useState({ process: '', level: '' });
+  const [assignOptions, setAssignOptions] = useState<{ processes: string[]; levels: string[] }>({ processes: [], levels: [] });
+  const [assignSaving, setAssignSaving] = useState(false);
 
   const employeeId = params.id as string;
 
@@ -96,6 +107,79 @@ export default function EmployeeDetailPage() {
   useEffect(() => {
     fetchDetail();
   }, [fetchDetail]);
+
+  function openEdit() {
+    if (!employee) return;
+    setEditForm({
+      name: employee.name,
+      employeeNo: employee.employeeNo?.startsWith('AUTO_') ? '' : employee.employeeNo,
+      department: employee.department,
+      role: employee.role === '未分配' ? '' : employee.role,
+    });
+    setEditOpen(true);
+  }
+
+  async function handleEditSave() {
+    setSaving(true);
+    try {
+      const payload: Record<string, string> = {};
+      if (editForm.name.trim()) payload.name = editForm.name.trim();
+      if (editForm.employeeNo.trim()) payload.employeeNo = editForm.employeeNo.trim();
+      if (editForm.department.trim()) payload.department = editForm.department.trim();
+      payload.role = editForm.role.trim() || '未分配';
+
+      const res = await fetch(`/api/admin/employees/${employeeId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '保存失败');
+      toast('员工信息已更新', 'success');
+      setEditOpen(false);
+      fetchDetail();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '保存失败', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function openAssignEdit(a: Assignment) {
+    setAssignEditTarget(a);
+    setAssignForm({ process: a.process || '', level: a.level || '' });
+    setAssignEditOpen(true);
+    try {
+      const res = await fetch(`/api/admin/exams/${a.examId}/assignment-options`);
+      const json = await res.json();
+      if (json.success) {
+        setAssignOptions(json.data);
+      }
+    } catch {
+      // keep empty options – user can still type via fallback
+    }
+  }
+
+  async function handleAssignSave() {
+    if (!assignEditTarget) return;
+    setAssignSaving(true);
+    try {
+      const res = await fetch(`/api/admin/employees/${employeeId}/assignments/${assignEditTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assignForm),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '保存失败');
+      toast('指派信息已更新', 'success');
+      setAssignEditOpen(false);
+      fetchDetail();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '保存失败', 'error');
+    } finally {
+      setAssignSaving(false);
+    }
+  }
 
   if (loading) return <LoadingSpinner />;
   if (!employee) {
@@ -122,7 +206,18 @@ export default function EmployeeDetailPage() {
       />
 
       {/* Basic info */}
-      <Card title="基本信息">
+      <Card
+        title="基本信息"
+        actions={
+          <button
+            onClick={openEdit}
+            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+          >
+            <Pencil className="h-3 w-3" />
+            编辑
+          </button>
+        }
+      >
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <InfoItem label="姓名" value={employee.name} />
           <InfoItem label="工号" value={employee.employeeNo?.startsWith('AUTO_') ? <span className="text-stone-400 italic">待分配</span> : employee.employeeNo} />
@@ -165,6 +260,7 @@ export default function EmployeeDetailPage() {
                   <p className="mt-1 text-xs text-stone-500">
                     {a.process ?? '—'} · {a.level ?? '—'} · {new Date(a.examCreatedAt).toLocaleDateString('zh-CN')}
                   </p>
+                  <button onClick={() => openAssignEdit(a)} className="mt-1.5 text-xs text-teal-600 hover:text-teal-700">编辑</button>
                 </div>
               ))}
             </div>
@@ -178,6 +274,7 @@ export default function EmployeeDetailPage() {
                     <TableHead>级别</TableHead>
                     <TableHead>考试状态</TableHead>
                     <TableHead>指派时间</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -193,6 +290,15 @@ export default function EmployeeDetailPage() {
                       </TableCell>
                       <TableCell className="text-xs text-stone-400 whitespace-nowrap">
                         {new Date(a.examCreatedAt).toLocaleDateString('zh-CN')}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => openAssignEdit(a)}
+                          className="inline-flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          编辑
+                        </button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -286,6 +392,75 @@ export default function EmployeeDetailPage() {
           </>
         )}
       </Card>
+
+      {/* Assignment edit dialog */}
+      <Dialog
+        open={assignEditOpen}
+        onClose={() => setAssignEditOpen(false)}
+        title={`编辑指派 — ${assignEditTarget?.examTitle ?? ''}`}
+        contentClassName="overflow-visible"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setAssignEditOpen(false)} disabled={assignSaving}>取消</Button>
+            <Button variant="primary" onClick={handleAssignSave} loading={assignSaving}>保存</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <Select
+            label="工序"
+            value={assignForm.process}
+            onChange={(e) => setAssignForm((f) => ({ ...f, process: e.target.value }))}
+            options={assignOptions.processes.map((p) => ({ value: p, label: p }))}
+            placeholder="请选择工序"
+          />
+          <Select
+            label="级别"
+            value={assignForm.level}
+            onChange={(e) => setAssignForm((f) => ({ ...f, level: e.target.value }))}
+            options={assignOptions.levels.map((l) => ({ value: l, label: l }))}
+            placeholder="请选择级别"
+          />
+        </div>
+      </Dialog>
+
+      {/* Employee edit dialog */}
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="编辑员工信息"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditOpen(false)} disabled={saving}>取消</Button>
+            <Button variant="primary" onClick={handleEditSave} loading={saving}>保存</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <Input
+            label="姓名"
+            value={editForm.name}
+            onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+          />
+          <Input
+            label="工号"
+            value={editForm.employeeNo}
+            onChange={(e) => setEditForm((f) => ({ ...f, employeeNo: e.target.value }))}
+            placeholder="留空保持自动生成"
+          />
+          <Input
+            label="部门"
+            value={editForm.department}
+            onChange={(e) => setEditForm((f) => ({ ...f, department: e.target.value }))}
+          />
+          <Input
+            label="岗位"
+            value={editForm.role}
+            onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
+            placeholder="如 SAW&DB&WB&QCgate"
+          />
+        </div>
+      </Dialog>
     </div>
   );
 }

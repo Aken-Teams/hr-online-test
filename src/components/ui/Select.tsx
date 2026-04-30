@@ -1,77 +1,134 @@
 'use client';
 
-import { forwardRef, type SelectHTMLAttributes } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { ChevronDown, Check } from 'lucide-react';
 
 export interface SelectOption {
   value: string;
   label: string;
 }
 
-export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps {
   label?: string;
   error?: string;
   options: SelectOption[];
   placeholder?: string;
+  value?: string;
+  onChange?: (e: { target: { value: string } }) => void;
+  disabled?: boolean;
+  className?: string;
 }
 
-const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, options, placeholder, className, id, ...props }, ref) => {
-    const selectId = id || (label ? label.replace(/\s+/g, '-').toLowerCase() : undefined);
+function Select({
+  label,
+  error,
+  options,
+  placeholder,
+  value,
+  onChange,
+  disabled,
+  className,
+}: SelectProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-    return (
-      <div className="w-full">
-        {label && (
-          <label
-            htmlFor={selectId}
-            className="block text-sm font-medium text-stone-700 mb-1.5"
-          >
-            {label}
-          </label>
-        )}
-        <select
-          ref={ref}
-          id={selectId}
+  const selected = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [open]);
+
+  function handleSelect(val: string) {
+    onChange?.({ target: { value: val } });
+    setOpen(false);
+  }
+
+  return (
+    <div className={cn('w-full', className)} ref={containerRef}>
+      {label && (
+        <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => !disabled && setOpen(!open)}
           className={cn(
-            'block w-full rounded-xl border px-3 py-2 text-sm',
-            'transition-colors duration-150',
+            'flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm text-left',
+            'transition-colors duration-150 bg-white',
             'focus:outline-none focus:ring-2 focus:ring-offset-0',
-            'appearance-none bg-white',
-            'bg-[url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%236B7280%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E")]',
-            'bg-[length:20px_20px] bg-[position:right_8px_center] bg-no-repeat pr-10',
-            error
-              ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500'
-              : 'border-stone-300 text-stone-800 focus:border-teal-500 focus:ring-teal-500',
+            open
+              ? 'border-teal-500 ring-2 ring-teal-500 ring-offset-0'
+              : error
+                ? 'border-red-300 text-red-900'
+                : 'border-stone-300 text-stone-800 hover:border-stone-400',
             'disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-500',
-            className
           )}
-          aria-invalid={error ? 'true' : undefined}
-          aria-describedby={error && selectId ? `${selectId}-error` : undefined}
-          {...props}
         >
-          {placeholder && (
-            <option value="" disabled>
-              {placeholder}
-            </option>
-          )}
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        {error && (
-          <p
-            id={selectId ? `${selectId}-error` : undefined}
-            className="mt-1.5 text-sm text-red-600"
+          <span className={cn(!selected && 'text-stone-400')}>
+            {selected ? selected.label : placeholder || '请选择'}
+          </span>
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 text-stone-400 transition-transform duration-150',
+              open && 'rotate-180',
+            )}
+          />
+        </button>
+
+        {open && (
+          <ul
+            className={cn(
+              'absolute z-50 mt-1 w-full overflow-auto rounded-xl border border-stone-200 bg-white py-1 shadow-lg',
+              'max-h-60 scrollbar-thin',
+            )}
           >
-            {error}
-          </p>
+            {options.length === 0 && (
+              <li className="px-3 py-2 text-sm text-stone-400">暂无选项</li>
+            )}
+            {options.map((option) => {
+              const isSelected = option.value === value;
+              return (
+                <li
+                  key={option.value}
+                  onClick={() => handleSelect(option.value)}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors',
+                    isSelected
+                      ? 'bg-teal-50 text-teal-700 font-medium'
+                      : 'text-stone-700 hover:bg-stone-50',
+                  )}
+                >
+                  <Check
+                    className={cn(
+                      'h-3.5 w-3.5 shrink-0',
+                      isSelected ? 'text-teal-600' : 'text-transparent',
+                    )}
+                  />
+                  {option.label}
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
-    );
-  }
-);
+      {error && (
+        <p className="mt-1.5 text-sm text-red-600">{error}</p>
+      )}
+    </div>
+  );
+}
 
 Select.displayName = 'Select';
 
