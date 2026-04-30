@@ -239,42 +239,41 @@ export async function PUT(
         include: { questionRules: true },
       });
 
-      // Batches: keep existing ones intact, only allow adding new batches
+      // Batches: keep started batches intact; allow updating/adding future batches
       if ('batches' in body) {
         const incomingBatches: { name: string; openAt: string; closeAt: string }[] =
           body.batches || [];
-        // Get existing batch IDs
+        const now = new Date();
         const existingBatches = await tx.examBatch.findMany({
           where: { examId: id },
-          select: { id: true, name: true, openAt: true, closeAt: true },
+          select: { id: true, name: true, openAt: true },
         });
-        const existingNames = new Set(existingBatches.map((b) => b.name));
-        // Filter to only new batches (by name not matching any existing)
-        const newBatches = incomingBatches.filter((b) => !existingNames.has(b.name));
-        if (newBatches.length > 0) {
-          const examOpen = data.openAt ? new Date(data.openAt) : null;
-          const examClose = data.closeAt ? new Date(data.closeAt) : null;
-          for (const b of newBatches) {
-            const bOpen = new Date(b.openAt);
-            const bClose = new Date(b.closeAt);
-            if (examOpen && bOpen < examOpen) {
-              throw new Error(`梯次「${b.name}」的开始时间不能早于考试开放时间`);
+        const existingByName = new Map(existingBatches.map((b) => [b.name, b]));
+        const examOpen = data.openAt ? new Date(data.openAt) : null;
+        const examClose = data.closeAt ? new Date(data.closeAt) : null;
+
+        for (const b of incomingBatches) {
+          const bOpen = new Date(b.openAt);
+          const bClose = new Date(b.closeAt);
+          // For active exams only enforce the exam's closeAt (not openAt, to allow earlier batch times)
+          if (examClose && bClose > examClose) throw new Error(`梯次「${b.name}」的结束时间不能晚于考试截止时间`);
+          if (bOpen >= bClose) throw new Error(`梯次「${b.name}」的开始时间必须早于结束时间`);
+
+          const existing = existingByName.get(b.name);
+          if (existing) {
+            // Only update if this batch hasn't started yet
+            if (existing.openAt > now) {
+              await tx.examBatch.update({
+                where: { id: existing.id },
+                data: { openAt: bOpen, closeAt: bClose },
+              });
             }
-            if (examClose && bClose > examClose) {
-              throw new Error(`梯次「${b.name}」的结束时间不能晚于考试截止时间`);
-            }
-            if (bOpen >= bClose) {
-              throw new Error(`梯次「${b.name}」的开始时间必须早于结束时间`);
-            }
+          } else {
+            // New batch — create it
+            await tx.examBatch.create({
+              data: { examId: id, name: b.name, openAt: bOpen, closeAt: bClose },
+            });
           }
-          await tx.examBatch.createMany({
-            data: newBatches.map((b) => ({
-              examId: id,
-              name: b.name,
-              openAt: new Date(b.openAt),
-              closeAt: new Date(b.closeAt),
-            })),
-          });
         }
       }
 

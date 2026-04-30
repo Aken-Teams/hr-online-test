@@ -194,13 +194,21 @@ export default function TabBasicInfo(props: Props) {
         )}
         {!isFullyEditable && !isArchived && (
           <p className="text-xs text-amber-600 mb-3">
-            考试进行中，已有梯次不可修改，但可新增梯次。
+            考试进行中，已开始的梯次不可修改，未开始的梯次仍可编辑。
           </p>
         )}
         <div className="space-y-3">
           {batches.map((batch, idx) => {
             const isExisting = idx < existingBatchCount;
-            const locked = isExisting && !isFullyEditable;
+            // Use string comparison to avoid timezone ambiguity with datetime-local values
+            const now = new Date();
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const nowStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const batchStarted = isExisting && batch.openAt && batch.openAt <= nowStr;
+            const locked = isExisting && !isFullyEditable && !!batchStarted;
+            // For active exams, only enforce closeAt as max (don't restrict min)
+            const batchMin = isFullyEditable ? (openAt || undefined) : undefined;
+            const batchMax = closeAt || undefined;
             return (
               <div key={idx} className={`grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_1fr_40px] items-end ${locked ? 'pointer-events-none opacity-60' : ''}`}>
                 <Input
@@ -217,8 +225,8 @@ export default function TabBasicInfo(props: Props) {
                   label={idx === 0 ? '开始时间' : undefined}
                   type="datetime-local"
                   value={batch.openAt}
-                  min={openAt || undefined}
-                  max={closeAt || undefined}
+                  min={batchMin}
+                  max={batchMax}
                   onChange={(e) => {
                     const updated = [...batches];
                     updated[idx] = { ...batch, openAt: e.target.value };
@@ -229,8 +237,8 @@ export default function TabBasicInfo(props: Props) {
                   label={idx === 0 ? '结束时间' : undefined}
                   type="datetime-local"
                   value={batch.closeAt}
-                  min={openAt || undefined}
-                  max={closeAt || undefined}
+                  min={batchMin}
+                  max={batchMax}
                   onChange={(e) => {
                     const updated = [...batches];
                     updated[idx] = { ...batch, closeAt: e.target.value };
