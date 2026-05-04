@@ -8,10 +8,11 @@ export interface CardProps {
   description?: string;
   actions?: ReactNode;
   className?: string;
+  contentClassName?: string;
   children: ReactNode;
 }
 
-export function Card({ title, description, actions, className, children }: CardProps) {
+export function Card({ title, description, actions, className, contentClassName, children }: CardProps) {
   return (
     <div
       className={cn(
@@ -32,7 +33,7 @@ export function Card({ title, description, actions, className, children }: CardP
           {actions && <div>{actions}</div>}
         </div>
       )}
-      <div className="px-4 py-3 sm:px-6 sm:py-4">{children}</div>
+      <div className={cn('px-4 py-3 sm:px-6 sm:py-4', contentClassName)}>{children}</div>
     </div>
   );
 }

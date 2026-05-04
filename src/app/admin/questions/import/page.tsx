@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useRef, type DragEvent } from 'react';
+import { useState, useRef, useEffect, type DragEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ArrowLeft, FileSpreadsheet, CheckCircle, XCircle, Loader2, Upload, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { Select } from '@/components/ui/Select';
 import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
 import { QUESTION_TYPE_LABELS } from '@/lib/constants';
 
@@ -16,15 +17,25 @@ import { QUESTION_TYPE_LABELS } from '@/lib/constants';
 
 type Category = 'BASIC' | 'PROFESSIONAL';
 
+interface ParsedMeta {
+  department?: string | null;
+  process?: string | null;
+  level?: string | null;
+}
+
 interface FileResult {
   status: 'pending' | 'uploading' | 'done' | 'error';
   created?: number;
-  duplicates?: number;
-  skipped?: number;
+  replaced?: number;
   totalRows?: number;
-  imagesAttached?: number;
   byType?: Record<string, number>;
+  parsed?: ParsedMeta | null;
   error?: string;
+}
+
+interface ExamOption {
+  id: string;
+  title: string;
 }
 
 const CATEGORY_LABEL: Record<Category, string> = {
@@ -41,6 +52,10 @@ export default function QuestionImportPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Exam selection
+  const [exams, setExams] = useState<ExamOption[]>([]);
+  const [selectedExamId, setSelectedExamId] = useState('');
+
   const [files, setFiles] = useState<File[]>([]);
   const [fileCategories, setFileCategories] = useState<Map<string, Category>>(new Map());
   const [fileResults, setFileResults] = useState<Map<string, FileResult>>(new Map());
@@ -51,7 +66,30 @@ export default function QuestionImportPage() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  // Load exam list
+  useEffect(() => {
+    async function loadExams() {
+      try {
+        const res = await fetch('/api/admin/exams');
+        if (!res.ok) return;
+        const json = await res.json();
+        const items = json.data?.items ?? json.data ?? [];
+        setExams(
+          items.map((e: { id: string; title: string }) => ({
+            id: e.id,
+            title: e.title,
+          }))
+        );
+      } catch { /* ignore */ }
+    }
+    loadExams();
+  }, []);
+
   function handleNewFiles(newFiles: FileList | File[]) {
+    if (!selectedExamId) {
+      toast('请先选择关联考试', 'warning');
+      return;
+    }
     const validFiles: File[] = [];
     for (const f of Array.from(newFiles)) {
       const ext = f.name.split('.').pop()?.toLowerCase();
@@ -102,44 +140,64 @@ export default function QuestionImportPage() {
   }
 
   async function handleImportAll() {
-    if (files.length === 0) return;
+    if (files.length === 0 || !selectedExamId) return;
     setImporting(true);
 
     let totalCreated = 0;
-    let totalDuplicates = 0;
+    let totalReplaced = 0;
 
-    for (const file of files) {
-      const existing = fileResults.get(file.name);
-      if (existing?.status === 'done') continue;
+    // Build classifications JSON
+    const classifications: Record<string, string> = {};
+    for (const [name, cat] of fileCategories) {
+      classifications[name] = cat;
+    }
 
+    // Upload all pending files in one batch to the exam-specific API
+    const pendingFiles = files.filter((f) => {
+      const r = fileResults.get(f.name);
+      return !r || r.status === 'pending' || r.status === 'error';
+    });
+
+    // Mark all as uploading
+    for (const file of pendingFiles) {
       setFileResults((prev) => new Map(prev).set(file.name, { status: 'uploading' }));
+    }
 
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('category', fileCategories.get(file.name) || 'PROFESSIONAL');
+    try {
+      const formData = new FormData();
+      for (const file of pendingFiles) {
+        formData.append('files', file);
+      }
+      formData.append('classifications', JSON.stringify(classifications));
 
-        const res = await fetch('/api/admin/questions/import', {
-          method: 'POST',
-          body: formData,
-        });
+      const res = await fetch(`/api/admin/exams/${selectedExamId}/import-questions`, {
+        method: 'POST',
+        body: formData,
+      });
 
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || '导入失败');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '导入失败');
 
+      const data = json.data;
+      totalCreated = data.created ?? 0;
+      totalReplaced = data.replaced ?? 0;
+
+      // Update per-file results
+      for (const fr of data.fileResults ?? []) {
         const result: FileResult = {
-          status: 'done',
-          created: json.data?.created ?? 0,
-          duplicates: json.data?.duplicates ?? 0,
-          skipped: json.data?.skipped ?? 0,
-          totalRows: json.data?.totalRows ?? 0,
-          imagesAttached: json.data?.imagesAttached ?? 0,
-          byType: json.data?.byType,
+          status: fr.error ? 'error' : 'done',
+          created: fr.created ?? 0,
+          replaced: fr.replaced ?? 0,
+          totalRows: fr.rows ?? 0,
+          byType: fr.byType,
+          parsed: fr.parsed,
+          error: fr.error,
         };
-        setFileResults((prev) => new Map(prev).set(file.name, result));
-        totalCreated += result.created!;
-        totalDuplicates += result.duplicates!;
-      } catch (err) {
+        setFileResults((prev) => new Map(prev).set(fr.filename, result));
+      }
+    } catch (err) {
+      // Mark all pending as error
+      for (const file of pendingFiles) {
         setFileResults((prev) =>
           new Map(prev).set(file.name, {
             status: 'error',
@@ -151,7 +209,7 @@ export default function QuestionImportPage() {
 
     setImporting(false);
     const parts = [`全部完成：共导入 ${totalCreated} 题`];
-    if (totalDuplicates > 0) parts.push(`${totalDuplicates} 题重复已跳过`);
+    if (totalReplaced > 0) parts.push(`${totalReplaced} 题已覆盖`);
     toast(parts.join('，'), totalCreated > 0 ? 'success' : 'info');
   }
 
@@ -180,11 +238,13 @@ export default function QuestionImportPage() {
 
   const doneCount = files.filter((f) => fileResults.get(f.name)?.status === 'done').length;
 
+  const selectedExamTitle = exams.find((e) => e.id === selectedExamId)?.title;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="导入题库"
-        description="从 Excel 文件批量导入题目"
+        description="从 Excel 文件批量导入题目到指定考试"
         actions={
           <Button variant="outline" onClick={() => router.push('/admin/questions')}>
             <ArrowLeft className="h-4 w-4" />
@@ -193,24 +253,60 @@ export default function QuestionImportPage() {
         }
       />
 
+      {/* Exam selection */}
+      <Card title="选择关联考试" className="overflow-visible" contentClassName="overflow-visible">
+        <div className="max-w-md">
+          <Select
+            label="关联考试"
+            value={selectedExamId}
+            onChange={(e) => {
+              setSelectedExamId(e.target.value);
+              setFileResults(new Map());
+            }}
+            options={exams.map((exam) => ({ value: exam.id, label: exam.title }))}
+            placeholder="请选择考试"
+          />
+          <p className="mt-1.5 text-xs text-stone-400">
+            导入的题目将关联到所选考试，系统会自动根据文件名解析部门、工序、级别
+          </p>
+        </div>
+      </Card>
+
       {/* Upload zone */}
       <Card>
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            if (!selectedExamId) {
+              toast('请先选择关联考试', 'warning');
+              return;
+            }
+            fileInputRef.current?.click();
+          }}
           className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-12 text-center cursor-pointer transition-colors ${
-            dragOver
-              ? 'border-teal-400 bg-teal-50/50'
-              : 'border-stone-300 bg-stone-50/30 hover:border-gray-400'
+            !selectedExamId
+              ? 'border-stone-200 bg-stone-50/50 cursor-not-allowed opacity-60'
+              : dragOver
+                ? 'border-teal-400 bg-teal-50/50'
+                : 'border-stone-300 bg-stone-50/30 hover:border-gray-400'
           }`}
         >
           <Upload className="h-10 w-10 text-stone-400 mb-3" />
           <p className="text-sm font-medium text-stone-700">
-            拖拽文件到此处，或点击选择文件
+            {selectedExamId
+              ? '拖拽文件到此处，或点击选择文件'
+              : '请先选择关联考试'}
           </p>
-          <p className="mt-1 text-xs text-stone-500">支持 .xls 和 .xlsx 格式，可同时选择多个文件</p>
+          <p className="mt-1 text-xs text-stone-500">
+            支持 .xls 和 .xlsx 格式，可同时选择多个文件
+          </p>
+          {selectedExamId && selectedExamTitle && (
+            <p className="mt-2 text-xs font-medium text-teal-600">
+              将导入到：{selectedExamTitle}
+            </p>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -263,14 +359,25 @@ export default function QuestionImportPage() {
                         {result?.status === 'done' && (
                           <span className="ml-2 text-green-600">
                             {result.totalRows} 题解析，{result.created} 题导入
-                            {(result.duplicates ?? 0) > 0 && `，${result.duplicates} 题重复`}
-                            {(result.skipped ?? 0) > 0 && `，${result.skipped} 题跳过`}
+                            {(result.replaced ?? 0) > 0 && `，${result.replaced} 题已覆盖`}
                           </span>
                         )}
                         {result?.status === 'error' && (
                           <span className="ml-2 text-red-600">{result.error}</span>
                         )}
                       </p>
+                      {/* Parsed filename metadata */}
+                      {result?.status === 'done' && result.parsed && (
+                        <p className="text-teal-600 mt-0.5">
+                          {[
+                            result.parsed.department && `部门: ${result.parsed.department}`,
+                            result.parsed.process && `工序: ${result.parsed.process}`,
+                            result.parsed.level && `级别: ${result.parsed.level}`,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || '未从文件名解析到元数据'}
+                        </p>
+                      )}
                       {result?.status === 'done' && result.byType && Object.keys(result.byType).length > 0 && (
                         <p className="text-stone-400 mt-0.5">
                           {Object.entries(result.byType)
@@ -319,7 +426,7 @@ export default function QuestionImportPage() {
             <Button
               onClick={handleImportAll}
               loading={importing}
-              disabled={pendingCount === 0}
+              disabled={pendingCount === 0 || !selectedExamId}
             >
               {doneCount > 0 && pendingCount > 0
                 ? `继续导入 (${pendingCount} 个)`
