@@ -343,26 +343,32 @@ export async function POST(
       ? shuffle(generatedQuestions.map((q) => q.questionId))
       : generatedQuestions.map((q) => q.questionId);
 
-    const session = await prisma.$transaction(async (tx) => {
-      // Create ExamQuestion records (if not existing from previous attempts)
-      for (const gq of generatedQuestions) {
-        await tx.examQuestion.upsert({
-          where: {
-            examId_questionId: {
-              examId,
-              questionId: gq.questionId,
-            },
-          },
-          create: {
-            examId,
-            questionId: gq.questionId,
-            sortOrder: gq.sortOrder,
-            points: gq.points,
-          },
-          update: {},
+    // Create ExamQuestion records outside transaction (idempotent with skipDuplicates)
+    // Retry on deadlock (P2034) since concurrent starts may conflict
+    const examQuestionData = generatedQuestions.map((gq) => ({
+      examId,
+      questionId: gq.questionId,
+      sortOrder: gq.sortOrder,
+      points: gq.points,
+    }));
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await prisma.examQuestion.createMany({
+          data: examQuestionData,
+          skipDuplicates: true,
         });
+        break;
+      } catch (e: unknown) {
+        const prismaError = e as { code?: string };
+        if (prismaError.code === 'P2034' && attempt < 2) {
+          await new Promise((r) => setTimeout(r, 100 * (attempt + 1)));
+          continue;
+        }
+        throw e;
       }
+    }
 
+    const session = await prisma.$transaction(async (tx) => {
       // Create session
       const newSession = await tx.examSession.create({
         data: {
