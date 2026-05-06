@@ -171,11 +171,26 @@ export async function POST(
         })
       ).map((q) => q.id);
 
+      // Safety check: block import if there are answer records referencing these questions
+      if (existingIds.length > 0) {
+        const answerCount = await prisma.answer.count({
+          where: { questionId: { in: existingIds } },
+        });
+        if (answerCount > 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `该考试已有 ${answerCount} 条答题记录，重新导入会删除所有答题数据。如需重新导入，请先在「成绩管理」中清除答题记录。`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+
       await prisma.$transaction(
         async (tx) => {
           // Delete ALL existing questions for this exam
           if (existingIds.length > 0) {
-            await tx.answer.deleteMany({ where: { questionId: { in: existingIds } } });
             await tx.examQuestion.deleteMany({ where: { questionId: { in: existingIds } } });
             await tx.questionOption.deleteMany({ where: { questionId: { in: existingIds } } });
             await tx.questionTag.deleteMany({ where: { questionId: { in: existingIds } } });
