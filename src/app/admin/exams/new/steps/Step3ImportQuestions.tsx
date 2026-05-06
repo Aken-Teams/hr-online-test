@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
+import { partitionFilesByClassification } from '@/lib/excel-client';
 import { QUESTION_TYPE_LABELS } from '@/lib/constants';
 
 type Category = 'BASIC' | 'PROFESSIONAL';
@@ -35,7 +36,7 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0 || !examId) return;
 
@@ -48,21 +49,35 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
     }
 
     if (validFiles.length > 0) {
-      setPendingFiles(validFiles);
-      setDialogOpen(true);
+      const { withCategory, withoutCategory } = await partitionFilesByClassification(validFiles);
+
+      // Files with built-in classification skip the dialog and upload directly
+      if (withCategory.length > 0) {
+        await uploadFiles(withCategory, new Map());
+      }
+
+      // Files without built-in classification go through the dialog
+      if (withoutCategory.length > 0) {
+        setPendingFiles(withoutCategory);
+        setDialogOpen(true);
+      }
     }
 
     if (fileRef.current) fileRef.current.value = '';
   }
 
-  async function handleClassificationConfirm(classifications: Map<string, Category>) {
+  function handleClassificationConfirm(classifications: Map<string, Category>) {
     setDialogOpen(false);
+    uploadFiles(pendingFiles, classifications);
+  }
+
+  async function uploadFiles(filesToUpload: File[], classifications: Map<string, Category>) {
     if (!examId) return;
 
     setUploading(true);
     try {
       const formData = new FormData();
-      for (const file of pendingFiles) {
+      for (const file of filesToUpload) {
         formData.append('files', file);
       }
       const classObj: Record<string, string> = {};
@@ -99,7 +114,7 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
                 上传题库 Excel 文件，系统会自动解析题目内容。
               </p>
               <p className="mt-1 text-xs text-stone-500">
-                选择文件后需先分类（基本知识/专业知识），确认后再上传。
+                支持原始题库文件和导出文件格式。导出文件自动识别分类，无需手动分类。
               </p>
             </div>
 

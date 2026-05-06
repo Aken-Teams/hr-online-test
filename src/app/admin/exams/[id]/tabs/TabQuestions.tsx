@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2, Trash2, Search, Download } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
+import { partitionFilesByClassification } from '@/lib/excel-client';
 import { QUESTION_TYPE_LABELS, QUESTION_CATEGORY_LABELS } from '@/lib/constants';
 
 type Category = 'BASIC' | 'PROFESSIONAL';
@@ -74,7 +75,7 @@ export default function TabQuestions({ examId }: Props) {
     }
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -87,21 +88,35 @@ export default function TabQuestions({ examId }: Props) {
     }
 
     if (validFiles.length > 0) {
-      setPendingFiles(validFiles);
-      setDialogOpen(true);
+      const { withCategory, withoutCategory } = await partitionFilesByClassification(validFiles);
+
+      // Files with built-in classification skip the dialog and upload directly
+      if (withCategory.length > 0) {
+        await uploadFiles(withCategory, new Map());
+      }
+
+      // Files without built-in classification go through the dialog
+      if (withoutCategory.length > 0) {
+        setPendingFiles(withoutCategory);
+        setDialogOpen(true);
+      }
     }
 
     if (fileRef.current) fileRef.current.value = '';
   }
 
-  async function handleClassificationConfirm(classifications: Map<string, Category>) {
+  function handleClassificationConfirm(classifications: Map<string, Category>) {
     setDialogOpen(false);
+    uploadFiles(pendingFiles, classifications);
+  }
+
+  async function uploadFiles(filesToUpload: File[], classifications: Map<string, Category>) {
     setUploading(true);
 
     // Mark all files as uploading
     setUploadStatuses((prev) => {
       const next = new Map(prev);
-      for (const file of pendingFiles) {
+      for (const file of filesToUpload) {
         next.set(file.name, { status: 'uploading' });
       }
       return next;
@@ -109,7 +124,7 @@ export default function TabQuestions({ examId }: Props) {
 
     try {
       const formData = new FormData();
-      for (const file of pendingFiles) {
+      for (const file of filesToUpload) {
         formData.append('files', file);
       }
       const classObj: Record<string, string> = {};
@@ -156,7 +171,7 @@ export default function TabQuestions({ examId }: Props) {
       // Mark all pending as error
       setUploadStatuses((prev) => {
         const next = new Map(prev);
-        for (const file of pendingFiles) {
+        for (const file of filesToUpload) {
           next.set(file.name, {
             status: 'error',
             error: err instanceof Error ? err.message : '导入失败',

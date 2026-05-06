@@ -352,6 +352,15 @@ export function parseQuestionExcel(
         role = parts[1]?.trim() || department; // fallback to dept if no role
       }
 
+      // Parse per-row category from exported files (基本题 → BASIC, 专业题 → PROFESSIONAL)
+      let rowCategory: string | undefined;
+      const catVal = row._category || '';
+      if (/基本|basic/i.test(catVal)) {
+        rowCategory = 'BASIC';
+      } else if (/专业|professional/i.test(catVal)) {
+        rowCategory = 'PROFESSIONAL';
+      }
+
       const importRow: QuestionImportRow = {
         content,
         type: questionType,
@@ -362,6 +371,8 @@ export function parseQuestionExcel(
         isMultiSelect: isMulti,
         referenceAnswer: row.referenceAnswer || undefined,
         sourceFile: undefined, // Set by caller
+        category: rowCategory,
+        process: row._process || undefined,
         _sheetName: sheetName,
         _rowIndex: rowIdx + 1, // +1 because row 0 is header in openpyxl anchor coords
       };

@@ -87,7 +87,7 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
-    const category = (formData.get('category') as string) || 'PROFESSIONAL';
+    const fileCategory = (formData.get('category') as string) || 'PROFESSIONAL';
 
     if (!file) {
       return NextResponse.json(
@@ -230,19 +230,23 @@ export async function POST(request: Request) {
         async (tx) => {
           // Batch create all questions at once
           await tx.question.createMany({
-            data: validRows.map(({ id, row }) => ({
-              id,
-              type: row.type,
-              content: row.content,
-              level: category === 'BASIC' ? '' : row.level,
-              department: row.department,
-              role: row.role,
-              correctAnswer: row.correctAnswer ?? null,
-              isMultiSelect: row.isMultiSelect ?? false,
-              referenceAnswer: row.referenceAnswer ?? null,
-              sourceFile: file.name,
-              category,
-            })),
+            data: validRows.map(({ id, row }) => {
+              const cat = row.category || fileCategory;
+              return {
+                id,
+                type: row.type,
+                content: row.content,
+                level: cat === 'BASIC' ? '' : row.level,
+                department: row.department,
+                role: row.role,
+                correctAnswer: row.correctAnswer ?? null,
+                isMultiSelect: row.isMultiSelect ?? false,
+                referenceAnswer: row.referenceAnswer ?? null,
+                sourceFile: file.name,
+                process: row.process || null,
+                category: cat,
+              };
+            }),
           });
 
           // Batch create all options at once

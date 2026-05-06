@@ -9,6 +9,7 @@ import { ArrowLeft, FileSpreadsheet, CheckCircle, XCircle, Loader2, Upload, Tras
 import { useToast } from '@/components/ui/Toast';
 import { Select } from '@/components/ui/Select';
 import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
+import { partitionFilesByClassification } from '@/lib/excel-client';
 import { QUESTION_TYPE_LABELS } from '@/lib/constants';
 
 // ---------------------------------------------------------------------------
@@ -85,7 +86,7 @@ export default function QuestionImportPage() {
     loadExams();
   }, []);
 
-  function handleNewFiles(newFiles: FileList | File[]) {
+  async function handleNewFiles(newFiles: FileList | File[]) {
     if (!selectedExamId) {
       toast('请先选择关联考试', 'warning');
       return;
@@ -100,8 +101,24 @@ export default function QuestionImportPage() {
       if (files.some((existing) => existing.name === f.name)) continue;
       validFiles.push(f);
     }
-    if (validFiles.length > 0) {
-      setPendingFiles(validFiles);
+    if (validFiles.length === 0) return;
+
+    // Detect which files already have per-row classification (exported files)
+    const { withCategory, withoutCategory } = await partitionFilesByClassification(validFiles);
+
+    // Files with built-in classification skip the dialog
+    if (withCategory.length > 0) {
+      setFiles((prev) => [...prev, ...withCategory]);
+      // No file-level classification needed; backend reads per-row 分类
+      toast(
+        `${withCategory.length} 个文件已包含分类信息，无需手动分类`,
+        'info'
+      );
+    }
+
+    // Files without built-in classification go through the dialog
+    if (withoutCategory.length > 0) {
+      setPendingFiles(withoutCategory);
       setDialogOpen(true);
     }
   }

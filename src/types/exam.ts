@@ -335,6 +335,10 @@ export interface QuestionImportRow {
   referenceAnswer?: string;
   options?: { label: string; content: string; imageUrl?: string }[];
   sourceFile?: string;
+  /** Per-row category from exported files (BASIC/PROFESSIONAL) */
+  category?: string;
+  /** Per-row process from exported files */
+  process?: string;
   /** Internal: sheet name for image matching */
   _sheetName?: string;
   /** Internal: 0-based row index in sheet for image matching */

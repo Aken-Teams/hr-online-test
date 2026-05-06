@@ -130,13 +130,15 @@ export async function POST(
         continue;
       }
 
-      // Determine category: use frontend classification first, then filename fallback
-      let category: string;
+      // Determine file-level category fallback
+      // Per-row category (from exported files with 分类 column) takes priority
+      const hasPerRowCategory = rows.some((r) => r.category);
+      let fileCategory: string;
       if (classifications[file.name]) {
-        category = classifications[file.name];
+        fileCategory = classifications[file.name];
       } else {
         const isBasic = file.name.includes('基本') || file.name.includes('基础') || file.name.toLowerCase().includes('basic');
-        category = isBasic ? 'BASIC' : 'PROFESSIONAL';
+        fileCategory = isBasic ? 'BASIC' : 'PROFESSIONAL';
       }
 
       // Dedup within file (same type + content)
@@ -171,21 +173,24 @@ export async function POST(
           }
 
           // ── Step 2: Create all questions from file ──
-          const newQuestions = uniqueRows.map((row) => ({
-            id: randomUUID(),
-            type: row.type,
-            content: row.content,
-            level: category === 'BASIC' ? '' : (parsed?.level || row.level),
-            department: parsed?.department || row.department,
-            role: row.role,
-            correctAnswer: row.correctAnswer ?? null,
-            isMultiSelect: row.isMultiSelect ?? false,
-            referenceAnswer: row.referenceAnswer ?? null,
-            sourceFile: file.name,
-            process: parsed?.process || null,
-            category,
-            examSourceId: examId,
-          }));
+          const newQuestions = uniqueRows.map((row) => {
+            const cat = (hasPerRowCategory && row.category) ? row.category : fileCategory;
+            return {
+              id: randomUUID(),
+              type: row.type,
+              content: row.content,
+              level: cat === 'BASIC' ? '' : (parsed?.level || row.level),
+              department: parsed?.department || row.department,
+              role: row.role,
+              correctAnswer: row.correctAnswer ?? null,
+              isMultiSelect: row.isMultiSelect ?? false,
+              referenceAnswer: row.referenceAnswer ?? null,
+              sourceFile: file.name,
+              process: row.process || parsed?.process || null,
+              category: cat,
+              examSourceId: examId,
+            };
+          });
 
           await tx.question.createMany({ data: newQuestions });
 
