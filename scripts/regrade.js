@@ -27,6 +27,8 @@ function autoGrade(correctAnswer, userAnswer, type, points) {
   return null;
 }
 
+const AUTO_TYPES = ['SINGLE_CHOICE', 'MULTI_CHOICE', 'TRUE_FALSE'];
+
 (async () => {
   const sessions = await p.examSession.findMany({
     where: { status: { in: ['COMPLETED', 'GRADING'] } },
@@ -47,14 +49,31 @@ function autoGrade(correctAnswer, userAnswer, type, points) {
 
   for (const session of sessions) {
     let autoScore = 0;
+    let manualScore = 0;
     let correctCount = 0;
+    let hasUngradedManual = false;
     let updated = 0;
+    const categoryScores = {};
 
     for (const answer of session.answers) {
       const q = answer.question;
       const eqPoints = q.examQuestions.find(eq => eq.examId === session.examId)?.points ?? q.points;
 
-      if (['SINGLE_CHOICE', 'MULTI_CHOICE', 'TRUE_FALSE'].includes(q.type)) {
+      // Init category
+      if (!categoryScores[q.type]) {
+        categoryScores[q.type] = {
+          type: q.type,
+          earnedPoints: 0,
+          maxPoints: 0,
+          correctCount: 0,
+          totalCount: 0,
+        };
+      }
+      const cat = categoryScores[q.type];
+      cat.maxPoints += eqPoints;
+      cat.totalCount += 1;
+
+      if (AUTO_TYPES.includes(q.type)) {
         const result = autoGrade(q.correctAnswer, answer.answerContent, q.type, eqPoints);
         if (result) {
           if (result.isCorrect !== !!answer.isCorrect || result.earnedPoints !== answer.earnedPoints) {
@@ -65,18 +84,33 @@ function autoGrade(correctAnswer, userAnswer, type, points) {
             updated++;
           }
           autoScore += result.earnedPoints;
-          if (result.isCorrect) correctCount++;
+          cat.earnedPoints += result.earnedPoints;
+          if (result.isCorrect) {
+            correctCount++;
+            cat.correctCount++;
+          }
         }
       } else {
-        autoScore += (answer.earnedPoints || 0);
-        if (answer.isCorrect) correctCount++;
+        // Manual grading
+        if (answer.earnedPoints != null) {
+          manualScore += answer.earnedPoints;
+          cat.earnedPoints += answer.earnedPoints;
+          if (answer.isCorrect) {
+            correctCount++;
+            cat.correctCount++;
+          }
+        } else {
+          hasUngradedManual = true;
+        }
       }
     }
 
     if (session.result) {
-      const totalScore = autoScore;
-      const isPassed = totalScore >= session.exam.passScore;
-      const pct = session.exam.totalScore > 0 ? (totalScore / session.exam.totalScore) * 100 : 0;
+      const isFullyGraded = !hasUngradedManual;
+      const totalScore = isFullyGraded ? autoScore + manualScore : null;
+      const maxScore = session.exam.totalScore;
+      const isPassed = totalScore != null ? totalScore >= session.exam.passScore : null;
+      const pct = maxScore > 0 && totalScore != null ? (totalScore / maxScore) * 100 : 0;
       let gradeLabel = 'F';
       if (pct >= 90) gradeLabel = 'A';
       else if (pct >= 80) gradeLabel = 'B';
@@ -85,17 +119,27 @@ function autoGrade(correctAnswer, userAnswer, type, points) {
 
       await p.examResult.update({
         where: { id: session.result.id },
-        data: { autoScore, totalScore, correctCount, isPassed, gradeLabel }
+        data: {
+          autoScore,
+          manualScore: isFullyGraded ? manualScore : null,
+          totalScore,
+          correctCount,
+          isPassed,
+          gradeLabel,
+          isFullyGraded,
+          categoryScores,
+        }
       });
 
-      console.log(`  ${session.id}: autoScore ${session.result.autoScore} -> ${autoScore}, correct ${session.result.correctCount} -> ${correctCount}, answers fixed: ${updated}`);
+      console.log(`  ${session.id}: score ${session.result.totalScore} -> ${totalScore}, correct ${session.result.correctCount} -> ${correctCount}, answers fixed: ${updated}`);
     }
   }
 
   console.log('\nDone! Fetching updated results...\n');
 
   const results = await p.$queryRaw`
-    SELECT u.name, er.total_score, er.auto_score, er.correct_count, er.is_passed, er.grade_label
+    SELECT u.name, er.total_score, er.auto_score, er.correct_count, er.is_passed, er.grade_label,
+           er.category_scores
     FROM exam_results er
     JOIN exam_sessions es ON er.session_id = es.id
     JOIN users u ON es.user_id = u.id
@@ -109,6 +153,20 @@ function autoGrade(correctAnswer, userAnswer, type, points) {
     passed: x.is_passed ? 'YES' : 'NO',
     grade: x.grade_label
   })));
+
+  // Show category breakdown for top scorer
+  const top = results[0];
+  if (top && top.category_scores) {
+    console.log('\n=== TOP SCORER CATEGORY BREAKDOWN ===');
+    const cs = typeof top.category_scores === 'string' ? JSON.parse(top.category_scores) : top.category_scores;
+    console.table(Object.values(cs).map(c => ({
+      type: c.type,
+      earned: c.earnedPoints,
+      max: c.maxPoints,
+      correct: c.correctCount + '/' + c.totalCount,
+      rate: c.maxPoints > 0 ? (c.earnedPoints / c.maxPoints * 100).toFixed(1) + '%' : '0%'
+    })));
+  }
 
   await p.$disconnect();
 })().catch(e => { console.error(e); process.exit(1); });
