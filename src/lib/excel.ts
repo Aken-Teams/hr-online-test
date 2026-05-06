@@ -33,11 +33,40 @@ const SHEET_TYPE_MAP: Record<string, QuestionType> = {
   '实操题': 'PRACTICAL',
 };
 
+/** Map Chinese type labels (used in exports) to QuestionType. */
+const TYPE_LABEL_MAP: Record<string, QuestionType> = {
+  '单选题': 'SINGLE_CHOICE',
+  '单选': 'SINGLE_CHOICE',
+  '多选题': 'MULTI_CHOICE',
+  '多选': 'MULTI_CHOICE',
+  '判断题': 'TRUE_FALSE',
+  '判断': 'TRUE_FALSE',
+  '简答题': 'SHORT_ANSWER',
+  '简答': 'SHORT_ANSWER',
+  '问答题': 'SHORT_ANSWER',
+  '填空题': 'FILL_BLANK',
+  '案例分析题': 'CASE_ANALYSIS',
+  '实操题': 'PRACTICAL',
+  'SINGLE_CHOICE': 'SINGLE_CHOICE',
+  'MULTI_CHOICE': 'MULTI_CHOICE',
+  'TRUE_FALSE': 'TRUE_FALSE',
+  'SHORT_ANSWER': 'SHORT_ANSWER',
+  'FILL_BLANK': 'FILL_BLANK',
+  'CASE_ANALYSIS': 'CASE_ANALYSIS',
+  'PRACTICAL': 'PRACTICAL',
+};
+
 /**
  * Detect the QuestionType from a sheet name by checking for known keywords.
+ * Returns 'MIXED' for generic sheet names like '题库' where type is per-row.
  */
-function detectTypeFromSheetName(sheetName: string): QuestionType | null {
+function detectTypeFromSheetName(sheetName: string): QuestionType | 'MIXED' | null {
   const trimmed = sheetName.trim();
+
+  // Generic "题库" sheet from exports — type determined per-row via 题型 column
+  if (trimmed === '题库') {
+    return 'MIXED';
+  }
 
   // Exact match first
   if (SHEET_TYPE_MAP[trimmed]) {
@@ -125,6 +154,9 @@ const COLUMN_MAP: Record<string, string> = {
   '分析要点': 'note',
   '题型': '_questionType',
   '技能': 'level',
+  '分类': '_category',
+  '工序': '_process',
+  '分值': '_points',
 
   // Merged options column (some files combine A-D in one "选项" column)
   '选项': '_mergedOptions',
@@ -235,8 +267,19 @@ export function parseQuestionExcel(
       const content = row.content;
       if (!content) continue; // Skip empty rows
 
-      // Determine the actual type (may override to MULTI_CHOICE)
-      let questionType = detectedType;
+      // Determine the actual type
+      let questionType: QuestionType;
+      if (detectedType === 'MIXED') {
+        // Mixed sheet (e.g. exported '题库') — read type from per-row column
+        const typeLabel = row._questionType || '';
+        const resolved = TYPE_LABEL_MAP[typeLabel.trim()];
+        if (!resolved) continue; // Skip rows with unrecognized type
+        questionType = resolved;
+      } else {
+        questionType = detectedType;
+      }
+
+      // May override to MULTI_CHOICE
       const isMulti =
         row.isMultiSelect === '是' ||
         row.isMultiSelect === 'true' ||
