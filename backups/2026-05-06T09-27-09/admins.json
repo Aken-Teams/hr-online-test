@@ -1,0 +1,12 @@
+[
+  {
+    "id": "cmobcr4e100008yfeqxlqc2f3",
+    "username": "admin",
+    "passwordHash": "$2b$10$TfHm8NaC/TzOWspxe0kiSeUSGuTOlVRpZhNWV7t97bLUlroB86Gpi",
+    "displayName": "系统管理员",
+    "role": "SUPER_ADMIN",
+    "isActive": true,
+    "createdAt": "2026-04-23T10:42:14.905Z",
+    "updatedAt": "2026-04-23T10:42:14.905Z"
+  }
+]

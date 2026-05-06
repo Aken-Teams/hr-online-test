@@ -1,0 +1,51 @@
+[
+  {
+    "id": "cmobdll33071c12wiypkziy6d",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "name": "第1梯次",
+    "openAt": "2026-04-06T00:00:00.000Z",
+    "closeAt": "2026-04-08T00:00:00.000Z"
+  },
+  {
+    "id": "cmobdll33071d12wij38rp2wc",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "name": "第2梯次",
+    "openAt": "2026-04-13T00:00:00.000Z",
+    "closeAt": "2026-04-15T00:00:00.000Z"
+  },
+  {
+    "id": "cmobdll33071e12wiyxw6lcdu",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "name": "第3梯次",
+    "openAt": "2026-04-20T00:00:00.000Z",
+    "closeAt": "2026-04-22T00:59:00.000Z"
+  },
+  {
+    "id": "cmoc9lwdp0001mg6mhpaoq0l1",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "name": "第4梯次",
+    "openAt": "2026-04-22T02:01:00.000Z",
+    "closeAt": "2026-04-30T02:01:00.000Z"
+  },
+  {
+    "id": "cmol7bvwi00h19nykpt7v587e",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "name": "第5梯次",
+    "openAt": "2026-04-30T08:40:00.000Z",
+    "closeAt": "2026-05-06T08:07:00.000Z"
+  },
+  {
+    "id": "cmol7x20d00h59nykv0sh5wcf",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "name": "第6梯次",
+    "openAt": "2026-04-30T08:24:00.000Z",
+    "closeAt": "2026-05-03T08:24:00.000Z"
+  },
+  {
+    "id": "cmotsnmmu0kfncqagxsd0xtxe",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "name": "第7梯次",
+    "openAt": "2026-05-06T08:26:00.000Z",
+    "closeAt": "2026-05-06T14:26:00.000Z"
+  }
+]

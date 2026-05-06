@@ -325,7 +325,7 @@ export default function ExamListPage() {
                         </button>
                       </>
                     )}
-                    {(['DRAFT', 'PUBLISHED'] as string[]).includes(exam.status) && (
+                    {(['DRAFT', 'PUBLISHED'] as string[]).includes(exam.status) && (exam.sessionCount ?? 0) === 0 && (
                       <button
                         className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700"
                         onClick={() => setDeleteId(exam.id)}
@@ -526,8 +526,9 @@ export default function ExamListPage() {
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
         title="删除考试"
-        message="删除后数据将无法恢复。确认删除此考试？"
+        message="删除考试将同时删除所有考试记录、答题数据和成绩，且无法恢复。题库和人员数据不会被删除，但需要重新建立考试并重新导入题库、指派人员。确认删除此考试？"
         confirmText="确认删除"
+        variant="danger"
         loading={deleting}
       />
 

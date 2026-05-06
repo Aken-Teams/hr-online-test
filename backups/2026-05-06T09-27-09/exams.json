@@ -1,0 +1,29 @@
+[
+  {
+    "id": "cmobdh7we000112wie3ojdhw1",
+    "title": "強茂徐州考試測驗 - Demo",
+    "description": null,
+    "timeLimitMinutes": 60,
+    "passScore": 60,
+    "totalScore": 90,
+    "isPracticeMode": false,
+    "shuffleQuestions": false,
+    "shuffleOptions": true,
+    "maxAttempts": 1,
+    "showResultImmediately": true,
+    "showCorrectAnswers": false,
+    "openAt": "2026-04-30T06:23:00.000Z",
+    "closeAt": "2026-05-07T06:23:00.000Z",
+    "tabSwitchLimit": 3,
+    "enableFaceAuth": false,
+    "status": "ARCHIVED",
+    "createdAt": "2026-04-23T11:02:32.511Z",
+    "updatedAt": "2026-05-06T09:25:09.742Z",
+    "resultQueryCloseAt": "2026-05-16T04:00:00.000Z",
+    "resultQueryOpenAt": "2026-05-08T04:00:00.000Z",
+    "basicQuestionRatio": 0.1,
+    "compositePassScore": 90,
+    "practicalWeight": 0.6,
+    "theoryWeight": 0.4
+  }
+]

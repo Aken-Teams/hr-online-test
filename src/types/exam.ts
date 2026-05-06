@@ -106,6 +106,7 @@ export interface ExamData {
   status: ExamStatus;
   questionRules: QuestionRuleData[];
   assignments?: ExamAssignmentData[];
+  _count?: { sessions?: number; examQuestions?: number };
   /** Whether the employee can still start/resume this exam */
   canStart?: boolean;
   /** How many attempts the employee has already made */

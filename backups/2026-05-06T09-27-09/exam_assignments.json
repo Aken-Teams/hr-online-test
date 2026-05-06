@@ -1,0 +1,1091 @@
+[
+  {
+    "id": "cmomdcsjr006dq269sgxbo9wm",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkch506rn12wir928uqzs",
+    "department": "工务部",
+    "role": "SAW",
+    "level": "Ⅱ级",
+    "process": "SAW"
+  },
+  {
+    "id": "cmomdcsjr006eq269gzs3baje",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkdw506s312wiouhjck6b",
+    "department": "工务部",
+    "role": "DB",
+    "level": "Ⅱ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr006fq269wovfmnro",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkf2b06sf12wig9e0pops",
+    "department": "工务部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr006gq2693f8q3ftn",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkgn906sx12wisf65phc2",
+    "department": "工务部",
+    "role": "WB",
+    "level": "Ⅰ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr006hq269fq0obvya",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkgwa06t012wiwkvf4xzh",
+    "department": "工务部",
+    "role": "WB",
+    "level": "Ⅰ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr006iq269drr0bz5e",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkh5906t312wirh83d737",
+    "department": "工务部",
+    "role": "WB",
+    "level": "Ⅰ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr006jq26908nic3cb",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkhoo06t912wi5l5u95nu",
+    "department": "工务部",
+    "role": "DB",
+    "level": "Ⅱ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr006kq269ozgms5me",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkiet06tf12wii556qwol",
+    "department": "工务部",
+    "role": "TMTT",
+    "level": "Ⅰ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr006lq269t0qm56p0",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkiot06ti12wir3991lh4",
+    "department": "工务部",
+    "role": "WB",
+    "level": "Ⅰ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr006mq269bldj8dju",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkixn06tl12wig2xlvhxz",
+    "department": "工务部",
+    "role": "TMTT",
+    "level": "Ⅰ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr006nq269u5czp4yx",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkjy506tx12wi8cdcf8jd",
+    "department": "生产部",
+    "role": "SAW",
+    "level": "Ⅱ级",
+    "process": "SAW"
+  },
+  {
+    "id": "cmomdcsjr006oq2699jlzvm52",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkk7o06u012wiqqjugm31",
+    "department": "生产部",
+    "role": "SAW",
+    "level": "Ⅱ级",
+    "process": "SAW"
+  },
+  {
+    "id": "cmomdcsjr006pq269e4wjnjxa",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkkh606u312wi8w7k13pe",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅱ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjr006qq269bn0sd28d",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdknbd06v012wijshqsa9z",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr006rq269xhcvr0mz",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdknt806v612wi5wl2hj16",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr006sq269rqzfbdrh",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkol906vf12wircxcpe2t",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr006tq269o66hezs5",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkpe006vo12wizrq4jegf",
+    "department": "生产部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr006uq2690ismoemj",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkr7806w912wi1tukqotu",
+    "department": "生产部",
+    "role": "TF",
+    "level": "Ⅱ级",
+    "process": "TF"
+  },
+  {
+    "id": "cmomdcsjr006vq269g8gpk3us",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkrgd06wc12wisdkdq7vq",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅱ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjr006wq269scodnzsc",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkrq906wf12wipu3k90ac",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅱ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjr006xq269yn641o79",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdks0206wi12wirwf2ygfe",
+    "department": "生产部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr006yq269ntol6orl",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdksj206wo12wiwpksh2vg",
+    "department": "生产部",
+    "role": "MD",
+    "level": "Ⅱ级",
+    "process": "MD"
+  },
+  {
+    "id": "cmomdcsjr006zq2696nrzaa4z",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkt9n06wx12wish208jvr",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅱ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjr0070q269bj6z9ywf",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkti806x012wioysxlxb8",
+    "department": "生产部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr0071q26922l2fyds",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkts006x312wi5ulpftcg",
+    "department": "生产部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr0072q2692u8k3xih",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdku2s06x612wias8twjuu",
+    "department": "生产部",
+    "role": "DB",
+    "level": "Ⅱ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr0073q269amvmjfoz",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkunf06xc12wixpuoedsu",
+    "department": "生产部",
+    "role": "MD",
+    "level": "Ⅱ级",
+    "process": "MD"
+  },
+  {
+    "id": "cmomdcsjr0074q269kytoqw6c",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkwb406xw12wiw76e86z9",
+    "department": "生产部",
+    "role": "PACK",
+    "level": "Ⅱ级",
+    "process": "PACK"
+  },
+  {
+    "id": "cmomdcsjr0075q269htvamh94",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkwu306y212wix70pd66j",
+    "department": "生产部",
+    "role": "PACK",
+    "level": "Ⅰ级",
+    "process": "PACK"
+  },
+  {
+    "id": "cmomdcsjr0076q2692g45ndo0",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkx4a06y512wikgej623o",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅰ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr0077q269kixenbvj",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkxdt06y812wic7cclg65",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr0078q269mlccpri2",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkxvx06ye12wi4jnbu41i",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr0079q2694voguexd",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdky3o06yh12wiqjsfk3wj",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr007aq269p7x4enak",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmolb3paf00t39nykpeqh1594",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅰ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjr007bq269ownte8ov",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkyvi06yq12wis5unlmzr",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅰ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjr007cq2692fwu1p7v",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkzmf06yz12wid2ynu477",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅰ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr007dq269n1q0shnh",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkzvh06z212wiqjuau37m",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr007eq269tza6ivb0",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl04206z512wiehrkzph5",
+    "department": "生产部",
+    "role": "DB",
+    "level": "Ⅰ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr007fq269vm0a3gll",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl0lh06zb12wi6wltgmi3",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅰ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr007gq269zez8zv67",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl1m106zn12wi4ztnupwt",
+    "department": "制程品管部",
+    "role": "MD&TF&PT&TMTT&FQC",
+    "level": "Ⅱ级",
+    "process": "MD&TF&PT&TMTT&FQC"
+  },
+  {
+    "id": "cmomdcsjr007hq269w0vluf18",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl1ur06zq12wiuqen9a7s",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅱ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjr007iq269zjlcxqtv",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl2l706zz12wivuw01aig",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅱ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjr007jq269ombt5d3y",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl2ug070212wi8b10uual",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅱ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjr007kq26977fsjmaq",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl334070512wiafbsblzg",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅰ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjr007lq2693jyus6bo",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl3c2070812wifxccp2ua",
+    "department": "制程品管部",
+    "role": "MD&TF&PT&TMTT&FQC",
+    "level": "Ⅰ级",
+    "process": "MD&TF&PT&TMTT&FQC"
+  },
+  {
+    "id": "cmomdcsjr007mq269pj2swscy",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl4kd070n12wi9zd6h32t",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅱ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjr007nq269pyf4rb7v",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkd6s06rv12wi81r4mcul",
+    "department": "工务部",
+    "role": "SAW",
+    "level": "Ⅰ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr007oq269r34dp6hj",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkc5a06rk12wiumx70rh6",
+    "department": "工务部",
+    "role": "DB",
+    "level": "Ⅱ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr007pq269ee5t44g2",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkhex06t612wimklmitlp",
+    "department": "工务部",
+    "role": "MD&TF",
+    "level": "Ⅰ级",
+    "process": "MD&TF"
+  },
+  {
+    "id": "cmomdcsjr007qq2693g9afe7u",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkegv06s912wiqfijh29n",
+    "department": "工务部",
+    "role": "SAW",
+    "level": "Ⅱ级",
+    "process": "SAW"
+  },
+  {
+    "id": "cmomdcsjr007rq2691veuamtw",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkjfp06tr12wips6q3di6",
+    "department": "工务部",
+    "role": "TMTT",
+    "level": "Ⅰ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr007sq269m0vpj4h0",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkfcu06si12wig8wqj1x9",
+    "department": "工务部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr007tq269mjh4eaj1",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkfmf06sl12wiz5m0fh2l",
+    "department": "工务部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr007uq269wbg1qb59",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkqfo06w012wipktbcno3",
+    "department": "生产部",
+    "role": "DB",
+    "level": "Ⅱ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr007vq269wm7e3n9o",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkkqt06u612wifp41s5zv",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅱ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjr007wq269qzkcp7i9",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkl9106uc12wi9rtjll5j",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅱ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjr007xq2696kannm2n",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdklqm06ui12wij4wqj41t",
+    "department": "生产部",
+    "role": "MD",
+    "level": "Ⅱ级",
+    "process": "MD"
+  },
+  {
+    "id": "cmomdcsjr007yq269e5y9jlso",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkm0i06ul12wi6khry7ps",
+    "department": "生产部",
+    "role": "MD",
+    "level": "Ⅱ级",
+    "process": "MD"
+  },
+  {
+    "id": "cmomdcsjr007zq269dbjgfi07",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkuwg06xf12wirlkdba4f",
+    "department": "生产部",
+    "role": "PACK",
+    "level": "Ⅱ级",
+    "process": "PACK"
+  },
+  {
+    "id": "cmomdcsjr0080q269tcfo3nry",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkv6606xi12wixkbw20iu",
+    "department": "生产部",
+    "role": "PACK",
+    "level": "Ⅱ级",
+    "process": "PACK"
+  },
+  {
+    "id": "cmomdcsjr0081q269iplig9vl",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkveu06xl12wi7iccnt0c",
+    "department": "生产部",
+    "role": "PACK",
+    "level": "Ⅱ级",
+    "process": "PACK"
+  },
+  {
+    "id": "cmomdcsjr0082q2697690ce8b",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkari06r812wis8o4sh40",
+    "department": "工程/研发部",
+    "role": "FA",
+    "level": "Ⅱ级",
+    "process": "FA"
+  },
+  {
+    "id": "cmomdcsjr0083q269pxjs115q",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkvwn06xr12wis3jdlqd2",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "PACK"
+  },
+  {
+    "id": "cmomdcsjr0084q269xvkda68e",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkms306uu12wifojfza1k",
+    "department": "生产部",
+    "role": "Plating",
+    "level": "Ⅱ级",
+    "process": "Plating"
+  },
+  {
+    "id": "cmomdcsjr0085q2694wov5aju",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkpn006vr12wilho6t6sv",
+    "department": "生产部",
+    "role": "SAW",
+    "level": "Ⅱ级",
+    "process": "SAW"
+  },
+  {
+    "id": "cmomdcsjr0086q269wfdhir07",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkyme06yn12wiqydue4ka",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅰ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr0087q269yd5ufqdk",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkn1k06ux12wiztjwrt98",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr0088q269u6slbke8",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdknk906v312wigecsv7kf",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr0089q269czavlziz",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdko2n06v912wig9n3vidc",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr008aq269g5leiwsz",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkzdj06yw12wif7yzm7fp",
+    "department": "生产部",
+    "role": "WB",
+    "level": "Ⅰ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr008bq269d97ag3li",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkq5y06vx12wiwlt31mwt",
+    "department": "生产部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr008cq269ovdkh3vn",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl3kz070b12wiv5dpawzs",
+    "department": "制程品管部",
+    "role": "MD&TF&PT&TMTT&FQC",
+    "level": "Ⅰ级",
+    "process": "MD&TF&PT&TMTT&FQC"
+  },
+  {
+    "id": "cmomdcsjr008dq269ktc6ssgq",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl13506zh12wivpo4vmxg",
+    "department": "制程品管部",
+    "role": "MD&TF&PT&TMTT&FQC",
+    "level": "Ⅱ级",
+    "process": "MD&TF&PT&TMTT&FQC"
+  },
+  {
+    "id": "cmomdcsjr008eq269j5nybji4",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl4t1070q12wikyzrc8gc",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅰ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjr008fq269c3x4ic2s",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl23i06zt12wiocd74oy6",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅱ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjr008gq269atz7evu3",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl61g071512wizbebgv3g",
+    "department": "资材部",
+    "role": "仓管",
+    "level": "Ⅰ级",
+    "process": "仓管"
+  },
+  {
+    "id": "cmomdcsjr008hq269owjgtbup",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl5aj070w12wips2l42te",
+    "department": "资材部",
+    "role": "仓管",
+    "level": "Ⅱ级",
+    "process": "仓管"
+  },
+  {
+    "id": "cmomdcsjr008iq269l9tu594j",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkch506rn12wir928uqzs",
+    "department": "工务部",
+    "role": "SAW",
+    "level": "Ⅱ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr008jq26938suf7h7",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkb6y06rb12wixehi45bc",
+    "department": "工程/研发部",
+    "role": "FA",
+    "level": "Ⅱ级",
+    "process": "FA"
+  },
+  {
+    "id": "cmomdcsjr008kq269ko181zx4",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkjol06tu12wiaiuj41fc",
+    "department": "工务部",
+    "role": "DB",
+    "level": "Ⅰ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr008lq269wyzq3bxh",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkdly06s012wiwzns3iwn",
+    "department": "工务部",
+    "role": "DB",
+    "level": "Ⅱ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjr008mq26990yk1v51",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkcwz06rs12wiorx8ioi7",
+    "department": "工务部",
+    "role": "MD&TF",
+    "level": "Ⅱ级",
+    "process": "MD&TF"
+  },
+  {
+    "id": "cmomdcsjr008nq26909wjx2sl",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdke6b06s612wimc14eo73",
+    "department": "工务部",
+    "role": "Plating",
+    "level": "Ⅱ级",
+    "process": "Plating"
+  },
+  {
+    "id": "cmomdcsjr008oq269fzoqptfq",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkd6s06rv12wi81r4mcul",
+    "department": "工务部",
+    "role": "SAW",
+    "level": "Ⅱ级",
+    "process": "SAW"
+  },
+  {
+    "id": "cmomdcsjr008pq269itgi69ji",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkerp06sc12wit2cfk5or",
+    "department": "工务部",
+    "role": "SAW",
+    "level": "Ⅱ级",
+    "process": "SAW"
+  },
+  {
+    "id": "cmomdcsjr008qq269z9yft8r3",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkj6y06to12wi3gzofym4",
+    "department": "工务部",
+    "role": "TMTT",
+    "level": "Ⅰ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr008rq26922nwz5ou",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkgeh06su12wiqddg20qa",
+    "department": "工务部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr008sq269klch47dk",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkhy406tc12wi1jydy122",
+    "department": "工务部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjr008tq269gdk4o22h",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkfwq06so12wi7becyntu",
+    "department": "工务部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr008uq269rscx3y2h",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkg5h06sr12wi4vg7s4jp",
+    "department": "工务部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjr008vq269pxcfn6fb",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkbi006re12wifvsv39zo",
+    "department": "客户质量部",
+    "role": "IQC",
+    "level": "Ⅱ级",
+    "process": "IQC"
+  },
+  {
+    "id": "cmomdcsjs008wq269hqfli15f",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkbtf06rh12wiyoy7dnfx",
+    "department": "客户质量部",
+    "role": "信赖性",
+    "level": "Ⅰ级",
+    "process": "信赖性"
+  },
+  {
+    "id": "cmomdcsjs008xq269nl7qwzk9",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl0uj06ze12wiv593jxrw",
+    "department": "生产部",
+    "role": "DB",
+    "level": "Ⅰ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjs008yq269k75beoqh",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkt1706wu12wiwdy5bz6w",
+    "department": "生产部",
+    "role": "DB",
+    "level": "Ⅱ级",
+    "process": "DB"
+  },
+  {
+    "id": "cmomdcsjs008zq269mti6dc3m",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkxmf06yb12wi0alulbyb",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅰ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjs0090q2695tfx2wj6",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkkzz06u912wi8ex3eori",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅱ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjs0091q269myr35m4g",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdklhj06uf12wikkwtaiwx",
+    "department": "生产部",
+    "role": "DW",
+    "level": "Ⅱ级",
+    "process": "DW"
+  },
+  {
+    "id": "cmomdcsjs0092q2698xpupalo",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkqxu06w612wijarbekll",
+    "department": "生产部",
+    "role": "MD",
+    "level": "Ⅱ级",
+    "process": "MD"
+  },
+  {
+    "id": "cmomdcsjs0093q269lshunfv3",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkss506wr12wirqiq8768",
+    "department": "生产部",
+    "role": "MD",
+    "level": "Ⅱ级",
+    "process": "MD"
+  },
+  {
+    "id": "cmomdcsjs0094q269t39pmjvi",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkwkx06xz12wif5c8oho7",
+    "department": "生产部",
+    "role": "PACK",
+    "level": "Ⅰ级",
+    "process": "PACK"
+  },
+  {
+    "id": "cmomdcsjs0095q269qnc4xagm",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkvnu06xo12wibm4gecun",
+    "department": "生产部",
+    "role": "PACK",
+    "level": "Ⅱ级",
+    "process": "PACK"
+  },
+  {
+    "id": "cmomdcsjs0096q269dpb2531n",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkm9g06uo12wi3v6jh6gx",
+    "department": "生产部",
+    "role": "Plating",
+    "level": "Ⅱ级",
+    "process": "Plating"
+  },
+  {
+    "id": "cmomdcsjs0097q2697umui6ot",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkmiv06ur12wi4co7ltdi",
+    "department": "生产部",
+    "role": "Plating",
+    "level": "Ⅱ级",
+    "process": "Plating"
+  },
+  {
+    "id": "cmomdcsjs0098q2692h21j9ll",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkz4c06yt12wi2hpn9wad",
+    "department": "生产部",
+    "role": "SAW",
+    "level": "Ⅰ级",
+    "process": "SAW"
+  },
+  {
+    "id": "cmomdcsjs0099q26997almkbc",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl0cx06z812wigpejut6y",
+    "department": "生产部",
+    "role": "TF",
+    "level": "Ⅰ级",
+    "process": "TF"
+  },
+  {
+    "id": "cmomdcsjs009aq2691phkimh2",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkobx06vc12wi5uld8zx4",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjs009bq2697zmctm66",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkouy06vi12wi3c5m26uy",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjs009cq26989g1ybd4",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkp4y06vl12wik1gd4gwr",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjs009dq269wwjjczjm",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkpwk06vu12wikt1kkrqa",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjs009eq269ccz0qsr8",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkvwn06xr12wis3jdlqd2",
+    "department": "生产部",
+    "role": "TMTT",
+    "level": "Ⅱ级",
+    "process": "TMTT"
+  },
+  {
+    "id": "cmomdcsjs009fq269b3qvxkgj",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkqp506w312wi59x8xcgu",
+    "department": "生产部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjs009gq269nuxm0793",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdks8s06wl12wifmacrev7",
+    "department": "生产部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjs009hq269tsglocip",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdkudc06x912wionfhqwmm",
+    "department": "生产部",
+    "role": "WB",
+    "level": "Ⅱ级",
+    "process": "WB"
+  },
+  {
+    "id": "cmomdcsjs009iq2694al1xl12",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl1bz06zk12wiolfb8c7y",
+    "department": "制程品管部",
+    "role": "MD&TF&PT&TMTT&FQC",
+    "level": "Ⅱ级",
+    "process": "MD&TF&PT&TMTT&FQC"
+  },
+  {
+    "id": "cmomdcsjs009jq269fkhhnyif",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl51z070t12wisv6h3pvz",
+    "department": "制程品管部",
+    "role": "MD&TF&PT&TMTT&FQC",
+    "level": "Ⅱ级",
+    "process": "MD&TF&PT&TMTT&FQC"
+  },
+  {
+    "id": "cmomdcsjs009kq2694ie774t1",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl2cd06zw12wiyr04ouob",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅱ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjs009lq269nlek2d57",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl3tp070e12wio648n6k2",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅱ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjs009mq2698nxme432",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl42y070h12wie1znijhh",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅱ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjs009nq269z9iddcrs",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl4bt070k12wiqu5ypilv",
+    "department": "制程品管部",
+    "role": "SAW&DB&WB&QCgate",
+    "level": "Ⅱ级",
+    "process": "SAW&DB&WB&QCgate"
+  },
+  {
+    "id": "cmomdcsjs009oq269km2njcwl",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl5ju070z12wi7kgx5j0t",
+    "department": "资材部",
+    "role": "仓管",
+    "level": "Ⅱ级",
+    "process": "仓管"
+  },
+  {
+    "id": "cmomdcsjs009pq269bqr6zjc2",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "userId": "cmobdl5ss071212wijvl3t01k",
+    "department": "资材部",
+    "role": "仓管",
+    "level": "Ⅱ级",
+    "process": "仓管"
+  }
+]

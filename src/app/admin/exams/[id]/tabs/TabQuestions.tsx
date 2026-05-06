@@ -33,9 +33,10 @@ interface UploadStatus {
 
 interface Props {
   examId: string;
+  hasResults?: boolean;
 }
 
-export default function TabQuestions({ examId }: Props) {
+export default function TabQuestions({ examId, hasResults = false }: Props) {
   const { toast } = useToast();
   const [importedFiles, setImportedFiles] = useState<ImportedFile[]>([]);
   const [uploadStatuses, setUploadStatuses] = useState<Map<string, UploadStatus>>(new Map());
@@ -306,7 +307,7 @@ export default function TabQuestions({ examId }: Props) {
                 <span className="ml-1 text-sm font-normal text-stone-500">题</span>
               </p>
               <div className="flex items-center gap-2">
-                {totalCount > 0 && (
+                {totalCount > 0 && !hasResults && (
                   <Button variant="outline" size="sm" onClick={handleDeleteAll}>
                     <Trash2 className="h-3.5 w-3.5" />
                     清空题库
@@ -318,14 +319,16 @@ export default function TabQuestions({ examId }: Props) {
                     导出题库
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  onClick={() => fileRef.current?.click()}
-                  loading={uploading}
-                >
-                  <Upload className="h-3.5 w-3.5" />
-                  导入文件
-                </Button>
+                {!hasResults && (
+                  <Button
+                    size="sm"
+                    onClick={() => fileRef.current?.click()}
+                    loading={uploading}
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    导入文件
+                  </Button>
+                )}
               </div>
             </div>
             {totalCount > 0 && (
@@ -459,18 +462,20 @@ export default function TabQuestions({ examId }: Props) {
                               )}
                             </div>
                             <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
-                            <button
-                              onClick={() => handleDeleteFile(f.sourceFile)}
-                              disabled={deletingFile === f.sourceFile}
-                              className="p-1 text-stone-400 hover:text-red-500 transition-colors shrink-0 disabled:opacity-50"
-                              title="删除该文件的题目"
-                            >
-                              {deletingFile === f.sourceFile ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </button>
+                            {!hasResults && (
+                              <button
+                                onClick={() => handleDeleteFile(f.sourceFile)}
+                                disabled={deletingFile === f.sourceFile}
+                                className="p-1 text-stone-400 hover:text-red-500 transition-colors shrink-0 disabled:opacity-50"
+                                title="删除该文件的题目"
+                              >
+                                {deletingFile === f.sourceFile ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </button>
+                            )}
                           </div>
                         );
                       })}
@@ -479,6 +484,12 @@ export default function TabQuestions({ examId }: Props) {
                 </div>
               );
             })()}
+
+            {hasResults && totalCount > 0 && (
+              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                该考试已有考试记录，题库已锁定不可修改。如需修改题库，请先在「成绩管理」中重置成绩。
+              </p>
+            )}
 
             {importedFiles.length === 0 && totalCount === 0 && (
               <p className="text-sm text-stone-400">尚未导入任何题目</p>

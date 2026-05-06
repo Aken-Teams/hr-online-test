@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cmobdlkui071912wiatom9ia3",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "questionType": "SINGLE_CHOICE",
+    "count": 20,
+    "pointsPerQuestion": 2,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmobdlkui071a12wiea8fmgz7",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "questionType": "MULTI_CHOICE",
+    "count": 10,
+    "pointsPerQuestion": 3,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmobdlkui071b12wixb15kbk9",
+    "examId": "cmobdh7we000112wie3ojdhw1",
+    "questionType": "TRUE_FALSE",
+    "count": 20,
+    "pointsPerQuestion": 1,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  }
+]

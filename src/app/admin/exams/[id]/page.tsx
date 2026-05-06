@@ -86,6 +86,7 @@ export default function EditExamPage() {
   const [publishing, setPublishing] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
   const [participantCount, setParticipantCount] = useState(0);
+  const [sessionCount, setSessionCount] = useState(0);
 
   // Question rules
   const [rules, setRules] = useState<QuestionRule[]>([]);
@@ -154,6 +155,7 @@ export default function EditExamPage() {
       }));
       setBatches(loadedBatches);
       setExistingBatchCount(loadedBatches.length);
+      setSessionCount(exam._count?.sessions ?? 0);
     } catch {
       toast('加载考试数据失败', 'error');
     } finally {
@@ -352,7 +354,7 @@ export default function EditExamPage() {
         />
       )}
 
-      {activeTab === 'questions' && <TabQuestions examId={examId} />}
+      {activeTab === 'questions' && <TabQuestions examId={examId} hasResults={sessionCount > 0} />}
       {activeTab === 'participants' && <TabParticipants examId={examId} />}
       {activeTab === 'scores' && <TabScores examId={examId} />}
 

@@ -3,8 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Upload, Download, Loader2 } from 'lucide-react';
+import { Upload, Download, Loader2, RotateCcw } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 
 interface ScoreRow {
   sessionId: string;
@@ -27,6 +28,8 @@ export default function TabScores({ examId }: Props) {
   const [scores, setScores] = useState<ScoreRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -70,6 +73,22 @@ export default function TabScores({ examId }: Props) {
     window.open(`/api/admin/exams/${examId}/offline-scores?action=template`, '_blank');
   }
 
+  async function handleResetScores() {
+    setResetting(true);
+    try {
+      const res = await fetch(`/api/admin/exams/${examId}/reset-scores`, { method: 'POST' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '重置失败');
+      toast(`已清除 ${json.data.deletedSessions} 条考试记录`, 'success');
+      setShowResetDialog(false);
+      setScores([]);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '重置失败', 'error');
+    } finally {
+      setResetting(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card title="成绩管理">
@@ -83,6 +102,12 @@ export default function TabScores({ examId }: Props) {
             <Download className="h-4 w-4" />
             下载模板
           </Button>
+          {scores.length > 0 && (
+            <Button variant="outline" onClick={() => setShowResetDialog(true)}>
+              <RotateCcw className="h-4 w-4" />
+              重置成绩
+            </Button>
+          )}
           {uploading && <span className="flex items-center gap-1 text-sm text-stone-500"><Loader2 className="h-4 w-4 animate-spin" />导入中...</span>}
         </div>
 
@@ -121,6 +146,17 @@ export default function TabScores({ examId }: Props) {
           </div>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={showResetDialog}
+        onClose={() => setShowResetDialog(false)}
+        onConfirm={handleResetScores}
+        title="重置成绩"
+        message="此操作将删除所有考试记录、答题数据和成绩，但保留题库和应考人员配置。删除后无法恢复，确认重置？"
+        confirmText="确认重置"
+        variant="danger"
+        loading={resetting}
+      />
     </div>
   );
 }
