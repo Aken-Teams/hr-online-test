@@ -35,27 +35,37 @@ export async function GET(
     }
 
     // Group by source file
-    const fileMap = new Map<string, { count: number; category: string; byType: Record<string, number>; importedAt: Date }>();
+    const fileMap = new Map<string, { count: number; byCategory: Record<string, number>; byType: Record<string, number>; importedAt: Date }>();
     for (const q of questions) {
       const sf = q.sourceFile || '(未知来源)';
       let entry = fileMap.get(sf);
       if (!entry) {
-        entry = { count: 0, category: q.category || 'PROFESSIONAL', byType: {}, importedAt: q.createdAt };
+        entry = { count: 0, byCategory: {}, byType: {}, importedAt: q.createdAt };
         fileMap.set(sf, entry);
       }
       entry.count++;
+      const cat = q.category || 'PROFESSIONAL';
+      entry.byCategory[cat] = (entry.byCategory[cat] || 0) + 1;
       const label = QUESTION_TYPE_LABELS[q.type as QuestionType] || q.type;
       entry.byType[label] = (entry.byType[label] || 0) + 1;
       if (q.createdAt > entry.importedAt) entry.importedAt = q.createdAt;
     }
 
-    const byFile = Array.from(fileMap.entries()).map(([sourceFile, data]) => ({
-      sourceFile,
-      count: data.count,
-      category: data.category,
-      byType: data.byType,
-      importedAt: data.importedAt.toISOString(),
-    }));
+    const byFile = Array.from(fileMap.entries()).map(([sourceFile, data]) => {
+      // Determine primary category for backwards compat (most frequent)
+      const cats = Object.entries(data.byCategory);
+      const category = cats.length > 0
+        ? cats.sort((a, b) => b[1] - a[1])[0][0]
+        : 'PROFESSIONAL';
+      return {
+        sourceFile,
+        count: data.count,
+        category,
+        byCategory: data.byCategory,
+        byType: data.byType,
+        importedAt: data.importedAt.toISOString(),
+      };
+    });
 
     return NextResponse.json({
       success: true,

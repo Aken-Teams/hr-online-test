@@ -16,6 +16,7 @@ interface ImportedFile {
   sourceFile: string;
   count: number;
   category: string;
+  byCategory?: Record<string, number>;
   byType: Record<string, number>;
   importedAt: string;
 }
@@ -343,12 +344,22 @@ export default function TabQuestions({ examId }: Props) {
             {/* Per-file list */}
             {importedFiles.length > 0 && (() => {
               const filtered = importedFiles.filter((f) => {
-                if (categoryFilter !== 'ALL' && f.category !== categoryFilter) return false;
+                if (categoryFilter !== 'ALL') {
+                  // Use byCategory if available, otherwise fall back to category
+                  const cats = f.byCategory ? Object.keys(f.byCategory) : [f.category];
+                  if (!cats.includes(categoryFilter)) return false;
+                }
                 if (searchQuery && !f.sourceFile.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                 return true;
               });
-              const basicCount = importedFiles.filter((f) => f.category === 'BASIC').length;
-              const proCount = importedFiles.filter((f) => f.category === 'PROFESSIONAL').length;
+              const basicCount = importedFiles.filter((f) => {
+                const cats = f.byCategory ? Object.keys(f.byCategory) : [f.category];
+                return cats.includes('BASIC');
+              }).length;
+              const proCount = importedFiles.filter((f) => {
+                const cats = f.byCategory ? Object.keys(f.byCategory) : [f.category];
+                return cats.includes('PROFESSIONAL');
+              }).length;
 
               return (
                 <div className="space-y-3 border-t border-stone-100 pt-4">
@@ -406,17 +417,32 @@ export default function TabQuestions({ examId }: Props) {
                           >
                             <FileSpreadsheet className="h-5 w-5 shrink-0 text-stone-400 mt-0.5" />
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-sm font-medium text-stone-800 truncate">{f.sourceFile}</p>
-                                <span
-                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                    f.category === 'BASIC'
-                                      ? 'bg-blue-100 text-blue-700'
-                                      : 'bg-amber-100 text-amber-700'
-                                  }`}
-                                >
-                                  {QUESTION_CATEGORY_LABELS[f.category] || f.category}
-                                </span>
+                                {f.byCategory && Object.keys(f.byCategory).length > 1 ? (
+                                  Object.entries(f.byCategory).map(([cat, count]) => (
+                                    <span
+                                      key={cat}
+                                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                        cat === 'BASIC'
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : 'bg-amber-100 text-amber-700'
+                                      }`}
+                                    >
+                                      {QUESTION_CATEGORY_LABELS[cat] || cat} {count}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                      f.category === 'BASIC'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-amber-100 text-amber-700'
+                                    }`}
+                                  >
+                                    {QUESTION_CATEGORY_LABELS[f.category] || f.category}
+                                  </span>
+                                )}
                               </div>
                               <p className="text-xs text-stone-500 mt-0.5">
                                 {f.count} 题
