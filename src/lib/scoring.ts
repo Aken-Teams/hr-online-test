@@ -44,6 +44,22 @@ export interface AutoGradeResult {
 }
 
 // ============================================================
+// Helpers
+// ============================================================
+
+/**
+ * Parse a multi-choice answer string into individual option letters.
+ * Handles both comma-separated ("A,B,D") and concatenated ("ABD") formats.
+ */
+function parseMultiChoiceAnswer(raw: string): string[] {
+  if (raw.includes(',')) {
+    return raw.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  // Concatenated format: split each character (e.g. "ABD" → ["A","B","D"])
+  return raw.split('').filter((c) => /[A-Z]/.test(c));
+}
+
+// ============================================================
 // Auto-grading for objective questions
 // ============================================================
 
@@ -84,13 +100,10 @@ export function autoGradeAnswer(
   }
 
   if (question.type === 'MULTI_CHOICE') {
-    // Both answers are stored as comma-separated labels, e.g. "A,B,D"
-    const correctSet = new Set(
-      correct.split(',').map((s) => s.trim()).filter(Boolean)
-    );
-    const givenSet = new Set(
-      given.split(',').map((s) => s.trim()).filter(Boolean)
-    );
+    // Normalize both answers to individual letter sets.
+    // Supports both "A,B,D" (comma-separated) and "ABD" (concatenated) formats.
+    const correctSet = new Set(parseMultiChoiceAnswer(correct));
+    const givenSet = new Set(parseMultiChoiceAnswer(given));
 
     const isCorrect =
       correctSet.size === givenSet.size &&
