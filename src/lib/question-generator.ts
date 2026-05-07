@@ -173,6 +173,24 @@ async function pickQuestionsForRule(
     }
   }
 
+  // Fallback: broader search without examSourceId constraint
+  if (result.length < count) {
+    const stillNeeded = count - result.length;
+    const broadPool = await fetchPool({
+      type: questionType,
+      department: employeeDept,
+      process: process || undefined,
+      level: level || undefined,
+      excludeIds: [...excludeArray, ...result],
+    });
+    const unique = shuffle(broadPool).filter((id) => !usedIds.has(id));
+    const fallback = unique.slice(0, stillNeeded);
+    for (const id of fallback) {
+      result.push(id);
+      usedIds.add(id);
+    }
+  }
+
   if (result.length < count) {
     warnings.push(
       `${questionType}: 需要 ${count} 题，但仅找到 ${result.length} 题可用`
