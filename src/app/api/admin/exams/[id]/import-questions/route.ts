@@ -149,10 +149,10 @@ export async function POST(
         fileCategory = isBasic ? 'BASIC' : 'PROFESSIONAL';
       }
 
-      // Dedup within file (same type + content)
+      // Dedup within file (same type + content + level)
       const seen = new Set<string>();
       const uniqueRows = rows.filter((row) => {
-        const fp = `${row.type}||${row.content.trim()}`;
+        const fp = `${row.type}||${row.level || ''}||${row.content.trim()}`;
         if (seen.has(fp)) return false;
         seen.add(fp);
         return true;

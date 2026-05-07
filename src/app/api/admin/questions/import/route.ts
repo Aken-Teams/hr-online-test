@@ -201,11 +201,13 @@ export async function POST(request: Request) {
     }
 
     // Step 5: Build duplicate detection set
+    // Include level and process so that the same content at different levels
+    // or different processes is NOT treated as a duplicate.
     const existingQuestions = await prisma.question.findMany({
-      select: { content: true, type: true, department: true },
+      select: { content: true, type: true, department: true, level: true, process: true },
     });
     const existingSet = new Set(
-      existingQuestions.map((q) => `${q.type}||${q.department}||${q.content.trim()}`)
+      existingQuestions.map((q) => `${q.type}||${q.department}||${q.level || ''}||${q.process || ''}||${q.content.trim()}`)
     );
 
     // Step 6: Bulk create questions
@@ -214,7 +216,7 @@ export async function POST(request: Request) {
     // Filter duplicates and prepare batch data
     const validRows: { id: string; row: typeof rows[0] }[] = [];
     for (const row of rows) {
-      const fingerprint = `${row.type}||${row.department}||${row.content.trim()}`;
+      const fingerprint = `${row.type}||${row.department}||${row.level || ''}||${row.process || ''}||${row.content.trim()}`;
       if (existingSet.has(fingerprint)) {
         duplicates++;
         continue;
