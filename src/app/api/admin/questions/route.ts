@@ -40,6 +40,8 @@ export async function GET(request: Request) {
     }
     if (isActive !== null && isActive !== '') {
       where.isActive = isActive === 'true';
+    } else {
+      where.isActive = true; // Default: only show active questions
     }
     if (search) {
       where.content = { contains: search };
