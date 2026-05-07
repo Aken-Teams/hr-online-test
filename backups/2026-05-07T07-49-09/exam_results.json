@@ -1,0 +1,174 @@
+[
+  {
+    "id": "cmov0m3gs0e714bhlrk13jau6",
+    "sessionId": "cmov0bxw80e384bhlevqjkze8",
+    "totalScore": 58,
+    "autoScore": 58,
+    "manualScore": 0,
+    "maxPossibleScore": 90,
+    "correctCount": 35,
+    "totalQuestions": 50,
+    "timeTakenSeconds": 471,
+    "isPassed": false,
+    "gradeLabel": "D",
+    "categoryScores": {
+      "TRUE_FALSE": {
+        "type": "TRUE_FALSE",
+        "maxPoints": 20,
+        "totalCount": 20,
+        "correctCount": 16,
+        "earnedPoints": 16
+      },
+      "MULTI_CHOICE": {
+        "type": "MULTI_CHOICE",
+        "maxPoints": 30,
+        "totalCount": 10,
+        "correctCount": 4,
+        "earnedPoints": 12
+      },
+      "SINGLE_CHOICE": {
+        "type": "SINGLE_CHOICE",
+        "maxPoints": 40,
+        "totalCount": 20,
+        "correctCount": 15,
+        "earnedPoints": 30
+      }
+    },
+    "isFullyGraded": true,
+    "finalizedAt": "2026-05-07T04:57:45.544Z",
+    "createdAt": "2026-05-07T04:57:48.556Z",
+    "updatedAt": "2026-05-07T04:57:48.556Z",
+    "combinedScore": null,
+    "essayScore": null,
+    "practicalScore": null
+  },
+  {
+    "id": "cmov19yn90ecf4bhlnoho9yi8",
+    "sessionId": "cmov0yj4r0e8o4bhlq7rk1i5i",
+    "totalScore": 57,
+    "autoScore": 57,
+    "manualScore": 0,
+    "maxPossibleScore": 90,
+    "correctCount": 37,
+    "totalQuestions": 50,
+    "timeTakenSeconds": 531,
+    "isPassed": false,
+    "gradeLabel": "D",
+    "categoryScores": {
+      "TRUE_FALSE": {
+        "type": "TRUE_FALSE",
+        "maxPoints": 20,
+        "totalCount": 20,
+        "correctCount": 19,
+        "earnedPoints": 19
+      },
+      "MULTI_CHOICE": {
+        "type": "MULTI_CHOICE",
+        "maxPoints": 30,
+        "totalCount": 10,
+        "correctCount": 2,
+        "earnedPoints": 6
+      },
+      "SINGLE_CHOICE": {
+        "type": "SINGLE_CHOICE",
+        "maxPoints": 40,
+        "totalCount": 20,
+        "correctCount": 16,
+        "earnedPoints": 32
+      }
+    },
+    "isFullyGraded": true,
+    "finalizedAt": "2026-05-07T05:16:19.030Z",
+    "createdAt": "2026-05-07T05:16:22.053Z",
+    "updatedAt": "2026-05-07T05:16:22.053Z",
+    "combinedScore": null,
+    "essayScore": null,
+    "practicalScore": null
+  },
+  {
+    "id": "cmov1ifhy0ejw4bhlcrf00c71",
+    "sessionId": "cmov1he3y0egr4bhlr7yfwg89",
+    "totalScore": 0,
+    "autoScore": 0,
+    "manualScore": 0,
+    "maxPossibleScore": 90,
+    "correctCount": 0,
+    "totalQuestions": 50,
+    "timeTakenSeconds": 41,
+    "isPassed": false,
+    "gradeLabel": "F",
+    "categoryScores": {
+      "TRUE_FALSE": {
+        "type": "TRUE_FALSE",
+        "maxPoints": 20,
+        "totalCount": 20,
+        "correctCount": 0,
+        "earnedPoints": 0
+      },
+      "MULTI_CHOICE": {
+        "type": "MULTI_CHOICE",
+        "maxPoints": 30,
+        "totalCount": 10,
+        "correctCount": 0,
+        "earnedPoints": 0
+      },
+      "SINGLE_CHOICE": {
+        "type": "SINGLE_CHOICE",
+        "maxPoints": 40,
+        "totalCount": 20,
+        "correctCount": 0,
+        "earnedPoints": 0
+      }
+    },
+    "isFullyGraded": true,
+    "finalizedAt": "2026-05-07T05:22:49.458Z",
+    "createdAt": "2026-05-07T05:22:57.143Z",
+    "updatedAt": "2026-05-07T05:22:57.143Z",
+    "combinedScore": null,
+    "essayScore": null,
+    "practicalScore": null
+  },
+  {
+    "id": "cmov1t85e0env4bhle4cb1r7g",
+    "sessionId": "cmov1cv6w0edy4bhlqg98mqn5",
+    "totalScore": 84,
+    "autoScore": 84,
+    "manualScore": 0,
+    "maxPossibleScore": 90,
+    "correctCount": 47,
+    "totalQuestions": 50,
+    "timeTakenSeconds": 761,
+    "isPassed": true,
+    "gradeLabel": "A",
+    "categoryScores": {
+      "TRUE_FALSE": {
+        "type": "TRUE_FALSE",
+        "maxPoints": 20,
+        "totalCount": 20,
+        "correctCount": 20,
+        "earnedPoints": 20
+      },
+      "MULTI_CHOICE": {
+        "type": "MULTI_CHOICE",
+        "maxPoints": 30,
+        "totalCount": 10,
+        "correctCount": 10,
+        "earnedPoints": 30
+      },
+      "SINGLE_CHOICE": {
+        "type": "SINGLE_CHOICE",
+        "maxPoints": 40,
+        "totalCount": 20,
+        "correctCount": 17,
+        "earnedPoints": 34
+      }
+    },
+    "isFullyGraded": true,
+    "finalizedAt": "2026-05-07T05:31:17.830Z",
+    "createdAt": "2026-05-07T05:31:20.834Z",
+    "updatedAt": "2026-05-07T05:31:20.834Z",
+    "combinedScore": null,
+    "essayScore": null,
+    "practicalScore": null
+  }
+]

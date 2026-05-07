@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { TypeToConfirmDialog } from '@/components/shared/TypeToConfirmDialog';
 import {
   Table,
   TableHeader,
@@ -64,6 +65,7 @@ export default function ExamListPage() {
   const [changingStatus, setChangingStatus] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [archiveDelete, setArchiveDelete] = useState<{ id: string; title: string } | null>(null);
   const [reopenId, setReopenId] = useState<string | null>(null);
   const [reopenOpenAt, setReopenOpenAt] = useState('');
   const [reopenCloseAt, setReopenCloseAt] = useState('');
@@ -149,6 +151,23 @@ export default function ExamListPage() {
       setDeleting(false);
     }
   }, [deleteId, toast, fetchExams]);
+
+  const handleArchiveDelete = useCallback(async () => {
+    if (!archiveDelete) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/exams/${archiveDelete.id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '删除失败');
+      toast('考试已永久删除', 'success');
+      setArchiveDelete(null);
+      fetchExams();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '删除失败', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  }, [archiveDelete, toast, fetchExams]);
 
   function toDatetimeLocal(d: Date) {
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -334,6 +353,15 @@ export default function ExamListPage() {
                         删除
                       </button>
                     )}
+                    {exam.status === 'ARCHIVED' && (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => setArchiveDelete({ id: exam.id, title: exam.title })}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        删除
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -458,6 +486,15 @@ export default function ExamListPage() {
                               删除
                             </button>
                           )}
+                          {exam.status === 'ARCHIVED' && (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => setArchiveDelete({ id: exam.id, title: exam.title })}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              删除
+                            </button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -529,6 +566,17 @@ export default function ExamListPage() {
         message="删除考试将同时删除所有考试记录、答题数据和成绩，且无法恢复。题库和人员数据不会被删除，但需要重新建立考试并重新导入题库、指派人员。确认删除此考试？"
         confirmText="确认删除"
         variant="danger"
+        loading={deleting}
+      />
+
+      <TypeToConfirmDialog
+        open={archiveDelete !== null}
+        onClose={() => setArchiveDelete(null)}
+        onConfirm={handleArchiveDelete}
+        title="永久删除已归档考试"
+        message="此操作将永久删除该考试及其所有关联数据（题目、答题记录、成绩、指派信息等），且无法恢复。"
+        confirmValue={archiveDelete?.title ?? ''}
+        confirmText="永久删除"
         loading={deleting}
       />
 

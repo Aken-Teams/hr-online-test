@@ -1,0 +1,29 @@
+[
+  {
+    "id": "cmoursrvg000gmpjc1cte3yvo",
+    "title": "2026年半年度技能考核",
+    "description": "2026年半年度技能考核",
+    "timeLimitMinutes": 60,
+    "passScore": 60,
+    "totalScore": 90,
+    "isPracticeMode": false,
+    "shuffleQuestions": false,
+    "shuffleOptions": false,
+    "maxAttempts": 1,
+    "showResultImmediately": true,
+    "showCorrectAnswers": false,
+    "openAt": "2026-05-07T00:47:00.000Z",
+    "closeAt": "2026-05-08T04:50:00.000Z",
+    "tabSwitchLimit": 3,
+    "enableFaceAuth": false,
+    "status": "CLOSED",
+    "createdAt": "2026-05-07T00:51:03.581Z",
+    "updatedAt": "2026-05-07T06:39:26.526Z",
+    "resultQueryCloseAt": null,
+    "resultQueryOpenAt": null,
+    "basicQuestionRatio": 0.1,
+    "compositePassScore": 90,
+    "practicalWeight": 0.6,
+    "theoryWeight": 0.4
+  }
+]

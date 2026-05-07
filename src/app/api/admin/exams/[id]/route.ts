@@ -332,30 +332,56 @@ export async function DELETE(
       );
     }
 
-    // Only DRAFT and PUBLISHED exams can be deleted
-    if (!['DRAFT', 'PUBLISHED'].includes(existing.status)) {
+    // Only DRAFT, PUBLISHED, and ARCHIVED exams can be deleted
+    if (!['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(existing.status)) {
       return NextResponse.json(
-        { success: false, error: '仅草稿或待开放的考试可以删除' },
+        { success: false, error: '仅草稿、待开放或已归档的考试可以删除' },
         { status: 403 }
       );
     }
 
-    // Cascade delete: sessions (and their answers/results) first, then exam
-    if (existing._count.sessions > 0) {
-      const sessions = await prisma.examSession.findMany({
-        where: { examId: id },
-        select: { id: true },
-      });
-      const sessionIds = sessions.map((s) => s.id);
+    // Full cascade delete: answers, results, sessions, exam-questions,
+    // question-options, questions, assignments, batches, rules, audit logs, exam
+    const sessions = await prisma.examSession.findMany({
+      where: { examId: id },
+      select: { id: true },
+    });
+    const sessionIds = sessions.map((s) => s.id);
 
-      await prisma.$transaction([
-        prisma.auditLog.deleteMany({ where: { sessionId: { in: sessionIds } } }),
-        prisma.examSession.deleteMany({ where: { examId: id } }),
-        prisma.exam.delete({ where: { id } }),
-      ]);
-    } else {
-      await prisma.exam.delete({ where: { id } });
-    }
+    // Questions bound to this exam
+    const questionIds = (
+      await prisma.question.findMany({
+        where: { examSourceId: id },
+        select: { id: true },
+      })
+    ).map((q) => q.id);
+
+    await prisma.$transaction(async (tx) => {
+      // Delete answer records for these sessions
+      if (sessionIds.length > 0) {
+        await tx.answer.deleteMany({ where: { sessionId: { in: sessionIds } } });
+        // Delete exam results tied to sessions
+        await tx.examResult.deleteMany({ where: { sessionId: { in: sessionIds } } });
+        // Delete audit logs tied to sessions
+        await tx.auditLog.deleteMany({ where: { sessionId: { in: sessionIds } } });
+      }
+      // Delete sessions
+      await tx.examSession.deleteMany({ where: { examId: id } });
+      // Delete exam-question pivot
+      await tx.examQuestion.deleteMany({ where: { examId: id } });
+      // Delete question options and questions bound to this exam
+      if (questionIds.length > 0) {
+        await tx.questionOption.deleteMany({ where: { questionId: { in: questionIds } } });
+        await tx.questionTag.deleteMany({ where: { questionId: { in: questionIds } } });
+        await tx.question.deleteMany({ where: { id: { in: questionIds } } });
+      }
+      // Delete assignments, batches, rules
+      await tx.examAssignment.deleteMany({ where: { examId: id } });
+      await tx.examBatch.deleteMany({ where: { examId: id } });
+      await tx.examQuestionRule.deleteMany({ where: { examId: id } });
+      // Finally delete the exam
+      await tx.exam.delete({ where: { id } });
+    }, { timeout: 30000 });
 
     return NextResponse.json({
       success: true,

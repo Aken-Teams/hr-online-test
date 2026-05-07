@@ -1,0 +1,16 @@
+[
+  {
+    "id": "cmourwmer06pqmpjc2wqq46bw",
+    "examId": "cmoursrvg000gmpjc1cte3yvo",
+    "name": "第1梯次",
+    "openAt": "2026-05-07T00:30:00.000Z",
+    "closeAt": "2026-05-07T04:50:00.000Z"
+  },
+  {
+    "id": "cmov0nnux0e774bhlxs0h4qlt",
+    "examId": "cmoursrvg000gmpjc1cte3yvo",
+    "name": "第2梯次",
+    "openAt": "2026-05-07T05:00:00.000Z",
+    "closeAt": "2026-05-08T04:00:00.000Z"
+  }
+]
