@@ -53,12 +53,10 @@ export async function generateQuestionSet(
 
   const basicRatio = exam.basicQuestionRatio; // default 0.1
 
-  // Load all existing exam-question pairs for this exam to avoid duplicates
-  const existingPairs = await prisma.examQuestion.findMany({
-    where: { examId },
-    select: { questionId: true },
-  });
-  const existingIds = new Set(existingPairs.map((eq) => eq.questionId));
+  // NOTE: We do NOT exclude questions already in exam_questions table.
+  // That table is shared across all users, so excluding them would cause
+  // later users to run out of questions. The createMany+skipDuplicates
+  // in the start route handles dedup at the DB level.
 
   const allSelected: GeneratedQuestion[] = [];
   const selectedIds = new Set<string>();
@@ -73,7 +71,6 @@ export async function generateQuestionSet(
       process,
       level,
       basicRatio,
-      existingIds,
       selectedIds,
       warnings
     );
@@ -111,7 +108,6 @@ async function pickQuestionsForRule(
   process: string | null | undefined,
   level: string | null | undefined,
   basicRatio: number,
-  excludeIds: Set<string>,
   alreadySelected: Set<string>,
   warnings: string[]
 ): Promise<string[]> {
@@ -121,7 +117,8 @@ async function pickQuestionsForRule(
   const basicCount = Math.round(count * basicRatio);
   const professionalCount = count - basicCount;
 
-  const excludeArray = [...excludeIds, ...alreadySelected];
+  // Only exclude questions already selected within THIS user's set
+  const excludeArray = [...alreadySelected];
 
   // Fetch BASIC pool (not filtered by process/level, only by exam source)
   const basicPool = await fetchPool({
