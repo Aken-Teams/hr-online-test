@@ -65,11 +65,8 @@ export async function GET(
 
 /**
  * POST /api/admin/exams/[id]/participants
- * Import participants from an Excel file.
- *
- * Overwrite behavior: deletes all existing assignments for this exam,
- * then recreates from the uploaded file. ExamSessions are preserved
- * (assignmentId set to null). Only affects this exam's assignments.
+ * - JSON body { userId, process, level, department? }: Add a single participant (non-destructive).
+ * - FormData with file: Import participants from an Excel file (overwrites existing).
  */
 export async function POST(
   request: Request,
@@ -90,6 +87,57 @@ export async function POST(
         { success: false, error: '考试不存在' },
         { status: 404 }
       );
+    }
+
+    // ── Single participant (JSON) ──
+    const contentType = request.headers.get('content-type') ?? '';
+    if (contentType.includes('application/json')) {
+      const body = await request.json();
+      const { userId, process: proc, level, department } = body as {
+        userId?: string;
+        process?: string;
+        level?: string;
+        department?: string;
+      };
+
+      if (!userId || !proc || !level) {
+        return NextResponse.json(
+          { success: false, error: '请填写必填字段：userId、工序、等级' },
+          { status: 400 }
+        );
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, department: true, role: true },
+      });
+      if (!user) {
+        return NextResponse.json({ success: false, error: '员工不存在' }, { status: 404 });
+      }
+
+      // Check for duplicate assignment (same userId + process)
+      const existing = await prisma.examAssignment.findFirst({
+        where: { examId, userId, process: proc },
+      });
+      if (existing) {
+        return NextResponse.json(
+          { success: false, error: '该员工已在应考名单中（相同工序）' },
+          { status: 409 }
+        );
+      }
+
+      const assignment = await prisma.examAssignment.create({
+        data: {
+          examId,
+          userId,
+          department: department || user.department || '',
+          role: user.role || '',
+          process: proc,
+          level,
+        },
+      });
+
+      return NextResponse.json({ success: true, data: { id: assignment.id }, message: '已添加应考人员' });
     }
 
     const formData = await request.formData();

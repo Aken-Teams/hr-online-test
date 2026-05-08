@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Upload, Users, Loader2, Search, Trash2, X, Download } from 'lucide-react';
+import { Dialog } from '@/components/ui/Dialog';
+import { Upload, Users, Loader2, Search, Trash2, X, Download, UserPlus, ChevronDown } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
 interface Participant {
@@ -14,6 +15,14 @@ interface Participant {
   level: string | null;
   user: { employeeNo: string; name: string; department: string } | null;
   sessionStatus: string;
+}
+
+interface EmployeeOption {
+  id: string;
+  employeeNo: string;
+  name: string;
+  department: string;
+  role: string;
 }
 
 interface Props {
@@ -32,11 +41,92 @@ function getStatusLabel(status: string) {
   return STATUS_LABELS[status] ?? status;
 }
 
+function ComboBox({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [open]);
+
+  const filtered = value.trim()
+    ? options.filter((o) => o.toLowerCase().includes(value.toLowerCase()))
+    : options;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        className="w-full rounded-md border border-stone-200 px-3 py-2 pr-9 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        onMouseDown={(e) => { e.preventDefault(); setOpen((o) => !o); }}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+      >
+        <ChevronDown className={`h-4 w-4 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-y-auto rounded-md border border-stone-200 bg-white shadow-lg">
+          {filtered.length === 0 && value.trim() ? (
+            <div className="px-3 py-2 text-sm text-stone-400">无匹配选项（将新增「{value}」）</div>
+          ) : filtered.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-stone-400">暂无选项</div>
+          ) : (
+            filtered.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-stone-50 ${
+                  value === opt ? 'bg-teal-50 font-medium text-teal-700' : 'text-stone-700'
+                }`}
+              >
+                {opt}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TabParticipants({ examId }: Props) {
   const { toast } = useToast();
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ department: '', process: '', level: '' });
+  const [filterOpts, setFilterOpts] = useState<{ departments: string[]; processes: string[]; levels: string[] }>({ departments: [], processes: [], levels: [] });
+  const [empSearch, setEmpSearch] = useState('');
+  const [empResults, setEmpResults] = useState<EmployeeOption[]>([]);
+  const [empSearching, setEmpSearching] = useState(false);
+  const [selectedEmp, setSelectedEmp] = useState<EmployeeOption | null>(null);
+  const [adding, setAdding] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDept, setFilterDept] = useState('');
   const [filterProcess, setFilterProcess] = useState('');
@@ -122,6 +212,69 @@ export default function TabParticipants({ examId }: Props) {
     }
   }
 
+  async function searchEmployees(q: string) {
+    if (!q.trim()) { setEmpResults([]); return; }
+    setEmpSearching(true);
+    try {
+      const res = await fetch(`/api/admin/employees?search=${encodeURIComponent(q)}&pageSize=10`);
+      const json = await res.json();
+      if (json.success) setEmpResults(json.data.items);
+    } catch {
+      // ignore
+    } finally {
+      setEmpSearching(false);
+    }
+  }
+
+  async function handleAddSingle() {
+    if (!selectedEmp) { toast('请选择员工', 'error'); return; }
+    if (!addForm.process.trim()) { toast('请填写工序', 'error'); return; }
+    if (!addForm.level.trim()) { toast('请填写等级', 'error'); return; }
+    setAdding(true);
+    try {
+      const res = await fetch(`/api/admin/exams/${examId}/participants`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: selectedEmp.id, department: addForm.department.trim() || undefined, process: addForm.process.trim(), level: addForm.level.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      toast(json.message || '已添加', 'success');
+      setShowAddModal(false);
+      setSelectedEmp(null);
+      setEmpSearch('');
+      setEmpResults([]);
+      setAddForm({ department: '', process: '', level: '' });
+      await loadParticipants();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '添加失败', 'error');
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function openAddModal() {
+    setSelectedEmp(null);
+    setEmpSearch('');
+    setEmpResults([]);
+    setAddForm({ department: '', process: '', level: '' });
+    setShowAddModal(true);
+    // Fetch filter options from question bank (best-effort)
+    try {
+      const res = await fetch('/api/admin/questions/filter-options');
+      const json = await res.json();
+      if (json.success) {
+        setFilterOpts({
+          departments: json.data.departments ?? [],
+          processes: json.data.processes ?? [],
+          levels: json.data.levels ?? [],
+        });
+      }
+    } catch {
+      // ignore – user can still type manually
+    }
+  }
+
   // Extract unique filter options
   const filterOptions = useMemo(() => {
     const depts = new Set<string>();
@@ -185,6 +338,111 @@ export default function TabParticipants({ examId }: Props) {
   return (
     <div className="space-y-6">
       <input ref={fileRef} type="file" accept=".xls,.xlsx" className="hidden" onChange={handleUpload} />
+
+      {/* Add Single Participant Modal */}
+      <Dialog
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="新增应考人员"
+        contentClassName="overflow-y-visible"
+        footer={
+          <>
+            <Button variant="outline" size="sm" onClick={() => setShowAddModal(false)}>取消</Button>
+            <Button size="sm" onClick={handleAddSingle} loading={adding}>确认新增</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {/* Employee search */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-stone-700">员工 <span className="text-red-500">*</span></label>
+            {selectedEmp ? (
+              <div className="flex items-center justify-between rounded-md border border-teal-300 bg-teal-50 px-3 py-2 text-sm">
+                <span className="font-medium text-stone-800">{selectedEmp.name}</span>
+                <span className="text-stone-500">{selectedEmp.department} · {selectedEmp.employeeNo}</span>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedEmp(null); setEmpSearch(''); setEmpResults([]); }}
+                  className="ml-2 text-stone-400 hover:text-stone-600"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
+                <input
+                  type="text"
+                  placeholder="搜索姓名或工号..."
+                  value={empSearch}
+                  onChange={(e) => {
+                    setEmpSearch(e.target.value);
+                    searchEmployees(e.target.value);
+                  }}
+                  className="w-full rounded-md border border-stone-200 py-2 pl-8 pr-3 text-sm placeholder:text-stone-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                />
+                {(empSearching || empResults.length > 0) && (
+                  <div className="absolute z-10 mt-1 w-full rounded-md border border-stone-200 bg-white shadow-lg">
+                    {empSearching ? (
+                      <div className="flex items-center gap-2 px-3 py-2 text-sm text-stone-400">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> 搜索中...
+                      </div>
+                    ) : (
+                      empResults.map((emp) => (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          onClick={() => { setSelectedEmp(emp); setEmpSearch(''); setEmpResults([]); setAddForm((f) => ({ ...f, department: emp.department || '' })); }}
+                          className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-stone-50"
+                        >
+                          <span className="font-medium text-stone-800">{emp.name}</span>
+                          <span className="text-stone-500">{emp.department} · {emp.employeeNo}</span>
+                        </button>
+                      ))
+                    )}
+                    {!empSearching && empResults.length === 0 && empSearch.trim() && (
+                      <div className="px-3 py-2 text-sm text-stone-400">无匹配员工</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Department */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-stone-700">部门</label>
+            <ComboBox
+              value={addForm.department}
+              onChange={(v) => setAddForm((f) => ({ ...f, department: v }))}
+              options={filterOpts.departments}
+              placeholder="选择或输入部门"
+            />
+          </div>
+
+          {/* Process */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-stone-700">工序 <span className="text-red-500">*</span></label>
+            <ComboBox
+              value={addForm.process}
+              onChange={(v) => setAddForm((f) => ({ ...f, process: v }))}
+              options={filterOpts.processes}
+              placeholder="选择或输入工序"
+            />
+          </div>
+
+          {/* Level */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-stone-700">等级 <span className="text-red-500">*</span></label>
+            <ComboBox
+              value={addForm.level}
+              onChange={(v) => setAddForm((f) => ({ ...f, level: v }))}
+              options={filterOpts.levels}
+              placeholder="选择或输入等级，如：Ⅰ级"
+            />
+          </div>
+        </div>
+      </Dialog>
 
       <Card
         title={
@@ -257,6 +515,10 @@ export default function TabParticipants({ examId }: Props) {
                     <Download className="h-3.5 w-3.5" />
                     导出名单
                   </Button>
+                  <Button variant="outline" size="sm" onClick={openAddModal}>
+                    <UserPlus className="h-3.5 w-3.5" />
+                    新增人员
+                  </Button>
                   <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
                     <Upload className="h-3.5 w-3.5" />
                     导入名单
@@ -266,6 +528,10 @@ export default function TabParticipants({ examId }: Props) {
             )}
             {participants.length === 0 && (
               <div className="flex items-center gap-2 justify-end">
+                <Button variant="outline" size="sm" onClick={openAddModal}>
+                  <UserPlus className="h-3.5 w-3.5" />
+                  新增人员
+                </Button>
                 <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
                   <Upload className="h-3.5 w-3.5" />
                   导入名单
