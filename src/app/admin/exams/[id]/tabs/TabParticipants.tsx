@@ -507,13 +507,14 @@ export default function TabParticipants({ examId }: Props) {
                   </button>
                 )}
                 <div className="flex items-center gap-2 ml-auto">
-                  <Button variant="outline" size="sm" onClick={handleDeleteAll}>
+                  <Button variant="ghost" size="sm" onClick={handleDeleteAll} className="text-red-500 hover:bg-red-50 hover:text-red-600">
                     <Trash2 className="h-3.5 w-3.5" />
                     清空名单
                   </Button>
+                  <div className="h-4 w-px bg-stone-200" />
                   <Button variant="outline" size="sm" onClick={handleExport}>
                     <Download className="h-3.5 w-3.5" />
-                    导出名单
+                    导出
                   </Button>
                   <Button variant="outline" size="sm" onClick={openAddModal}>
                     <UserPlus className="h-3.5 w-3.5" />
