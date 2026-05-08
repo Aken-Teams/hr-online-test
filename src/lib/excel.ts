@@ -770,6 +770,9 @@ const PARTICIPANT_COLUMN_MAP: Record<string, string> = {
   '部門': 'department',
   '所属部门': 'department',
   '所屬部門': 'department',
+  '梯次': 'batchHint',
+  '考试批次': 'batchHint',
+  '批次': 'batchHint',
 };
 
 function mapParticipantColumn(key: string, customMap?: Record<string, string>): string {
@@ -844,6 +847,7 @@ export function parseParticipantExcel(
       process,
       level,
       verificationCode: row.verificationCode || undefined,
+      batchHint: row.batchHint || undefined,
     });
   }
 

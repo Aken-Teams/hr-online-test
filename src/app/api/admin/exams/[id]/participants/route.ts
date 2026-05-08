@@ -21,26 +21,29 @@ export async function GET(
 
     const { id: examId } = await params;
 
-    const assignments = await prisma.examAssignment.findMany({
-      where: { examId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            employeeNo: true,
-            name: true,
-            department: true,
-            role: true,
+    const [assignments, examBatches] = await Promise.all([
+      prisma.examAssignment.findMany({
+        where: { examId },
+        include: {
+          user: {
+            select: { id: true, employeeNo: true, name: true, department: true, role: true },
           },
+          sessions: {
+            orderBy: { attemptNumber: 'desc' },
+            take: 1,
+            select: { id: true, status: true, attemptNumber: true },
+          },
+          batch: { select: { id: true, name: true, openAt: true, closeAt: true } },
+          previousBatch: { select: { id: true, name: true } },
         },
-        sessions: {
-          orderBy: { attemptNumber: 'desc' },
-          take: 1,
-          select: { id: true, status: true, attemptNumber: true },
-        },
-      },
-      orderBy: { user: { name: 'asc' } },
-    });
+        orderBy: { user: { name: 'asc' } },
+      }),
+      prisma.examBatch.findMany({
+        where: { examId },
+        orderBy: { openAt: 'asc' },
+        select: { id: true, name: true, openAt: true, closeAt: true },
+      }),
+    ]);
 
     const data = assignments.map((a) => ({
       id: a.id,
@@ -49,11 +52,16 @@ export async function GET(
       role: a.role,
       process: a.process,
       level: a.level,
+      batchId: a.batchId,
+      batchName: a.batch?.name ?? null,
+      previousBatchId: a.previousBatchId,
+      previousBatchName: a.previousBatch?.name ?? null,
+      batchChanged: a.previousBatchId !== null,
       user: a.user,
       sessionStatus: a.sessions[0]?.status ?? 'NOT_STARTED',
     }));
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data, examBatches });
   } catch (error) {
     console.error('Get participants error:', error);
     return NextResponse.json(
@@ -93,11 +101,12 @@ export async function POST(
     const contentType = request.headers.get('content-type') ?? '';
     if (contentType.includes('application/json')) {
       const body = await request.json();
-      const { userId, process: proc, level, department } = body as {
+      const { userId, process: proc, level, department, batchId } = body as {
         userId?: string;
         process?: string;
         level?: string;
         department?: string;
+        batchId?: string | null;
       };
 
       if (!userId || !proc || !level) {
@@ -134,6 +143,7 @@ export async function POST(
           role: user.role || '',
           process: proc,
           level,
+          ...(batchId ? { batchId } : {}),
         },
       });
 
@@ -172,6 +182,25 @@ export async function POST(
         { success: false, error: '文件中未找到有效数据（需要至少包含：姓名、工序、等级）' },
         { status: 400 }
       );
+    }
+
+    // ── Pre-load exam batches for batchHint resolution ──
+    const examBatchList = await prisma.examBatch.findMany({
+      where: { examId },
+      orderBy: { openAt: 'asc' },
+      select: { id: true, name: true },
+    });
+
+    function resolveBatchHint(hint: string | undefined): string | null {
+      if (!hint) return null;
+      const num = parseInt(hint);
+      if (!isNaN(num) && num >= 1 && num <= examBatchList.length) {
+        return examBatchList[num - 1].id;
+      }
+      const exact = examBatchList.find((b) => b.name === hint);
+      if (exact) return exact.id;
+      const partial = examBatchList.find((b) => b.name.includes(hint));
+      return partial?.id ?? null;
     }
 
     // ── Pre-load all users for matching ──
@@ -305,6 +334,7 @@ export async function POST(
           role: string;
           process: string;
           level: string;
+          batchId?: string;
         }[] = [];
 
         // Dedup: same userId + process should only appear once
@@ -314,6 +344,7 @@ export async function POST(
           const key = `${user.id}||${row.process}`;
           if (seen.has(key)) continue;
           seen.add(key);
+          const batchId = resolveBatchHint(row.batchHint) ?? undefined;
           assignments.push({
             examId,
             userId: user.id,
@@ -321,6 +352,7 @@ export async function POST(
             role: user.role,
             process: row.process,
             level: row.level,
+            ...(batchId ? { batchId } : {}),
           });
         }
 
@@ -334,6 +366,7 @@ export async function POST(
           const key = `${newUser.id}||${row.process}`;
           if (seen.has(key)) continue;
           seen.add(key);
+          const batchId = resolveBatchHint(row.batchHint) ?? undefined;
           assignments.push({
             examId,
             userId: newUser.id,
@@ -341,6 +374,7 @@ export async function POST(
             role: newUser.role,
             process: row.process,
             level: row.level,
+            ...(batchId ? { batchId } : {}),
           });
         }
 

@@ -94,6 +94,28 @@ export async function POST(
       assignmentDepartment = assignment.department;
       assignmentProcess = assignment.process;
       assignmentLevel = assignment.level;
+
+      // ── Batch enforcement (半硬性) ──
+      // If assignment is tied to a specific batch, verify the active batch matches.
+      if (assignment.batchId) {
+        const assignedBatch = batches.find((b) => b.id === assignment.batchId);
+        if (!windowResult.currentBatch) {
+          // No batch is open right now
+          const batchName = assignedBatch?.name ?? '指定梯次';
+          return NextResponse.json(
+            { success: false, error: `您被分配在「${batchName}」考试，该梯次暂未开放，请在该梯次时间内参加考试` },
+            { status: 403 }
+          );
+        }
+        if (windowResult.currentBatch.id !== assignment.batchId) {
+          // A different batch is open, not the one this person is assigned to
+          const batchName = assignedBatch?.name ?? '指定梯次';
+          return NextResponse.json(
+            { success: false, error: `您被分配在「${batchName}」考试，请在该梯次时间内参加考试` },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // Check if there's already an in-progress session - resume it

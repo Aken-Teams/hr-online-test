@@ -297,6 +297,7 @@ export interface ParticipantImportRow {
   process: string;
   level: string;
   verificationCode?: string;
+  batchHint?: string;  // raw value from 梯次 column (number or name)
 }
 
 export interface EmployeeImportRow {

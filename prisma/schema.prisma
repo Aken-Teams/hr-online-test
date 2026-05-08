@@ -141,13 +141,15 @@ model Exam {
 }
 
 model ExamBatch {
-  id       String        @id @default(cuid())
-  examId   String        @map("exam_id")
-  name     String
-  openAt   DateTime      @map("open_at")
-  closeAt  DateTime      @map("close_at")
-  exam     Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
-  sessions ExamSession[]
+  id                  String           @id @default(cuid())
+  examId              String           @map("exam_id")
+  name                String
+  openAt              DateTime         @map("open_at")
+  closeAt             DateTime         @map("close_at")
+  exam                Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  sessions            ExamSession[]
+  assignments         ExamAssignment[] @relation("AssignmentCurrentBatch")
+  previousAssignments ExamAssignment[] @relation("AssignmentPreviousBatch")
 
   @@index([examId])
   @@map("exam_batches")
@@ -184,21 +186,26 @@ model ExamQuestion {
 }
 
 model ExamAssignment {
-  id         String        @id @default(cuid())
-  examId     String        @map("exam_id")
-  userId     String?       @map("user_id")
-  department String?
-  role       String?
-  level      String?
-  process    String?
-  exam       Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
-  user       User?         @relation(fields: [userId], references: [id])
-  sessions   ExamSession[]
+  id              String        @id @default(cuid())
+  examId          String        @map("exam_id")
+  userId          String?       @map("user_id")
+  department      String?
+  role            String?
+  level           String?
+  process         String?
+  batchId         String?       @map("batch_id")
+  previousBatchId String?       @map("previous_batch_id")
+  exam            Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user            User?         @relation(fields: [userId], references: [id])
+  batch           ExamBatch?    @relation("AssignmentCurrentBatch", fields: [batchId], references: [id], onDelete: SetNull)
+  previousBatch   ExamBatch?    @relation("AssignmentPreviousBatch", fields: [previousBatchId], references: [id], onDelete: SetNull)
+  sessions        ExamSession[]
 
   @@index([examId])
   @@index([userId])
   @@index([department, role])
   @@index([examId, process, level])
+  @@index([batchId])
   @@map("exam_assignments")
 }
 
@@ -365,4 +372,5 @@ enum AuditAction {
   EMPLOYEES_EXPORTED
   BATCH_RESET_CODES
   SCORES_RESET
+  BATCH_REASSIGNED
 }
