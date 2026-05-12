@@ -162,18 +162,18 @@ export async function POST(
 
         if (AUTO_GRADABLE_TYPES.includes(question.type)) {
           const result = autoGradeAnswer(question, answer.answerContent);
-          if (result) {
-            await tx.answer.update({
-              where: { id: answer.id },
-              data: {
-                isCorrect: result.isCorrect,
-                earnedPoints: result.earnedPoints,
-              },
-            });
-            // Update in-memory for calculateExamResult
-            answer.isCorrect = result.isCorrect;
-            answer.earnedPoints = result.earnedPoints;
-          }
+          // If autoGradeAnswer returns null (e.g. correctAnswer missing), treat as 0
+          const graded = result ?? { isCorrect: false, earnedPoints: 0 };
+          await tx.answer.update({
+            where: { id: answer.id },
+            data: {
+              isCorrect: graded.isCorrect,
+              earnedPoints: graded.earnedPoints,
+            },
+          });
+          // Update in-memory for calculateExamResult
+          answer.isCorrect = graded.isCorrect;
+          answer.earnedPoints = graded.earnedPoints;
         } else {
           // Manual question: if blank, mark as 0 points (nothing to grade)
           if (!answer.answerContent || answer.answerContent.trim() === '') {

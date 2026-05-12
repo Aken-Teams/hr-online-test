@@ -162,15 +162,13 @@ export function calculateExamResult(
     category.totalCount += 1;
 
     if (AUTO_GRADABLE_TYPES.includes(question.type)) {
-      // Auto-grade
-      const result = autoGradeAnswer(question, answer.answerContent);
-      if (result) {
-        autoScore += result.earnedPoints;
-        category.earnedPoints += result.earnedPoints;
-        if (result.isCorrect) {
-          correctCount += 1;
-          category.correctCount += 1;
-        }
+      // Auto-grade; treat null result (missing correctAnswer) as 0
+      const result = autoGradeAnswer(question, answer.answerContent) ?? { isCorrect: false, earnedPoints: 0 };
+      autoScore += result.earnedPoints;
+      category.earnedPoints += result.earnedPoints;
+      if (result.isCorrect) {
+        correctCount += 1;
+        category.correctCount += 1;
       }
     } else {
       // Manual grading

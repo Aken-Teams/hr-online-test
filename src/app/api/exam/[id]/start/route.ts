@@ -243,11 +243,10 @@ export async function POST(
               if (!q) continue;
               if (AUTO_GRADABLE_TYPES.includes(q.type)) {
                 const result = autoGradeAnswer(q, answer.answerContent);
-                if (result) {
-                  await tx.answer.update({ where: { id: answer.id }, data: { isCorrect: result.isCorrect, earnedPoints: result.earnedPoints } });
-                  answer.isCorrect = result.isCorrect;
-                  answer.earnedPoints = result.earnedPoints;
-                }
+                const graded = result ?? { isCorrect: false, earnedPoints: 0 };
+                await tx.answer.update({ where: { id: answer.id }, data: { isCorrect: graded.isCorrect, earnedPoints: graded.earnedPoints } });
+                answer.isCorrect = graded.isCorrect;
+                answer.earnedPoints = graded.earnedPoints;
               } else if (!answer.answerContent || answer.answerContent.trim() === '') {
                 await tx.answer.update({ where: { id: answer.id }, data: { isCorrect: false, earnedPoints: 0 } });
                 answer.isCorrect = false;
@@ -287,6 +286,23 @@ export async function POST(
               where: { id: existingSession.id },
               data: { status: hasPendingGrading ? 'GRADING' : 'COMPLETED', submittedAt: submitNow, lastActiveAt: submitNow },
             });
+
+            // Audit log for auto-submit
+            await tx.auditLog.create({
+              data: {
+                sessionId: existingSession.id,
+                action: 'SESSION_SUBMIT',
+                details: {
+                  examId,
+                  autoSubmitted: true,
+                  reason: 'time_expired_on_resume',
+                  autoScore: examResult.autoScore,
+                  totalScore: examResult.totalScore,
+                  hasPendingGrading,
+                },
+                ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
+              },
+            });
           }, { timeout: 15000 });
 
           const result = await prisma.examResult.findUnique({ where: { sessionId: existingSession.id } });
@@ -297,15 +313,12 @@ export async function POST(
           });
         } catch (e) {
           console.error('Auto-submit expired session error:', e);
-          // Fallback: force-close the session without scoring
-          await prisma.examSession.update({
-            where: { id: existingSession.id },
-            data: { status: 'COMPLETED', submittedAt: new Date() },
-          }).catch(() => {});
-          return NextResponse.json({
-            success: true,
-            data: { sessionId: existingSession.id, examId, autoSubmitted: true, result: null },
-          });
+          // Do NOT force-close without grading — leave as IN_PROGRESS so the
+          // next start attempt will retry the auto-submit with full grading.
+          return NextResponse.json(
+            { success: false, error: '自动交卷处理失败，请重新进入考试页面重试' },
+            { status: 500 }
+          );
         }
       }
 
