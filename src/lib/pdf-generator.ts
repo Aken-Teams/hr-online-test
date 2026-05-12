@@ -47,13 +47,8 @@ const fontPath = path.join(process.cwd(), 'public', 'fonts', 'NotoSansSC-Regular
 // ─── Helpers ────────────────────────────────────────────────
 
 const SECTION_ORDER: QuestionType[] = [
-  'TRUE_FALSE',
-  'SINGLE_CHOICE',
-  'MULTI_CHOICE',
-  'FILL_BLANK',
-  'SHORT_ANSWER',
-  'CASE_ANALYSIS',
-  'PRACTICAL',
+  'TRUE_FALSE', 'SINGLE_CHOICE', 'MULTI_CHOICE', 'FILL_BLANK',
+  'SHORT_ANSWER', 'CASE_ANALYSIS', 'PRACTICAL',
 ];
 
 const SECTION_NUMBERS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
@@ -63,9 +58,6 @@ const COLOR_RED = '#dc2626';
 const COLOR_AMBER = '#92400e';
 const COLOR_GRAY = '#78716c';
 const COLOR_DARK = '#1c1917';
-const COLOR_LIGHT_GREEN_BG = '#ecfdf5';
-const COLOR_LIGHT_RED_BG = '#fef2f2';
-const COLOR_LIGHT_AMBER_BG = '#fffbeb';
 const COLOR_BORDER = '#d6d3d1';
 
 function formatDuration(seconds: number): string {
@@ -108,10 +100,16 @@ const PAGE_MARGIN = 40;
 const CONTENT_WIDTH = 595.28 - PAGE_MARGIN * 2;
 const INDENT = PAGE_MARGIN + 16;
 const INDENT_WIDTH = CONTENT_WIDTH - 16;
+const STRIP_H = 18;
 
+/** Available vertical space on the current page */
+function remainingSpace(doc: PDFKit.PDFDocument): number {
+  return doc.page.height - doc.page.margins.bottom - doc.y;
+}
+
+/** Move to a new page if needed */
 function ensureSpace(doc: PDFKit.PDFDocument, needed: number) {
-  const remaining = doc.page.height - doc.page.margins.bottom - doc.y;
-  if (remaining < needed) doc.addPage();
+  if (remainingSpace(doc) < needed) doc.addPage();
 }
 
 function drawInfoTable(doc: PDFKit.PDFDocument, data: PdfSessionData) {
@@ -135,22 +133,20 @@ function drawInfoTable(doc: PDFKit.PDFDocument, data: PdfSessionData) {
     const y = startY + i * rowHeight;
     doc.strokeColor(COLOR_BORDER).lineWidth(0.5);
     doc.rect(tableX, y, CONTENT_WIDTH, rowHeight).stroke();
-
     let x = tableX;
     for (let j = 0; j < 4; j++) {
       const isLabel = j % 2 === 0;
-      const cellText = rows[i][j];
       if (j > 0) doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke();
       doc.fontSize(isLabel ? 9 : 10)
         .fillColor(isLabel ? COLOR_GRAY : (i === 2 && j === 3 ? passColor : COLOR_DARK));
-      doc.text(cellText, x + 6, y + 5, { width: colWidths[j] - 12, lineBreak: false });
+      doc.text(rows[i][j], x + 6, y + 5, { width: colWidths[j] - 12, lineBreak: false });
       x += colWidths[j];
     }
   }
-  doc.y = startY + rows.length * rowHeight + 20;
+  doc.y = startY + rows.length * rowHeight + 16;
 }
 
-/** Strip leading label prefix from option content if duplicated (e.g. content="A.xxx" with label="A") */
+/** Strip duplicate label prefix from option content */
 function cleanOptionContent(label: string, content: string): string {
   const prefixes = [`${label}.`, `${label}、`, `${label}．`, `${label} `];
   for (const prefix of prefixes) {
@@ -171,21 +167,79 @@ function formatCorrectAnswer(q: PdfQuestionData): string {
   return q.correctAnswer.trim();
 }
 
+/**
+ * Draw a colored result strip. CALLER must ensure enough space exists.
+ * Returns the y position after the strip.
+ */
+function drawResultStrip(
+  doc: PDFKit.PDFDocument,
+  y: number,
+  bgColor: string,
+  borderColor: string,
+  labelColor: string,
+  statusText: string,
+  scoreText: string,
+  userAns: string,
+  correctAns: string,
+) {
+  // Background
+  doc.save();
+  doc.rect(INDENT, y, INDENT_WIDTH, STRIP_H).fill(bgColor);
+  doc.rect(INDENT, y, INDENT_WIDTH, STRIP_H).strokeColor(borderColor).lineWidth(0.5).stroke();
+  doc.restore();
+
+  const textY = y + 4;
+
+  // Status label (colored)
+  doc.fillColor(labelColor).fontSize(9);
+  doc.text(statusText, INDENT + 6, textY, { width: 80, lineBreak: false });
+
+  // Score
+  doc.fillColor(COLOR_DARK).fontSize(9);
+  doc.text(scoreText, INDENT + 80, textY, { width: 60, lineBreak: false });
+
+  // User answer
+  doc.fillColor('#57534e').fontSize(9);
+  doc.text(`考生: ${userAns}`, INDENT + 148, textY, { width: 140, lineBreak: false });
+
+  // Correct answer
+  doc.fillColor(COLOR_GREEN).fontSize(9);
+  doc.text(`答案: ${correctAns}`, INDENT + 300, textY, { width: INDENT_WIDTH - 306, lineBreak: false });
+
+  return y + STRIP_H;
+}
+
 function renderQuestion(doc: PDFKit.PDFDocument, q: PdfQuestionData, index: number) {
   const isCorrect = q.isCorrect === true;
   const isWrong = q.isCorrect === false || (q.isCorrect == null && q.earnedPoints === 0);
   const noAnswer = !q.yourAnswer?.trim();
+  const type = q.questionType;
+  const isLongForm = type === 'SHORT_ANSWER' || type === 'FILL_BLANK' || type === 'CASE_ANALYSIS' || type === 'PRACTICAL';
 
-  ensureSpace(doc, 50);
+  // ── Pre-calculate heights ──
+  doc.fontSize(10);
+  const stemH = doc.heightOfString(`${index}. ${q.content}`, { width: CONTENT_WIDTH });
+
+  let optionsH = 0;
+  if ((type === 'SINGLE_CHOICE' || type === 'MULTI_CHOICE') && q.options && q.options.length > 0) {
+    doc.fontSize(9);
+    for (const opt of q.options) {
+      const c = cleanOptionContent(opt.label, opt.content);
+      optionsH += doc.heightOfString(`    ${opt.label}. ${c}`, { width: INDENT_WIDTH });
+    }
+    optionsH += 4; // moveDown(0.15) approx
+  }
+
+  // Minimum needed: stem + options + result strip + spacing
+  const minNeeded = stemH + optionsH + STRIP_H + 20;
+  ensureSpace(doc, Math.min(minNeeded, 200)); // cap at 200 to avoid skipping pages for huge questions
 
   // ── Question stem ──
   doc.fontSize(10).fillColor(COLOR_DARK);
   doc.text(`${index}. ${q.content}`, PAGE_MARGIN, doc.y, { width: CONTENT_WIDTH });
-  doc.moveDown(0.25);
+  doc.moveDown(0.2);
 
-  const type = q.questionType;
-
-  // ── Options (for choice questions) ──
+  // ── Options ──
   if ((type === 'SINGLE_CHOICE' || type === 'MULTI_CHOICE') && q.options && q.options.length > 0) {
     doc.fontSize(9);
     for (const opt of q.options) {
@@ -193,121 +247,78 @@ function renderQuestion(doc: PDFKit.PDFDocument, q: PdfQuestionData, index: numb
       doc.fillColor('#44403c');
       doc.text(`    ${opt.label}. ${cleanContent}`, INDENT, doc.y, { width: INDENT_WIDTH });
     }
-    doc.moveDown(0.15);
+    doc.moveDown(0.1);
   }
 
-  // ── Result box — compact colored strip ──
-  const resultY = doc.y;
+  // ── Result strip — ensure space for it ──
+  const stripNeeded = isLongForm ? 60 : STRIP_H + 8;
+  ensureSpace(doc, stripNeeded);
+
+  // Colors
+  let bgColor: string, borderColor: string, labelColor: string;
+  if (isCorrect) {
+    bgColor = '#ecfdf5'; borderColor = '#a7f3d0'; labelColor = COLOR_GREEN;
+  } else if (isWrong) {
+    bgColor = '#fef2f2'; borderColor = '#fecaca'; labelColor = COLOR_RED;
+  } else {
+    bgColor = '#fffbeb'; borderColor = '#fde68a'; labelColor = COLOR_AMBER;
+  }
+
+  const statusText = isCorrect ? '[正确]' : isWrong ? '[错误]' : '[待定]';
+  const scoreText = `${q.earnedPoints}/${q.maxPoints}分`;
   const userAns = formatUserAnswer(q);
   const correctAns = formatCorrectAnswer(q);
 
-  // Background color based on result
-  let bgColor: string;
-  let borderColor: string;
-  let labelColor: string;
-  if (isCorrect) {
-    bgColor = COLOR_LIGHT_GREEN_BG;
-    borderColor = '#a7f3d0';
-    labelColor = COLOR_GREEN;
-  } else if (isWrong) {
-    bgColor = COLOR_LIGHT_RED_BG;
-    borderColor = '#fecaca';
-    labelColor = COLOR_RED;
-  } else {
-    bgColor = COLOR_LIGHT_AMBER_BG;
-    borderColor = '#fde68a';
-    labelColor = COLOR_AMBER;
-  }
-
-  // Build result text parts
-  const statusLabel = isCorrect ? '✓ 正确' : isWrong ? '✗ 错误' : '? 待定';
-  const scoreText = `${q.earnedPoints}/${q.maxPoints}分`;
-
-  // Determine what to show
-  const isLongForm = type === 'SHORT_ANSWER' || type === 'FILL_BLANK' || type === 'CASE_ANALYSIS' || type === 'PRACTICAL';
-
   if (isLongForm) {
-    // Long-form answers: multi-line display
-    doc.fontSize(9);
+    // ── Long-form: strip + separate answer lines ──
+    const afterStrip = drawResultStrip(doc, doc.y, bgColor, borderColor, labelColor, statusText, scoreText, userAns, correctAns);
+    doc.y = afterStrip + 3;
 
-    // Status + score line
-    const stripH = 20;
-    doc.save();
-    doc.rect(INDENT, resultY, INDENT_WIDTH, stripH).fill(bgColor);
-    doc.rect(INDENT, resultY, INDENT_WIDTH, stripH).strokeColor(borderColor).lineWidth(0.5).stroke();
-    doc.restore();
-    doc.fillColor(labelColor).fontSize(9);
-    doc.text(`${statusLabel}  ${scoreText}`, INDENT + 8, resultY + 5, { width: INDENT_WIDTH - 16, lineBreak: false });
-    doc.y = resultY + stripH + 4;
-
-    // User answer
-    doc.fillColor(COLOR_GRAY).fontSize(8);
-    doc.text('考生作答:', INDENT, doc.y, { width: INDENT_WIDTH });
-    doc.fillColor(noAnswer ? COLOR_GRAY : COLOR_DARK).fontSize(9);
-    doc.text(noAnswer ? '（未作答）' : userAns, INDENT + 8, doc.y, { width: INDENT_WIDTH - 8 });
-
-    // Correct/reference answer
-    if (q.correctAnswer?.trim()) {
-      doc.moveDown(0.15);
+    // User answer detail
+    if (!noAnswer) {
       doc.fillColor(COLOR_GRAY).fontSize(8);
-      doc.text('参考答案:', INDENT, doc.y, { width: INDENT_WIDTH });
+      doc.text('考生作答:', INDENT, doc.y, { width: INDENT_WIDTH, lineBreak: false });
+      doc.fillColor(COLOR_DARK).fontSize(9);
+      doc.text(userAns, INDENT + 8, doc.y, { width: INDENT_WIDTH - 8 });
+    }
+
+    // Reference answer
+    if (q.correctAnswer?.trim()) {
+      doc.moveDown(0.1);
+      doc.fillColor(COLOR_GRAY).fontSize(8);
+      doc.text('参考答案:', INDENT, doc.y, { width: INDENT_WIDTH, lineBreak: false });
       doc.fillColor(COLOR_GREEN).fontSize(9);
       doc.text(correctAns, INDENT + 8, doc.y, { width: INDENT_WIDTH - 8 });
     }
   } else {
-    // Short-form: single colored strip with all info
-    // Measure to determine height
-    let line1 = `${statusLabel}  ${scoreText}`;
-    if (type === 'TRUE_FALSE' || type === 'SINGLE_CHOICE' || type === 'MULTI_CHOICE') {
-      line1 += `    考生答案: ${userAns}    正确答案: ${correctAns}`;
-    }
-
-    const stripH = 20;
-    doc.save();
-    doc.rect(INDENT, resultY, INDENT_WIDTH, stripH).fill(bgColor);
-    doc.rect(INDENT, resultY, INDENT_WIDTH, stripH).strokeColor(borderColor).lineWidth(0.5).stroke();
-    doc.restore();
-
-    // Status + score
-    doc.fillColor(labelColor).fontSize(9);
-    doc.text(`${statusLabel}  ${scoreText}`, INDENT + 8, resultY + 5, { width: 120, lineBreak: false });
-
-    // Answers on the same line
-    doc.fillColor(COLOR_DARK).fontSize(9);
-    doc.text(`考生: ${userAns}`, INDENT + 130, resultY + 5, { width: 100, lineBreak: false });
-    doc.fillColor(COLOR_GREEN).fontSize(9);
-    doc.text(`正确: ${correctAns}`, INDENT + 250, resultY + 5, { width: INDENT_WIDTH - 258, lineBreak: false });
-
-    doc.y = resultY + stripH;
+    // ── Short-form: single strip ──
+    const afterStrip = drawResultStrip(doc, doc.y, bgColor, borderColor, labelColor, statusText, scoreText, userAns, correctAns);
+    doc.y = afterStrip;
   }
 
-  // ── Analysis for wrong answers ──
+  // ── Analysis box for wrong answers ──
   if (isWrong && q.referenceAnswer?.trim()) {
-    doc.moveDown(0.2);
-    ensureSpace(doc, 30);
-
-    const boxX = INDENT;
-    const boxW = INDENT_WIDTH;
-    const textX = boxX + 8;
-    const textW = boxW - 16;
-
     const analysisText = `解析: ${q.referenceAnswer}`;
     doc.fontSize(8);
-    const textHeight = doc.heightOfString(analysisText, { width: textW });
-    const boxH = textHeight + 10;
+    const textH = doc.heightOfString(analysisText, { width: INDENT_WIDTH - 16 });
+    const boxH = textH + 8;
 
+    ensureSpace(doc, boxH + 4);
+    doc.moveDown(0.15);
     const boxY = doc.y;
+
+    // Blue left-border box
     doc.save();
-    doc.rect(boxX, boxY, boxW, boxH).fill('#f0f9ff');
-    doc.moveTo(boxX, boxY).lineTo(boxX, boxY + boxH).lineWidth(2).strokeColor('#60a5fa').stroke();
+    doc.rect(INDENT, boxY, INDENT_WIDTH, boxH).fill('#f0f9ff');
+    doc.rect(INDENT, boxY, 2.5, boxH).fill('#60a5fa');
     doc.restore();
 
     doc.fillColor('#1e40af').fontSize(8);
-    doc.text(analysisText, textX, boxY + 5, { width: textW });
+    doc.text(analysisText, INDENT + 10, boxY + 4, { width: INDENT_WIDTH - 20 });
     doc.y = boxY + boxH;
   }
 
-  doc.moveDown(0.4);
+  doc.moveDown(0.35);
 }
 
 // ─── Main export ────────────────────────────────────────────
@@ -318,7 +329,6 @@ export function generateExamResultPdf(data: PdfSessionData): Promise<Buffer> {
       const doc = new PDFDocument({
         size: 'A4',
         margins: { top: 50, bottom: 50, left: PAGE_MARGIN, right: PAGE_MARGIN },
-        // No bufferPages — avoids blank page bugs
       });
 
       doc.registerFont('NotoSansSC', fontPath);
@@ -329,34 +339,13 @@ export function generateExamResultPdf(data: PdfSessionData): Promise<Buffer> {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      let pageNumber = 1;
       const exportTime = formatDate(new Date().toISOString());
 
-      // Render footer on current page
-      function renderFooter() {
-        const savedY = doc.y;
-        const footerY = doc.page.height - 35;
-        doc.fontSize(7).fillColor('#a1a1aa');
-        doc.text(`${data.exam.title}  |  导出: ${exportTime}  |  第 ${pageNumber} 页`, PAGE_MARGIN, footerY, {
-          width: CONTENT_WIDTH,
-          align: 'center',
-          lineBreak: false,
-        });
-        doc.y = savedY;
-      }
-
-      // Listen for new pages to render footer on previous page and header on new page
-      doc.on('pageAdded', () => {
-        // Go back to the previous page to add its footer
-        // (pdfkit doesn't support going back without bufferPages, so we render footer before addPage)
-        pageNumber++;
-      });
-
       // ── Title ──
-      doc.fontSize(18).fillColor(COLOR_DARK).text('考试成绩报告', { align: 'center' });
-      doc.moveDown(0.3);
-      doc.fontSize(12).fillColor('#57534e').text(data.exam.title, { align: 'center' });
-      doc.moveDown(0.8);
+      doc.fontSize(16).fillColor(COLOR_DARK).text('考试成绩报告', { align: 'center' });
+      doc.moveDown(0.2);
+      doc.fontSize(11).fillColor('#57534e').text(data.exam.title, { align: 'center' });
+      doc.moveDown(0.6);
 
       // ── Info table ──
       drawInfoTable(doc, data);
@@ -372,19 +361,17 @@ export function generateExamResultPdf(data: PdfSessionData): Promise<Buffer> {
         const earnedTotal = items.reduce((s, q) => s + q.earnedPoints, 0);
         const sectionNum = SECTION_NUMBERS[sectionIdx] ?? `${sectionIdx + 1}`;
 
-        ensureSpace(doc, 40);
+        ensureSpace(doc, 36);
 
-        // Section header with underline
-        const sectionY = doc.y;
+        // Section header
         doc.fontSize(11).fillColor(COLOR_DARK);
-        doc.text(`${sectionNum}、${typeLabel}`, PAGE_MARGIN, sectionY, { width: CONTENT_WIDTH });
+        doc.text(`${sectionNum}、${typeLabel}`, PAGE_MARGIN, doc.y, { width: CONTENT_WIDTH, lineBreak: false });
         doc.fontSize(9).fillColor(COLOR_GRAY);
         doc.text(`共${items.length}题 / ${totalPoints}分 / 得${earnedTotal}分`, PAGE_MARGIN, doc.y, { width: CONTENT_WIDTH });
-        doc.moveDown(0.15);
         // Underline
         doc.strokeColor(COLOR_BORDER).lineWidth(0.5);
-        doc.moveTo(PAGE_MARGIN, doc.y).lineTo(PAGE_MARGIN + CONTENT_WIDTH, doc.y).stroke();
-        doc.moveDown(0.4);
+        doc.moveTo(PAGE_MARGIN, doc.y + 2).lineTo(PAGE_MARGIN + CONTENT_WIDTH, doc.y + 2).stroke();
+        doc.y += 6;
 
         for (const q of items) {
           renderQuestion(doc, q, globalIndex);
@@ -393,10 +380,14 @@ export function generateExamResultPdf(data: PdfSessionData): Promise<Buffer> {
         sectionIdx++;
       }
 
-      // ── Render footer on every page ──
-      // We need bufferPages for footers, but we were avoiding it.
-      // Alternative: render footer at the bottom of the last page now.
-      renderFooter();
+      // ── Footer on last page ──
+      const footerY = doc.page.height - 30;
+      doc.fontSize(7).fillColor('#a1a1aa');
+      doc.text(
+        `${data.employee.name} (${data.employee.employeeNo})  |  ${data.exam.title}  |  导出: ${exportTime}`,
+        PAGE_MARGIN, footerY,
+        { width: CONTENT_WIDTH, align: 'center', lineBreak: false },
+      );
 
       doc.end();
     } catch (err) {

@@ -19,6 +19,7 @@ import {
   TableCell,
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -68,6 +69,7 @@ export default function ExamResultsPage() {
   const [importing, setImporting] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showPdfConfirm, setShowPdfConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
 
@@ -141,7 +143,7 @@ export default function ExamResultsPage() {
     }
   }
 
-  async function handleExportPdf() {
+  function handleExportPdfClick() {
     const ids = selectedIds.size > 0
       ? Array.from(selectedIds)
       : results.map((r) => r.sessionId);
@@ -149,6 +151,14 @@ export default function ExamResultsPage() {
       toast('没有可导出的成绩', 'warning');
       return;
     }
+    setShowPdfConfirm(true);
+  }
+
+  async function handleExportPdf() {
+    setShowPdfConfirm(false);
+    const ids = selectedIds.size > 0
+      ? Array.from(selectedIds)
+      : results.map((r) => r.sessionId);
     setExporting(true);
     try {
       const sessionIds = ids;
@@ -251,7 +261,7 @@ export default function ExamResultsPage() {
             />
             {/* PDF export — dedicated button */}
             <Button
-              onClick={handleExportPdf}
+              onClick={handleExportPdfClick}
               disabled={exporting}
             >
               <FileText className="h-4 w-4" />
@@ -545,6 +555,21 @@ export default function ExamResultsPage() {
           </div>
         </Card>
       )}
+
+      {/* PDF export confirmation dialog */}
+      <ConfirmDialog
+        open={showPdfConfirm}
+        onClose={() => setShowPdfConfirm(false)}
+        onConfirm={handleExportPdf}
+        title="导出 PDF 试卷"
+        message={
+          selectedIds.size > 0
+            ? `确认导出 ${selectedIds.size} 位考生的 PDF 试卷？${selectedIds.size > 1 ? '将打包为 ZIP 文件下载。' : ''}`
+            : `确认导出全部 ${results.length} 位考生的 PDF 试卷？${results.length > 1 ? '将打包为 ZIP 文件下载。' : ''}`
+        }
+        confirmText="确认导出"
+        cancelText="取消"
+      />
     </div>
   );
 }
