@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { ArrowLeft, Download, Upload, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Download, Upload, ChevronDown, FileText } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -67,6 +67,7 @@ export default function ExamResultsPage() {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +102,23 @@ export default function ExamResultsPage() {
     }
   }, [showActions]);
 
+  function toggleSelect(sessionId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(sessionId)) next.delete(sessionId);
+      else next.add(sessionId);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === results.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(results.map((r) => r.sessionId)));
+    }
+  }
+
   async function handleExport() {
     setExporting(true);
     try {
@@ -118,6 +136,45 @@ export default function ExamResultsPage() {
       toast('导出成功', 'success');
     } catch {
       toast('导出失败', 'error');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleExportPdf() {
+    const ids = selectedIds.size > 0
+      ? Array.from(selectedIds)
+      : results.map((r) => r.sessionId);
+    if (ids.length === 0) {
+      toast('没有可导出的成绩', 'warning');
+      return;
+    }
+    setExporting(true);
+    try {
+      const sessionIds = ids;
+      const res = await fetch('/api/admin/results/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionIds, examId }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        throw new Error(json?.error || '导出失败');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = sessionIds.length === 1
+        ? `考试试卷_${examId}.pdf`
+        : `考试试卷_${examId}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast('导出 PDF 成功', 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '导出 PDF 失败', 'error');
     } finally {
       setExporting(false);
     }
@@ -192,13 +249,26 @@ export default function ExamResultsPage() {
               className="hidden"
               onChange={handleImportOfflineScores}
             />
-            {/* Actions dropdown */}
+            {/* PDF export — dedicated button */}
+            <Button
+              onClick={handleExportPdf}
+              disabled={exporting}
+            >
+              <FileText className="h-4 w-4" />
+              {exporting
+                ? '导出中...'
+                : selectedIds.size > 0
+                  ? `导出 PDF (${selectedIds.size}人)`
+                  : '导出 PDF'}
+            </Button>
+            {/* Other actions dropdown */}
             <div ref={actionsRef} className="relative">
               <Button
+                variant="outline"
                 onClick={() => setShowActions(!showActions)}
               >
                 <Download className="h-4 w-4" />
-                导入导出
+                更多
                 <ChevronDown className="h-4 w-4" />
               </Button>
               {showActions && (
@@ -266,6 +336,27 @@ export default function ExamResultsPage() {
         </div>
       )}
 
+      {/* Selection bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-2.5">
+          <span className="text-sm font-medium text-teal-800">
+            已选择 {selectedIds.size} / {results.length} 人
+          </span>
+          <button
+            className="text-sm text-teal-600 hover:text-teal-700 underline"
+            onClick={toggleSelectAll}
+          >
+            {selectedIds.size === results.length ? '取消全选' : '全选'}
+          </button>
+          <button
+            className="text-sm text-stone-500 hover:text-stone-600 underline"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            清除选择
+          </button>
+        </div>
+      )}
+
       {/* Results table */}
       {results.length === 0 ? (
         <EmptyState title="暂无成绩数据" description="该考试尚未有考生提交" />
@@ -280,6 +371,12 @@ export default function ExamResultsPage() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 shrink-0 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
+                      checked={selectedIds.has(row.sessionId)}
+                      onChange={() => toggleSelect(row.sessionId)}
+                    />
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-stone-600">
                       {row.rank}
                     </span>
@@ -349,6 +446,14 @@ export default function ExamResultsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
+                      checked={selectedIds.size === results.length && results.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>排名</TableHead>
                   <TableHead>姓名</TableHead>
                   <TableHead>部门</TableHead>
@@ -373,6 +478,14 @@ export default function ExamResultsPage() {
 
                   return (
                     <TableRow key={row.sessionId}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-stone-300 text-teal-600 focus:ring-teal-500"
+                          checked={selectedIds.has(row.sessionId)}
+                          onChange={() => toggleSelect(row.sessionId)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{row.rank}</TableCell>
                       <TableCell className="font-medium">{row.employeeName}</TableCell>
                       <TableCell>{row.department}</TableCell>
