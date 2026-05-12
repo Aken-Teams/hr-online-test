@@ -76,26 +76,25 @@ export async function POST(request: Request) {
       const sessionQuestionIds =
         questionOrder && Array.isArray(questionOrder) ? questionOrder : [];
 
-      const examQuestions = await prisma.examQuestion.findMany({
-        where: {
-          examId: session.examId,
-          ...(sessionQuestionIds.length > 0
-            ? { questionId: { in: sessionQuestionIds } }
-            : {}),
-        },
-        select: { questionId: true, points: true },
-      });
-      const pointsMap = new Map(examQuestions.map((eq) => [eq.questionId, eq.points]));
-
-      // Build answer lookup from session.answers (includes question + options)
+      // When questionOrder exists, use it as the authoritative list of assigned questions.
+      // When it's null (older sessions), we can only reliably show answered questions —
+      // the full ExamQuestion pool may be much larger than what was assigned.
       const answeredMap = new Map(
         session.answers.map((a) => [a.questionId, a])
       );
 
-      // Determine the full list of question IDs
       const questionIds = sessionQuestionIds.length > 0
         ? sessionQuestionIds
-        : examQuestions.map((eq) => eq.questionId);
+        : Array.from(answeredMap.keys());
+
+      const examQuestions = await prisma.examQuestion.findMany({
+        where: {
+          examId: session.examId,
+          questionId: { in: questionIds },
+        },
+        select: { questionId: true, points: true },
+      });
+      const pointsMap = new Map(examQuestions.map((eq) => [eq.questionId, eq.points]));
 
       // Find unanswered question IDs so we can load their data
       const unansweredIds = questionIds.filter((qid) => !answeredMap.has(qid));

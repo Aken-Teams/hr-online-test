@@ -121,7 +121,7 @@ function drawInfoTable(doc: PDFKit.PDFDocument, data: PdfSessionData) {
     ['姓名', data.employee.name, '工号', data.employee.employeeNo],
     ['部门', data.employee.department, '提交时间', formatDate(data.submittedAt)],
     ['得分', r ? `${r.totalScore ?? '--'} / ${data.exam.totalScore}` : '--', '结果', passLabel],
-    ['正确', r ? `${r.correctCount} / ${data.questions.length} 题` : '--', '用时', r ? formatDuration(r.timeTakenSeconds) : '--'],
+    ['正确', r ? `${r.correctCount} / ${r.totalQuestions} 题` : '--', '用时', r ? formatDuration(r.timeTakenSeconds) : '--'],
   ];
 
   const tableX = PAGE_MARGIN;

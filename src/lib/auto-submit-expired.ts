@@ -92,13 +92,26 @@ async function gradeAndSubmitSession(
   const { examId } = session;
   const sessionQuestionIds = (session.questionOrder as string[] | null) ?? [];
 
-  // Load exam questions for scoring
+  // Load exam questions for scoring.
+  // When questionOrder exists, use it as the authoritative list.
+  // When null (legacy sessions), fall back to only answered questions to avoid
+  // loading the entire question pool (which can be thousands).
+  const existingAnswerIds = sessionQuestionIds.length === 0
+    ? (await prisma.answer.findMany({
+        where: { sessionId: session.id },
+        select: { questionId: true },
+      })).map((a) => a.questionId)
+    : [];
+  const filterIds = sessionQuestionIds.length > 0
+    ? sessionQuestionIds
+    : existingAnswerIds;
+
   const examQuestions = await prisma.examQuestion.findMany({
     where: {
       examId,
-      ...(sessionQuestionIds.length > 0
-        ? { questionId: { in: sessionQuestionIds } }
-        : {}),
+      ...(filterIds.length > 0
+        ? { questionId: { in: filterIds } }
+        : { questionId: '__none__' }), // no matching IDs → empty result
     },
     include: { question: true },
   });
