@@ -24,7 +24,12 @@ const p = new PrismaClient();
   fs.writeFileSync(path.join(dir, 'questions.json'), JSON.stringify(questions, null, 2));
   console.log(`Questions: ${questions.length} records`);
 
-  // 4. Question options
+  // 4. Question tags
+  const tags = await p.questionTag.findMany();
+  fs.writeFileSync(path.join(dir, 'question_tags.json'), JSON.stringify(tags, null, 2));
+  console.log(`Question tags: ${tags.length} records`);
+
+  // 5. Question options
   const options = await p.questionOption.findMany();
   fs.writeFileSync(path.join(dir, 'question_options.json'), JSON.stringify(options, null, 2));
   console.log(`Question options: ${options.length} records`);
@@ -68,6 +73,11 @@ const p = new PrismaClient();
   const batches = await p.examBatch.findMany();
   fs.writeFileSync(path.join(dir, 'exam_batches.json'), JSON.stringify(batches, null, 2));
   console.log(`Exam batches: ${batches.length} records`);
+
+  // Audit logs
+  const auditLogs = await p.auditLog.findMany();
+  fs.writeFileSync(path.join(dir, 'audit_logs.json'), JSON.stringify(auditLogs, null, 2));
+  console.log(`Audit logs: ${auditLogs.length} records`);
 
   console.log(`\nAll data backed up to: ${dir}`);
 

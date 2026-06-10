@@ -47,6 +47,11 @@ export async function POST(request: Request) {
             department: true,
           },
         },
+        assignment: {
+          select: {
+            level: true,
+          },
+        },
         result: true,
         answers: {
           include: {
@@ -171,6 +176,7 @@ export async function POST(request: Request) {
           employeeNo: session.user.employeeNo,
           department: session.user.department,
         },
+        level: session.assignment?.level ?? null,
         submittedAt: session.submittedAt?.toISOString() ?? null,
         result: session.result
           ? {
@@ -186,9 +192,12 @@ export async function POST(request: Request) {
       };
 
       const safeName = session.user.name.replace(/[\\/:*?"<>|]/g, '_');
+      const safeDept = session.user.department.replace(/[\\/:*?"<>|]/g, '_');
+      const safeLevel = (session.assignment?.level ?? '').replace(/[\\/:*?"<>|]/g, '_');
+      const nameParts = [safeDept, safeLevel, safeName, session.user.employeeNo].filter(Boolean);
       pdfDataList.push({
         data: pdfData,
-        fileName: `${safeName}_${session.user.employeeNo}.pdf`,
+        fileName: `${nameParts.join('_')}.pdf`,
       });
     }
 

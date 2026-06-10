@@ -16,6 +16,7 @@ export interface PdfSessionData {
     employeeNo: string;
     department: string;
   };
+  level: string | null;
   submittedAt: string | null;
   result: {
     totalScore: number | null;
@@ -116,17 +117,20 @@ function drawInfoTable(doc: PDFKit.PDFDocument, data: PdfSessionData) {
   const r = data.result;
   const passLabel = r?.isPassed === true ? '合格' : r?.isPassed === false ? '不合格' : '待定';
   const passColor = r?.isPassed === true ? COLOR_GREEN : r?.isPassed === false ? COLOR_RED : COLOR_AMBER;
+  const levelLabel = data.level || '--';
 
   const rows = [
     ['姓名', data.employee.name, '工号', data.employee.employeeNo],
     ['部门', data.employee.department, '提交时间', formatDate(data.submittedAt)],
-    ['得分', r ? `${r.totalScore ?? '--'} / ${data.exam.totalScore}` : '--', '结果', passLabel],
+    ['得分', r ? `${r.totalScore ?? '--'} / ${data.exam.totalScore}` : '--', '应考级别', levelLabel],
     ['正确', r ? `${r.correctCount} / ${r.totalQuestions} 题` : '--', '用时', r ? formatDuration(r.timeTakenSeconds) : '--'],
   ];
 
   const tableX = PAGE_MARGIN;
-  const colWidths = [55, CONTENT_WIDTH / 2 - 55, 55, CONTENT_WIDTH / 2 - 55];
-  const rowHeight = 22;
+  const labelW = 60;
+  const halfW = CONTENT_WIDTH / 2;
+  const colWidths = [labelW, halfW - labelW, labelW, halfW - labelW];
+  const rowHeight = 24;
   const startY = doc.y;
 
   for (let i = 0; i < rows.length; i++) {
@@ -137,9 +141,20 @@ function drawInfoTable(doc: PDFKit.PDFDocument, data: PdfSessionData) {
     for (let j = 0; j < 4; j++) {
       const isLabel = j % 2 === 0;
       if (j > 0) doc.moveTo(x, y).lineTo(x, y + rowHeight).stroke();
-      doc.fontSize(isLabel ? 9 : 10)
-        .fillColor(isLabel ? COLOR_GRAY : (i === 2 && j === 3 ? passColor : COLOR_DARK));
-      doc.text(rows[i][j], x + 6, y + 5, { width: colWidths[j] - 12, lineBreak: false });
+
+      if (isLabel) {
+        doc.save();
+        doc.rect(x, y, colWidths[j], rowHeight).fill('#f5f5f4');
+        doc.restore();
+        if (j > 0) doc.moveTo(x, y).lineTo(x, y + rowHeight).strokeColor(COLOR_BORDER).stroke();
+      }
+
+      let valueColor = COLOR_DARK;
+      if (isLabel) valueColor = COLOR_GRAY;
+      else if (i === 2 && j === 1) valueColor = passColor;
+
+      doc.fontSize(isLabel ? 9 : 10).fillColor(valueColor);
+      doc.text(rows[i][j], x + 8, y + 6, { width: colWidths[j] - 16, lineBreak: false });
       x += colWidths[j];
     }
   }
