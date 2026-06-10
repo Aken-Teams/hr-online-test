@@ -172,12 +172,16 @@ export default function ExamResultsPage() {
         throw new Error(json?.error || '导出失败');
       }
       const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|"?)([^";]+)/i);
+      const serverName = filenameMatch ? decodeURIComponent(filenameMatch[1].replace(/"$/, '')) : null;
+      const fallbackName = sessionIds.length === 1
+        ? `考试试卷_${examId}.pdf`
+        : `考试试卷_${examId}.zip`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = sessionIds.length === 1
-        ? `考试试卷_${examId}.pdf`
-        : `考试试卷_${examId}.zip`;
+      a.download = serverName || fallbackName;
       document.body.appendChild(a);
       a.click();
       a.remove();
