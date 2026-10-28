@@ -225,11 +225,15 @@ export default function TabBasicInfo(props: Props) {
       {showBasic && (
       <Card title="时间设置">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Input label="考试开放时间" type="datetime-local" value={openAt} onChange={(e) => setOpenAt(e.target.value)} />
-          <Input label="考试截止时间" type="datetime-local" value={closeAt} onChange={(e) => setCloseAt(e.target.value)} />
-          <Input label="成绩开放时间" type="datetime-local" value={resultQueryOpenAt} onChange={(e) => setResultQueryOpenAt(e.target.value)} />
-          <Input label="成绩截止时间" type="datetime-local" value={resultQueryCloseAt} onChange={(e) => setResultQueryCloseAt(e.target.value)} />
+          <Input label="考试开放时间" type="datetime-local" value={openAt} onChange={(e) => setTimeField('openAt', e.target.value)} />
+          <Input label="考试截止时间" type="datetime-local" value={closeAt} min={openAt || undefined} onChange={(e) => setTimeField('closeAt', e.target.value)} />
+          <Input label="解析开放时间" type="datetime-local" value={resultQueryOpenAt} min={closeAt || openAt || undefined} onChange={(e) => setTimeField('resultQueryOpenAt', e.target.value)} />
+          <Input label="解析截止时间" type="datetime-local" value={resultQueryCloseAt} min={resultQueryOpenAt || closeAt || openAt || undefined} onChange={(e) => setTimeField('resultQueryCloseAt', e.target.value)} />
         </div>
+        <p className="mt-3 text-xs leading-relaxed text-stone-500">
+          <strong>总分</strong>由下方「立即出分」控制，与此时间无关。此处「解析开放时间」<strong>只管控</strong>错题解析、正确答案与个人报告：
+          <strong>不设</strong>则默认不开放（考生只看得到总分）；<strong>设定后</strong>解析与报告仅在此时间窗口内开放查看。
+        </p>
       </Card>
       )}
 
@@ -325,6 +329,7 @@ export default function TabBasicInfo(props: Props) {
         <div className="space-y-4">
           <ToggleRow label="随机出题" description="题目顺序随机打乱" checked={shuffleQuestions} onChange={setShuffleQuestions} />
           <ToggleRow label="随机选项" description="选项 A/B/C/D 顺序随机" checked={shuffleOptions} onChange={setShuffleOptions} />
+          <ToggleRow label="立即出分" description="交卷后立即公布总分（客观题即时、简答题评分后更新）；关闭则总分等解析开放时才一并公布" checked={showResultImmediately} onChange={setShowResultImmediately} />
           <ToggleRow label="显示正确答案" description="提交后展示正确答案" checked={showCorrectAnswers} onChange={setShowCorrectAnswers} />
           <ToggleRow label="练习模式" description="不限作答次数" checked={isPracticeMode} onChange={setIsPracticeMode} />
           {/* 人脸验证功能已隐藏 */}

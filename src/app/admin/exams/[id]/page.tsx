@@ -73,6 +73,7 @@ export default function EditExamPage() {
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
   const [shuffleOptions, setShuffleOptions] = useState(true);
   const [showCorrectAnswers, setShowCorrectAnswers] = useState(false);
+  const [showResultImmediately, setShowResultImmediately] = useState(true);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const [tabSwitchLimit, setTabSwitchLimit] = useState(3);
   const [forceSubmitOnTabSwitch, setForceSubmitOnTabSwitch] = useState(true);
@@ -123,6 +124,7 @@ export default function EditExamPage() {
       setShuffleQuestions(exam.shuffleQuestions);
       setShuffleOptions(exam.shuffleOptions);
       setShowCorrectAnswers(exam.showCorrectAnswers);
+      setShowResultImmediately(exam.showResultImmediately ?? true);
       setIsPracticeMode(exam.isPracticeMode);
       setTabSwitchLimit(exam.tabSwitchLimit);
       setForceSubmitOnTabSwitch(exam.forceSubmitOnTabSwitch ?? true);
@@ -213,7 +215,7 @@ export default function EditExamPage() {
         shuffleQuestions,
         shuffleOptions,
         showCorrectAnswers,
-        showResultImmediately: true,
+        showResultImmediately,
         isPracticeMode,
         tabSwitchLimit,
         forceSubmitOnTabSwitch,
@@ -341,6 +343,7 @@ export default function EditExamPage() {
           shuffleQuestions={shuffleQuestions} setShuffleQuestions={setShuffleQuestions}
           shuffleOptions={shuffleOptions} setShuffleOptions={setShuffleOptions}
           showCorrectAnswers={showCorrectAnswers} setShowCorrectAnswers={setShowCorrectAnswers}
+          showResultImmediately={showResultImmediately} setShowResultImmediately={setShowResultImmediately}
           isPracticeMode={isPracticeMode} setIsPracticeMode={setIsPracticeMode}
           tabSwitchLimit={tabSwitchLimit} setTabSwitchLimit={setTabSwitchLimit}
           forceSubmitOnTabSwitch={forceSubmitOnTabSwitch} setForceSubmitOnTabSwitch={setForceSubmitOnTabSwitch}
@@ -374,6 +377,7 @@ export default function EditExamPage() {
           shuffleQuestions={shuffleQuestions} setShuffleQuestions={setShuffleQuestions}
           shuffleOptions={shuffleOptions} setShuffleOptions={setShuffleOptions}
           showCorrectAnswers={showCorrectAnswers} setShowCorrectAnswers={setShowCorrectAnswers}
+          showResultImmediately={showResultImmediately} setShowResultImmediately={setShowResultImmediately}
           isPracticeMode={isPracticeMode} setIsPracticeMode={setIsPracticeMode}
           tabSwitchLimit={tabSwitchLimit} setTabSwitchLimit={setTabSwitchLimit}
           forceSubmitOnTabSwitch={forceSubmitOnTabSwitch} setForceSubmitOnTabSwitch={setForceSubmitOnTabSwitch}
