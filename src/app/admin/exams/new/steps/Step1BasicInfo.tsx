@@ -200,9 +200,8 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
           />
         </div>
         <p className="mt-3 text-xs leading-relaxed text-stone-500">
-          <strong>总分</strong>由「高级设置 → 立即出分」控制，与下方时间无关。此处「解析开放时间」为选填，
-          <strong>只管控</strong>错题解析、正确答案与个人报告（用时、正确率）：<strong>不设</strong>则默认不开放（考生只看得到总分）；
-          <strong>设定后</strong>解析与报告仅在此时间窗口内开放查看。
+          总分何时公布看「立即出分」，与此无关。「解析开放时间」（选填）只控制<strong>错题解析 / 正确答案 / 个人报告</strong>：
+          不设 = 不开放（考生只看得到总分），设定后仅在此时段内可查看。
         </p>
       </Card>
 
@@ -288,7 +287,6 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
               <ToggleRow label="随机出题" description="题目顺序随机打乱" checked={data.shuffleQuestions} onChange={(v) => set('shuffleQuestions', v)} />
               <ToggleRow label="随机选项" description="选项 A/B/C/D 顺序随机" checked={data.shuffleOptions} onChange={(v) => set('shuffleOptions', v)} />
               <ToggleRow label="立即出分" description="交卷后立即公布总分（客观题即时、简答题评分后更新）；关闭则总分等解析开放时才一并公布" checked={data.showResultImmediately} onChange={(v) => set('showResultImmediately', v)} />
-              <ToggleRow label="显示正确答案" description="提交后展示正确答案" checked={data.showCorrectAnswers} onChange={(v) => set('showCorrectAnswers', v)} />
               <ToggleRow label="练习模式" description="不限作答次数" checked={data.isPracticeMode} onChange={(v) => set('isPracticeMode', v)} />
               {/* 人脸验证功能已隐藏 */}
             </div>

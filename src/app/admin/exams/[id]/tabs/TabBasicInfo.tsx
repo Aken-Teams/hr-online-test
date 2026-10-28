@@ -100,6 +100,10 @@ export default function TabBasicInfo(props: Props) {
 
   const { toast } = useToast();
 
+  // 客观题 / 简答题 分值拆解
+  const essayPoints = rules.reduce((s, r) => s + (r.questionType === 'SHORT_ANSWER' ? r.count * r.pointsPerQuestion : 0), 0);
+  const objectivePoints = totalScore - essayPoints;
+
   /**
    * 時間順序卡控（含時分）：開放 ≤ 截止 ≤ 解析開放 ≤ 解析截止。
    * 選到比下限早的時間會自動吸附到下限。編輯已開放的考試可能有過去的開放時間，
@@ -214,10 +218,51 @@ export default function TabBasicInfo(props: Props) {
       {showRules && (
       <Card title="权重与配比">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Input label="理论权重(%)" type="number" value={theoryWeight} onChange={(e) => { const v = Number(e.target.value); setTheoryWeight(v); setPracticalWeight(100 - v); }} min={0} max={100} />
-          <Input label="实操权重(%)" type="number" value={practicalWeight} onChange={(e) => { const v = Number(e.target.value); setPracticalWeight(v); setTheoryWeight(100 - v); }} min={0} max={100} />
-          <Input label="综合合格分" type="number" value={compositePassScore} onChange={(e) => setCompositePassScore(Number(e.target.value))} min={0} />
+          <Input label="理论权重(%)" type="number" value={theoryWeight} onChange={(e) => { const v = Math.max(0, Math.min(100, Number(e.target.value) || 0)); setTheoryWeight(v); setPracticalWeight(100 - v); }} min={0} max={100} />
+          <Input label="实操权重(%)" type="number" value={practicalWeight} onChange={(e) => { const v = Math.max(0, Math.min(100, Number(e.target.value) || 0)); setPracticalWeight(v); setTheoryWeight(100 - v); }} min={0} max={100} />
+          {practicalWeight > 0 ? (
+            <Input label="综合合格分" type="number" value={compositePassScore} onChange={(e) => setCompositePassScore(Number(e.target.value))} min={0} />
+          ) : (
+            <div className="w-full">
+              <label className="mb-1.5 block text-sm font-medium text-stone-400">综合合格分</label>
+              <div className="flex items-center rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-400" title="本场无实操，综合合格分不适用">—</div>
+            </div>
+          )}
           <Input label="基本题比例(%)" type="number" value={basicQuestionRatio} onChange={(e) => setBasicQuestionRatio(Number(e.target.value))} min={0} max={100} />
+        </div>
+        <div className="mt-3 space-y-1 rounded-lg border border-teal-200 bg-teal-50/50 px-4 py-3.5 text-sm leading-relaxed text-stone-700">
+          <p className="mb-1.5 text-[15px] font-semibold text-teal-800">本场成绩计算（依当前设定实时更新）</p>
+          <p>
+            <span className="text-stone-500">① 线上理论总分 =</span>{' '}
+            {objectivePoints > 0 && <>客观题 {objectivePoints} 分</>}
+            {objectivePoints > 0 && essayPoints > 0 && ' + '}
+            {essayPoints > 0 && <>简答题 {essayPoints} 分（需人工阅卷）</>}
+            {totalScore === 0 && <span className="text-amber-600">尚未设定题目规则</span>}
+            {totalScore > 0 && <> = <strong className="text-stone-900">{totalScore} 分</strong></>}
+          </p>
+          <p>
+            <span className="text-stone-500">② 每条规则抽题 =</span>{' '}
+            {basicQuestionRatio > 0
+              ? <>基本题 {basicQuestionRatio}%（全公司共用）+ 专业题 {100 - basicQuestionRatio}%（按工序/级别）</>
+              : <>全部专业题（按工序/级别），<span className="text-stone-400">本场无基本题</span></>}
+          </p>
+          <p>
+            <span className="text-stone-500">③ 综合成绩 =</span>{' '}
+            {practicalWeight > 0
+              ? <>线上 × {theoryWeight}% + 实操 × {practicalWeight}%，综合 ≥ {compositePassScore} 分合格</>
+              : <>线上理论总分（<span className="text-stone-400">本场无实操</span>，理论占 100%）</>}
+          </p>
+          <p>
+            <span className="text-stone-500">④ 合格线 =</span>{' '}
+            线上理论 ≥ <strong className="text-stone-900">{passScore} 分</strong>
+            <span className="text-stone-400">（「基本信息 → 线上理论及格分」设定）</span>
+            {practicalWeight > 0 && <>，综合 ≥ {compositePassScore} 分</>}
+          </p>
+          {totalScore > 0 && passScore > totalScore && (
+            <p className="font-medium text-amber-600">
+              注意：及格分 {passScore} 高于总分 {totalScore}，将无人能及格——请调低「线上理论及格分」，或增加题目分值。
+            </p>
+          )}
         </div>
       </Card>
       )}
@@ -231,8 +276,8 @@ export default function TabBasicInfo(props: Props) {
           <Input label="解析截止时间" type="datetime-local" value={resultQueryCloseAt} min={resultQueryOpenAt || closeAt || openAt || undefined} onChange={(e) => setTimeField('resultQueryCloseAt', e.target.value)} />
         </div>
         <p className="mt-3 text-xs leading-relaxed text-stone-500">
-          <strong>总分</strong>由下方「立即出分」控制，与此时间无关。此处「解析开放时间」<strong>只管控</strong>错题解析、正确答案与个人报告：
-          <strong>不设</strong>则默认不开放（考生只看得到总分）；<strong>设定后</strong>解析与报告仅在此时间窗口内开放查看。
+          总分何时公布看下方「立即出分」，与此无关。「解析开放时间」（选填）只控制<strong>错题解析 / 正确答案 / 个人报告</strong>：
+          不设 = 不开放（考生只看得到总分），设定后仅在此时段内可查看。
         </p>
       </Card>
       )}
@@ -330,7 +375,6 @@ export default function TabBasicInfo(props: Props) {
           <ToggleRow label="随机出题" description="题目顺序随机打乱" checked={shuffleQuestions} onChange={setShuffleQuestions} />
           <ToggleRow label="随机选项" description="选项 A/B/C/D 顺序随机" checked={shuffleOptions} onChange={setShuffleOptions} />
           <ToggleRow label="立即出分" description="交卷后立即公布总分（客观题即时、简答题评分后更新）；关闭则总分等解析开放时才一并公布" checked={showResultImmediately} onChange={setShowResultImmediately} />
-          <ToggleRow label="显示正确答案" description="提交后展示正确答案" checked={showCorrectAnswers} onChange={setShowCorrectAnswers} />
           <ToggleRow label="练习模式" description="不限作答次数" checked={isPracticeMode} onChange={setIsPracticeMode} />
           {/* 人脸验证功能已隐藏 */}
           <ToggleRow
@@ -385,6 +429,11 @@ export default function TabBasicInfo(props: Props) {
               <div className={`flex-1 grid grid-cols-2 gap-3 sm:grid-cols-[1fr_80px_80px_40px] ${!isFullyEditable ? 'pointer-events-none opacity-60' : ''}`}>
                 <div className="col-span-2 sm:col-span-1">
                   <CustomSelect options={QUESTION_TYPE_OPTIONS} value={rule.questionType} onChange={(v) => updateRule(idx, 'questionType', v as QuestionType)} />
+                  {rule.questionType === 'SHORT_ANSWER' ? (
+                    <span className="mt-1 inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700">简答题 · 需人工阅卷</span>
+                  ) : (
+                    <span className="mt-1 inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium bg-teal-50 text-teal-700">客观题 · 自动评分</span>
+                  )}
                 </div>
                 <Input type="number" value={rule.count} onChange={(e) => updateRule(idx, 'count', Number(e.target.value))} min={1} />
                 <Input type="number" value={rule.pointsPerQuestion} onChange={(e) => updateRule(idx, 'pointsPerQuestion', Number(e.target.value))} min={1} />

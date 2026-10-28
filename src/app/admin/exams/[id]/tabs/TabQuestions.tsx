@@ -51,6 +51,31 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  // 抽题池预览
+  interface PoolRule { type: string; needed: number; profNeeded: number; profAvail: number; basicAvail: number; available: number; sufficient: boolean }
+  interface PoolCombo { process: string | null; level: string | null; rules: PoolRule[] }
+  const [poolCombos, setPoolCombos] = useState<PoolCombo[] | null>(null);
+  const [poolHasParticipants, setPoolHasParticipants] = useState(true);
+  const [loadingPool, setLoadingPool] = useState(false);
+
+  async function loadPoolPreview() {
+    setLoadingPool(true);
+    try {
+      const res = await fetch(`/api/admin/exams/${examId}/question-pool-preview`);
+      const json = await res.json();
+      if (json.success) {
+        setPoolCombos(json.data.combos);
+        setPoolHasParticipants(json.data.hasParticipants);
+      } else {
+        toast(json.error || '加载失败', 'error');
+      }
+    } catch {
+      toast('加载抽题池失败', 'error');
+    } finally {
+      setLoadingPool(false);
+    }
+  }
+
   useEffect(() => {
     fetchImportedFiles();
   }, [examId]);
@@ -292,6 +317,58 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
       )}
 
       {/* Question summary + file list */}
+      <Card title="抽题池预览">
+        <div className="space-y-3">
+          <p className="text-sm leading-relaxed text-stone-600">
+            不上传专属题库时，系统按<strong>每位考生的工序 + 级别</strong>从<strong>系统题库</strong>自动抽题。
+            下方预览本场各工序/级别「需要 vs 可用」题数，确认够抽再开考。
+          </p>
+          <Button variant="secondary" size="sm" onClick={loadPoolPreview} loading={loadingPool}>
+            {poolCombos ? '重新预览' : '预览抽题池'}
+          </Button>
+
+          {poolCombos && !poolHasParticipants && (
+            <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">
+              尚未指派应考人员，无法预览。请先到「应考人员」添加考生（抽题依考生的工序/级别）。
+            </p>
+          )}
+
+          {poolCombos && poolHasParticipants && poolCombos.map((combo, ci) => (
+            <div key={ci} className="rounded-lg border border-stone-200 overflow-hidden">
+              <div className="bg-stone-50 px-3 py-2 text-sm font-medium text-stone-700">
+                工序 {combo.process || '—'} · 级别 {combo.level || '—'}
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stone-100 text-xs text-stone-500">
+                    <th className="py-1.5 px-3 text-left font-medium">题型</th>
+                    <th className="py-1.5 px-3 text-right font-medium">需要</th>
+                    <th className="py-1.5 px-3 text-right font-medium">专业题可用</th>
+                    <th className="py-1.5 px-3 text-right font-medium">基本题可用</th>
+                    <th className="py-1.5 px-3 text-center font-medium">状态</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {combo.rules.map((r, ri) => (
+                    <tr key={ri} className="border-b border-stone-50 last:border-0">
+                      <td className="py-1.5 px-3">{QUESTION_TYPE_LABELS[r.type as keyof typeof QUESTION_TYPE_LABELS] || r.type}</td>
+                      <td className="py-1.5 px-3 text-right">{r.needed}</td>
+                      <td className="py-1.5 px-3 text-right">{r.profAvail}</td>
+                      <td className="py-1.5 px-3 text-right">{r.basicAvail}</td>
+                      <td className="py-1.5 px-3 text-center">
+                        {r.sufficient
+                          ? <span className="inline-flex rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">充足</span>
+                          : <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">不足（可用 {r.available} &lt; 需要 {r.needed}）</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       <Card title="题库概况">
         {loadingFiles ? (
           <div className="flex items-center gap-2 text-sm text-stone-500">

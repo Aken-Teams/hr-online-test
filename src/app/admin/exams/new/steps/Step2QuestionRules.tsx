@@ -42,6 +42,16 @@ export default function Step2QuestionRules({ rules, onChange, shuffleQuestions =
     () => rules.reduce((sum, r) => sum + r.count * r.pointsPerQuestion, 0),
     [rules]
   );
+  // 客观题 / 简答题 分值拆解（简答题需人工阅卷，其余自动评分）
+  const breakdown = useMemo(() => {
+    let objective = 0, essay = 0;
+    for (const r of rules) {
+      const pts = r.count * r.pointsPerQuestion;
+      if (r.questionType === 'SHORT_ANSWER') essay += pts;
+      else objective += pts;
+    }
+    return { objective, essay };
+  }, [rules]);
 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -138,6 +148,11 @@ export default function Step2QuestionRules({ rules, onChange, shuffleQuestions =
                     value={rule.questionType}
                     onChange={(val) => updateRule(idx, 'questionType', val as QuestionType)}
                   />
+                  {rule.questionType === 'SHORT_ANSWER' ? (
+                    <span className="mt-1 inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700">简答题 · 需人工阅卷</span>
+                  ) : (
+                    <span className="mt-1 inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium bg-teal-50 text-teal-700">客观题 · 自动评分</span>
+                  )}
                 </div>
                 <Input
                   type="number"
@@ -187,9 +202,8 @@ export default function Step2QuestionRules({ rules, onChange, shuffleQuestions =
           type="number"
           value={basicData.theoryWeight}
           onChange={(e) => {
-            const val = Number(e.target.value);
-            setBasic('theoryWeight', val);
-            setBasic('practicalWeight', 100 - val);
+            const val = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+            onBasicChange({ ...basicData, theoryWeight: val, practicalWeight: 100 - val });
           }}
           min={0}
           max={100}
@@ -200,21 +214,27 @@ export default function Step2QuestionRules({ rules, onChange, shuffleQuestions =
           type="number"
           value={basicData.practicalWeight}
           onChange={(e) => {
-            const val = Number(e.target.value);
-            setBasic('practicalWeight', val);
-            setBasic('theoryWeight', 100 - val);
+            const val = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+            onBasicChange({ ...basicData, practicalWeight: val, theoryWeight: 100 - val });
           }}
           min={0}
           max={100}
         />
-        <Input
-          label="综合合格分"
-          required
-          type="number"
-          value={basicData.compositePassScore}
-          onChange={(e) => setBasic('compositePassScore', Number(e.target.value))}
-          min={0}
-        />
+        {basicData.practicalWeight > 0 ? (
+          <Input
+            label="综合合格分"
+            required
+            type="number"
+            value={basicData.compositePassScore}
+            onChange={(e) => setBasic('compositePassScore', Number(e.target.value))}
+            min={0}
+          />
+        ) : (
+          <div className="w-full">
+            <label className="mb-1.5 block text-sm font-medium text-stone-400">综合合格分</label>
+            <div className="flex items-center rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-400" title="本场无实操，综合合格分不适用">—</div>
+          </div>
+        )}
         <Input
           label="基本题比例(%)"
           required
@@ -225,9 +245,44 @@ export default function Step2QuestionRules({ rules, onChange, shuffleQuestions =
           max={100}
         />
       </div>
-      <p className="mt-2 text-xs text-stone-500">
-        综合成绩 = 线上分 × {basicData.theoryWeight}% + 实操分 × {basicData.practicalWeight}%，每题 {basicData.basicQuestionRatio}% 基本题 + {100 - basicData.basicQuestionRatio}% 专业题
-      </p>
+      <div className="mt-3 space-y-1 rounded-lg border border-teal-200 bg-teal-50/50 px-4 py-3.5 text-sm leading-relaxed text-stone-700">
+        <p className="mb-1.5 text-[15px] font-semibold text-teal-800">本场成绩计算（依上方设定实时更新）</p>
+        {/* 线上理论总分 = 客观 + 简答 */}
+        <p>
+          <span className="text-stone-500">① 线上理论总分 =</span>{' '}
+          {breakdown.objective > 0 && <>客观题 {breakdown.objective} 分</>}
+          {breakdown.objective > 0 && breakdown.essay > 0 && ' + '}
+          {breakdown.essay > 0 && <>简答题 {breakdown.essay} 分（需人工阅卷）</>}
+          {totalScore === 0 && <span className="text-amber-600">尚未设定题目规则</span>}
+          {totalScore > 0 && <> = <strong className="text-stone-900">{totalScore} 分</strong></>}
+        </p>
+        {/* 基本 / 专业 */}
+        <p>
+          <span className="text-stone-500">② 每条规则抽题 =</span>{' '}
+          {basicData.basicQuestionRatio > 0
+            ? <>基本题 {basicData.basicQuestionRatio}%（全公司共用）+ 专业题 {100 - basicData.basicQuestionRatio}%（按工序/级别）</>
+            : <>全部专业题（按工序/级别），<span className="text-stone-400">本场无基本题</span></>}
+        </p>
+        {/* 综合成绩 */}
+        <p>
+          <span className="text-stone-500">③ 综合成绩 =</span>{' '}
+          {basicData.practicalWeight > 0
+            ? <>线上 × {basicData.theoryWeight}% + 实操 × {basicData.practicalWeight}%，综合 ≥ {basicData.compositePassScore} 分合格</>
+            : <>线上理论总分（<span className="text-stone-400">本场无实操</span>，理论占 100%）</>}
+        </p>
+        {/* 及格线 */}
+        <p>
+          <span className="text-stone-500">④ 合格线 =</span>{' '}
+          线上理论 ≥ <strong className="text-stone-900">{basicData.passScore} 分</strong>
+          <span className="text-stone-400">（在第 1 步「线上理论及格分」设定）</span>
+          {basicData.practicalWeight > 0 && <>，综合 ≥ {basicData.compositePassScore} 分</>}
+        </p>
+        {totalScore > 0 && basicData.passScore > totalScore && (
+          <p className="font-medium text-amber-600">
+            注意：及格分 {basicData.passScore} 高于总分 {totalScore}，将无人能及格——请到第 1 步调低「线上理论及格分」，或增加题目分值。
+          </p>
+        )}
+      </div>
     </Card>
     </div>
   );
