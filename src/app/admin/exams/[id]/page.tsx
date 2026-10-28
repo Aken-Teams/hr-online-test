@@ -392,8 +392,8 @@ export default function EditExamPage() {
       )}
 
       {activeTab === 'questions' && <TabQuestions examId={examId} hasResults={sessionCount > 0} />}
-      {activeTab === 'participants' && <TabParticipants examId={examId} />}
-      {activeTab === 'scores' && <TabScores examId={examId} />}
+      {activeTab === 'participants' && <TabParticipants examId={examId} readOnly={isArchived} />}
+      {activeTab === 'scores' && <TabScores examId={examId} readOnly={isArchived} />}
 
       {/* Publish confirmation dialog */}
       <Dialog

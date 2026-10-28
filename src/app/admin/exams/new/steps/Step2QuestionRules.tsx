@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
+import type { Step1Data } from './Step1BasicInfo';
 import { Input } from '@/components/ui/Input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
@@ -31,9 +32,12 @@ interface Props {
   rules: QuestionRule[];
   onChange: (rules: QuestionRule[]) => void;
   shuffleQuestions?: boolean;
+  basicData: Step1Data;
+  onBasicChange: (data: Step1Data) => void;
 }
 
-export default function Step2QuestionRules({ rules, onChange, shuffleQuestions = true }: Props) {
+export default function Step2QuestionRules({ rules, onChange, shuffleQuestions = true, basicData, onBasicChange }: Props) {
+  const setBasic = (key: keyof Step1Data, val: number) => onBasicChange({ ...basicData, [key]: val });
   const totalScore = useMemo(
     () => rules.reduce((sum, r) => sum + r.count * r.pointsPerQuestion, 0),
     [rules]
@@ -94,6 +98,7 @@ export default function Step2QuestionRules({ rules, onChange, shuffleQuestions =
   }
 
   return (
+    <div className="space-y-6">
     <Card title={<>题目规则<span className="ml-0.5 text-red-500">*</span></>} className="overflow-visible">
       <div className="space-y-3">
         {canDrag && (
@@ -173,5 +178,57 @@ export default function Step2QuestionRules({ rules, onChange, shuffleQuestions =
         </div>
       </div>
     </Card>
+
+    <Card title="权重与配比">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Input
+          label="理论权重(%)"
+          required
+          type="number"
+          value={basicData.theoryWeight}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            setBasic('theoryWeight', val);
+            setBasic('practicalWeight', 100 - val);
+          }}
+          min={0}
+          max={100}
+        />
+        <Input
+          label="实操权重(%)"
+          required
+          type="number"
+          value={basicData.practicalWeight}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            setBasic('practicalWeight', val);
+            setBasic('theoryWeight', 100 - val);
+          }}
+          min={0}
+          max={100}
+        />
+        <Input
+          label="综合合格分"
+          required
+          type="number"
+          value={basicData.compositePassScore}
+          onChange={(e) => setBasic('compositePassScore', Number(e.target.value))}
+          min={0}
+        />
+        <Input
+          label="基本题比例(%)"
+          required
+          type="number"
+          value={basicData.basicQuestionRatio}
+          onChange={(e) => setBasic('basicQuestionRatio', Number(e.target.value))}
+          min={0}
+          max={100}
+        />
+      </div>
+      <p className="mt-2 text-xs text-stone-500">
+        综合成绩 = 线上分 × {basicData.theoryWeight}% + 实操分 × {basicData.practicalWeight}%，每题 {basicData.basicQuestionRatio}% 基本题 + {100 - basicData.basicQuestionRatio}% 专业题
+      </p>
+    </Card>
+    </div>
   );
 }

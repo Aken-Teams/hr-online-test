@@ -29,6 +29,7 @@ export interface Step1Data {
   showCorrectAnswers: boolean;
   isPracticeMode: boolean;
   tabSwitchLimit: number;
+  forceSubmitOnTabSwitch: boolean;
   enableFaceAuth: boolean;
   batches: BatchInput[];
 }
@@ -51,6 +52,7 @@ export const DEFAULT_STEP1: Step1Data = {
   showCorrectAnswers: false,
   isPracticeMode: false,
   tabSwitchLimit: 3,
+  forceSubmitOnTabSwitch: true,
   enableFaceAuth: false,
   batches: [],
 };
@@ -112,57 +114,6 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
             />
           </div>
         </div>
-      </Card>
-
-      <Card title="权重与配比">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Input
-            label="理论权重(%)"
-            required
-            type="number"
-            value={data.theoryWeight}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              set('theoryWeight', val);
-              set('practicalWeight', 100 - val);
-            }}
-            min={0}
-            max={100}
-          />
-          <Input
-            label="实操权重(%)"
-            required
-            type="number"
-            value={data.practicalWeight}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              set('practicalWeight', val);
-              set('theoryWeight', 100 - val);
-            }}
-            min={0}
-            max={100}
-          />
-          <Input
-            label="综合合格分"
-            required
-            type="number"
-            value={data.compositePassScore}
-            onChange={(e) => set('compositePassScore', Number(e.target.value))}
-            min={0}
-          />
-          <Input
-            label="基本题比例(%)"
-            required
-            type="number"
-            value={data.basicQuestionRatio}
-            onChange={(e) => set('basicQuestionRatio', Number(e.target.value))}
-            min={0}
-            max={100}
-          />
-        </div>
-        <p className="mt-2 text-xs text-stone-500">
-          综合成绩 = 线上分 × {data.theoryWeight}% + 实操分 × {data.practicalWeight}%，每题 {data.basicQuestionRatio}% 基本题 + {100 - data.basicQuestionRatio}% 专业题
-        </p>
       </Card>
 
       <Card title="时间设置">
@@ -281,10 +232,16 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
               <ToggleRow label="练习模式" description="不限作答次数" checked={data.isPracticeMode} onChange={(v) => set('isPracticeMode', v)} />
               {/* 人脸验证功能已隐藏 */}
             </div>
+            <ToggleRow
+              label="达上限强制交卷"
+              description="关闭时仅提醒与记录，由人资依稽核纪录人工判定（手机黑屏不会被强制交卷）"
+              checked={data.forceSubmitOnTabSwitch}
+              onChange={(v) => set('forceSubmitOnTabSwitch', v)}
+            />
             <div className="flex items-center justify-between rounded-lg border border-stone-100 bg-stone-50/50 px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-stone-700">切屏限制</p>
-                <p className="text-xs text-stone-500">最大切屏次数，0 = 不限制</p>
+                <p className="text-sm font-medium text-stone-700">{data.forceSubmitOnTabSwitch ? '切屏限制' : '离开画面提醒门槛'}</p>
+                <p className="text-xs text-stone-500">{data.forceSubmitOnTabSwitch ? '最大切屏次数，0 = 不限制' : '仅用于稽核统计，不会强制交卷'}</p>
               </div>
               <input
                 type="number"

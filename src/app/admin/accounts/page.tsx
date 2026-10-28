@@ -11,7 +11,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
-import { ChevronDown, Check, Eye, EyeOff, Shuffle } from 'lucide-react';
+import { ChevronDown, Check, Eye, EyeOff, Shuffle, Pencil, Ban, CheckCircle2 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -458,13 +458,17 @@ export default function AdminAccountsPage() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => openEdit(a)}>
+                  <div className="flex justify-end gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(a)}
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                    >
+                      <Pencil className="h-3 w-3" />
                       编辑
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
+                    </button>
+                    <button
+                      type="button"
                       disabled={saving}
                       onClick={() =>
                         patchAccount(
@@ -473,9 +477,25 @@ export default function AdminAccountsPage() {
                           a.isActive ? '账号已停用' : '账号已启用'
                         )
                       }
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors disabled:opacity-50',
+                        a.isActive
+                          ? 'hover:border-red-300 hover:bg-red-50 hover:text-red-600'
+                          : 'hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700'
+                      )}
                     >
-                      {a.isActive ? '停用' : '启用'}
-                    </Button>
+                      {a.isActive ? (
+                        <>
+                          <Ban className="h-3 w-3" />
+                          停用
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-3 w-3" />
+                          启用
+                        </>
+                      )}
+                    </button>
                   </div>
                 </td>
               </tr>

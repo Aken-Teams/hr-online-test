@@ -22,7 +22,7 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { DEPARTMENTS } from '@/lib/constants';
-import { Download, Trash2 } from 'lucide-react';
+import { Download, Trash2, Eye } from 'lucide-react';
 import { ExportDialog } from '@/components/shared/ExportDialog';
 import type { EmployeeData } from '@/types/exam';
 
@@ -48,6 +48,7 @@ export default function EmployeeListPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [examFilter, setExamFilter] = useState('');
   const [examOptions, setExamOptions] = useState<{ value: string; label: string }[]>([{ value: '', label: '全部考试' }]);
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
 
   // Export
   const [exportOpen, setExportOpen] = useState(false);
@@ -103,6 +104,9 @@ export default function EmployeeListPage() {
       setEmployees(data?.items ?? []);
       setTotal(data?.total ?? 0);
       setTotalPages(data?.totalPages ?? 1);
+      if (Array.isArray(data?.availableRoles) && data.availableRoles.length > 0) {
+        setAvailableRoles(data.availableRoles);
+      }
     } catch {
       toast('加载员工列表失败', 'error');
     } finally {
@@ -216,11 +220,11 @@ export default function EmployeeListPage() {
             value={deptFilter}
             onChange={(val) => setDeptFilter(val)}
           />
-          <Input
-            label="岗位"
-            placeholder="如 SAW, 仓管..."
+          <CustomSelect
+            label="岗位（工序）"
+            options={[{ value: '', label: '全部岗位' }, ...availableRoles.map((r) => ({ value: r, label: r }))]}
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
+            onChange={(val) => setRoleFilter(val)}
           />
           <Input
             label="搜索"
@@ -307,13 +311,22 @@ export default function EmployeeListPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <button
-                          className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
-                          onClick={(e) => { e.stopPropagation(); if (emp.id) setDeleteId(emp.id); }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          删除
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                            onClick={(e) => { e.stopPropagation(); if (emp.id) router.push(`/admin/employees/${emp.id}`); }}
+                          >
+                            <Eye className="h-3 w-3" />
+                            查看
+                          </button>
+                          <button
+                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                            onClick={(e) => { e.stopPropagation(); if (emp.id) setDeleteId(emp.id); }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            删除
+                          </button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -394,14 +407,13 @@ export default function EmployeeListPage() {
               setNewEmployee((prev) => ({ ...prev, department: val }))
             }
           />
-          <Input
-            label="岗位"
+          <CustomSelect
+            label="岗位（工序）"
             required
+            placeholder="请选择工序"
+            options={availableRoles.map((r) => ({ value: r, label: r }))}
             value={newEmployee.role}
-            onChange={(e) =>
-              setNewEmployee((prev) => ({ ...prev, role: e.target.value }))
-            }
-            placeholder="例如：仓管员"
+            onChange={(val) => setNewEmployee((prev) => ({ ...prev, role: val }))}
           />
           <Input
             label="身份证后6位"

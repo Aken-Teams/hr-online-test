@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -85,6 +86,62 @@ export default function EmployeeDetailPage() {
   const [assignForm, setAssignForm] = useState({ process: '', level: '' });
   const [assignOptions, setAssignOptions] = useState<{ processes: string[]; levels: string[] }>({ processes: [], levels: [] });
   const [assignSaving, setAssignSaving] = useState(false);
+
+  // 考试记录：查询 / 筛选 / 分页
+  const [recQuery, setRecQuery] = useState('');
+  const [recResult, setRecResult] = useState('');
+  const [recPage, setRecPage] = useState(1);
+  const REC_PAGE_SIZE = 10;
+
+  const allRecords = useMemo(() => {
+    if (!employee) return [];
+    const records = employee.assignments.map((a) => ({
+      key: a.id,
+      examTitle: a.examTitle,
+      process: a.process,
+      level: a.level,
+      examStatus: a.examStatus,
+      assignment: a as Assignment | null,
+      session: employee.sessions.find((x) => x.examId === a.examId) ?? null,
+    }));
+    const orphans = employee.sessions
+      .filter((x) => !employee.assignments.some((a) => a.examId === x.examId))
+      .map((x) => ({
+        key: x.sessionId,
+        examTitle: x.examTitle,
+        process: x.process,
+        level: x.level,
+        examStatus: x.status,
+        assignment: null as Assignment | null,
+        session: x,
+      }));
+    return [...records, ...orphans];
+  }, [employee]);
+
+  const filteredRecords = useMemo(() => {
+    const q = recQuery.trim().toLowerCase();
+    return allRecords.filter((r) => {
+      if (recResult === 'passed' && r.session?.isPassed !== true) return false;
+      if (recResult === 'failed' && r.session?.isPassed !== false) return false;
+      if (recResult === 'untaken' && r.session) return false;
+      if (q) {
+        const hay = [r.examTitle, r.process ?? '', r.level ?? ''].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [allRecords, recQuery, recResult]);
+
+  const recTotalPages = Math.max(1, Math.ceil(filteredRecords.length / REC_PAGE_SIZE));
+  const recPageSafe = Math.min(recPage, recTotalPages);
+  const pagedRecords = filteredRecords.slice(
+    (recPageSafe - 1) * REC_PAGE_SIZE,
+    recPageSafe * REC_PAGE_SIZE
+  );
+
+  useEffect(() => {
+    setRecPage(1);
+  }, [recQuery, recResult]);
 
   const employeeId = params.id as string;
 
@@ -236,31 +293,82 @@ export default function EmployeeDetailPage() {
         </div>
       </Card>
 
-      {/* Exam assignments */}
-      <Card title={`考试指派记录 (${employee.assignments.length})`}>
-        {employee.assignments.length === 0 ? (
-          <p className="py-4 text-center text-sm text-stone-400">暂无考试指派</p>
+      {/* 考试记录（指派 + 成绩合并） */}
+      <Card title={`考试记录 (${filteredRecords.length})`}>
+        {/* 查询 / 筛选 */}
+        {allRecords.length > 0 && (
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              value={recQuery}
+              onChange={(e) => setRecQuery(e.target.value)}
+              placeholder="搜寻考试名称或工序"
+              className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 sm:max-w-xs"
+            />
+            <div className="w-full sm:w-36">
+              <CustomSelect
+                options={[
+                  { value: '', label: '全部结果' },
+                  { value: 'passed', label: '合格' },
+                  { value: 'failed', label: '不合格' },
+                  { value: 'untaken', label: '未考' },
+                ]}
+                value={recResult}
+                onChange={setRecResult}
+              />
+            </div>
+          </div>
+        )}
+
+        {allRecords.length === 0 ? (
+          <p className="py-4 text-center text-sm text-stone-400">暂无考试记录</p>
+        ) : filteredRecords.length === 0 ? (
+          <p className="py-4 text-center text-sm text-stone-400">没有符合条件的记录</p>
         ) : (
           <>
             {/* Mobile cards */}
             <div className="space-y-2 md:hidden">
-              {employee.assignments.map((a) => (
-                <div key={a.id} className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-stone-800">{a.examTitle}</span>
-                    <Badge variant={a.examStatus === 'ACTIVE' ? 'success' : 'default'}>
-                      {STATUS_LABELS[a.examStatus] ?? a.examStatus}
-                    </Badge>
+              {pagedRecords.map((r) => (
+                <div key={r.key} className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-stone-800">{r.examTitle}</span>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={r.examStatus === 'ACTIVE' ? 'success' : 'default'}>
+                        {STATUS_LABELS[r.examStatus] ?? r.examStatus}
+                      </Badge>
+                      {r.session?.isPassed != null && (
+                        <Badge variant={r.session.isPassed ? 'success' : 'danger'}>
+                          {r.session.isPassed ? '合格' : '不合格'}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <p className="mt-1 text-xs text-stone-500">
-                    {a.process ?? '—'} · {a.level ?? '—'} · {new Date(a.examCreatedAt).toLocaleDateString('zh-CN')}
+                    {r.process ?? '—'} · {r.level ?? '—'}
+                    {r.session?.submittedAt && ` · 交卷 ${new Date(r.session.submittedAt).toLocaleDateString('zh-CN')}`}
                   </p>
-                  <button onClick={() => openAssignEdit(a)} className="mt-1.5 text-xs text-teal-600 hover:text-teal-700">编辑</button>
+                  <div className="mt-2 grid grid-cols-3 gap-2 rounded-md bg-white px-2 py-1.5 text-center">
+                    <div>
+                      <p className="text-[11px] text-stone-400">线上分</p>
+                      <p className="text-sm font-semibold text-stone-800">{r.session ? r.session.autoScore : '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-stone-400">实操分</p>
+                      <p className="text-sm font-semibold text-stone-800">{r.session?.practicalScore ?? '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-stone-400">综合分</p>
+                      <p className="text-sm font-bold text-teal-700">{r.session?.combinedScore ?? '—'}</p>
+                    </div>
+                  </div>
+                  {r.assignment && ['DRAFT', 'PUBLISHED'].includes(r.examStatus) && (
+                    <button onClick={() => openAssignEdit(r.assignment!)} className="mt-1.5 text-xs text-teal-600 hover:text-teal-700">编辑指派</button>
+                  )}
                 </div>
               ))}
             </div>
+
             {/* Desktop table */}
-            <div className="hidden md:block">
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -268,122 +376,64 @@ export default function EmployeeDetailPage() {
                     <TableHead>工序</TableHead>
                     <TableHead>级别</TableHead>
                     <TableHead>考试状态</TableHead>
-                    <TableHead>指派时间</TableHead>
+                    <TableHead className="text-right">线上分</TableHead>
+                    <TableHead className="text-right">实操分</TableHead>
+                    <TableHead className="text-right">综合分</TableHead>
+                    <TableHead>结果</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {employee.assignments.map((a) => (
-                    <TableRow key={a.id}>
-                      <TableCell className="font-medium">{a.examTitle}</TableCell>
-                      <TableCell>{a.process ?? '—'}</TableCell>
-                      <TableCell>{a.level ?? '—'}</TableCell>
+                  {pagedRecords.map((r) => (
+                    <TableRow key={r.key}>
+                      <TableCell className="font-medium">{r.examTitle}</TableCell>
+                      <TableCell>{r.process ?? '—'}</TableCell>
+                      <TableCell>{r.level ?? '—'}</TableCell>
                       <TableCell>
-                        <Badge variant={a.examStatus === 'ACTIVE' ? 'success' : 'default'}>
-                          {STATUS_LABELS[a.examStatus] ?? a.examStatus}
+                        <Badge variant={r.examStatus === 'ACTIVE' ? 'success' : 'default'}>
+                          {STATUS_LABELS[r.examStatus] ?? r.examStatus}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-stone-400 whitespace-nowrap">
-                        {new Date(a.examCreatedAt).toLocaleDateString('zh-CN')}
-                      </TableCell>
+                      <TableCell className="text-right">{r.session ? r.session.autoScore : <span className="text-stone-300">—</span>}</TableCell>
+                      <TableCell className="text-right">{r.session?.practicalScore ?? <span className="text-stone-300">—</span>}</TableCell>
+                      <TableCell className="text-right font-semibold text-teal-700">{r.session?.combinedScore ?? <span className="font-normal text-stone-300">—</span>}</TableCell>
                       <TableCell>
-                        <button
-                          onClick={() => openAssignEdit(a)}
-                          className="inline-flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700"
-                        >
-                          <Pencil className="h-3 w-3" />
-                          编辑
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )}
-      </Card>
-
-      {/* Historical scores */}
-      <Card title={`历史成绩 (${employee.sessions.length})`}>
-        {employee.sessions.length === 0 ? (
-          <p className="py-4 text-center text-sm text-stone-400">暂无考试成绩</p>
-        ) : (
-          <>
-            {/* Mobile cards */}
-            <div className="space-y-2 md:hidden">
-              {employee.sessions.map((s) => (
-                <div key={s.sessionId} className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-stone-800">{s.examTitle}</span>
-                    {s.isPassed != null && (
-                      <Badge variant={s.isPassed ? 'success' : 'danger'}>
-                        {s.isPassed ? '合格' : '不合格'}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs text-stone-500">
-                    {s.process ?? '—'} · {s.level ?? '—'}
-                    {s.submittedAt && ` · ${new Date(s.submittedAt).toLocaleDateString('zh-CN')}`}
-                  </p>
-                  <div className="mt-2 grid grid-cols-3 gap-2 rounded-md bg-white px-2 py-1.5 text-center">
-                    <div>
-                      <p className="text-[11px] text-stone-400">线上分</p>
-                      <p className="text-sm font-semibold text-stone-800">{s.autoScore}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] text-stone-400">实操分</p>
-                      <p className="text-sm font-semibold text-stone-800">{s.practicalScore ?? '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] text-stone-400">综合分</p>
-                      <p className="text-sm font-bold text-teal-700">{s.combinedScore ?? '—'}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Desktop table */}
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>考试名称</TableHead>
-                    <TableHead>工序</TableHead>
-                    <TableHead>级别</TableHead>
-                    <TableHead>线上分</TableHead>
-                    <TableHead>实操分</TableHead>
-                    <TableHead>综合分</TableHead>
-                    <TableHead>是否合格</TableHead>
-                    <TableHead>交卷时间</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employee.sessions.map((s) => (
-                    <TableRow key={s.sessionId}>
-                      <TableCell className="font-medium">{s.examTitle}</TableCell>
-                      <TableCell>{s.process ?? '—'}</TableCell>
-                      <TableCell>{s.level ?? '—'}</TableCell>
-                      <TableCell>{s.autoScore}</TableCell>
-                      <TableCell>{s.practicalScore ?? '—'}</TableCell>
-                      <TableCell className="font-semibold">{s.combinedScore ?? '—'}</TableCell>
-                      <TableCell>
-                        {s.isPassed != null ? (
-                          <Badge variant={s.isPassed ? 'success' : 'danger'}>
-                            {s.isPassed ? '合格' : '不合格'}
+                        {r.session?.isPassed != null ? (
+                          <Badge variant={r.session.isPassed ? 'success' : 'danger'}>
+                            {r.session.isPassed ? '合格' : '不合格'}
                           </Badge>
                         ) : (
-                          '—'
+                          <span className="text-xs text-stone-400">{r.session ? '待定' : '未考'}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs text-stone-400 whitespace-nowrap">
-                        {s.submittedAt ? new Date(s.submittedAt).toLocaleString('zh-CN') : '—'}
+                      <TableCell className="text-right">
+                        {r.assignment && ['DRAFT', 'PUBLISHED'].includes(r.examStatus) ? (
+                          <button
+                            onClick={() => openAssignEdit(r.assignment!)}
+                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                          >
+                            <Pencil className="h-3 w-3" />
+                            编辑指派
+                          </button>
+                        ) : (
+                          <span className="text-xs text-stone-300">—</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
+
+            {recTotalPages > 1 && (
+              <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-3 text-sm">
+                <span className="text-stone-500">第 {recPageSafe} / {recTotalPages} 页，共 {filteredRecords.length} 条</span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" disabled={recPageSafe <= 1} onClick={() => setRecPage((x) => Math.max(1, x - 1))}>上一页</Button>
+                  <Button size="sm" variant="outline" disabled={recPageSafe >= recTotalPages} onClick={() => setRecPage((x) => Math.min(recTotalPages, x + 1))}>下一页</Button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </Card>

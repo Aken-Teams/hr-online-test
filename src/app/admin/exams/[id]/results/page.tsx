@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { ArrowLeft, Download, Upload, ChevronDown, FileText } from 'lucide-react';
+import { ArrowLeft, Download, Upload, ChevronDown, FileText, Eye } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -445,12 +445,14 @@ export default function ExamResultsPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span>{row.timeTakenSeconds > 0 ? formatDuration(row.timeTakenSeconds) : '--'}</span>
-                    <Link
-                      href={`/admin/exams/${examId}/results/${row.sessionId}`}
-                      className="font-medium text-teal-600 hover:text-teal-700"
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/admin/exams/${examId}/results/${row.sessionId}`)}
+                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
                     >
+                      <Eye className="h-3 w-3" />
                       详细
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -546,12 +548,14 @@ export default function ExamResultsPage() {
                         {row.timeTakenSeconds > 0 ? formatDuration(row.timeTakenSeconds) : '--'}
                       </TableCell>
                       <TableCell>
-                        <Link
-                          href={`/admin/exams/${examId}/results/${row.sessionId}`}
-                          className="text-sm font-medium text-teal-600 hover:text-teal-700"
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/admin/exams/${examId}/results/${row.sessionId}`)}
+                          className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
                         >
+                          <Eye className="h-3 w-3" />
                           详细
-                        </Link>
+                        </button>
                       </TableCell>
                     </TableRow>
                   );

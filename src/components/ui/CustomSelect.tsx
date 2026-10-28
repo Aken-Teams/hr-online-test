@@ -34,22 +34,46 @@ export function CustomSelect({
 }: CustomSelectProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // 以 fixed 浮层定位，避免被对话框等 overflow 容器裁切
+  const [pos, setPos] = useState<{ top: number; left: number; width: number; up: boolean } | null>(null);
 
   const selectedOption = options.find((o) => o.value === value);
 
   const handleClose = useCallback(() => setOpen(false), []);
 
-  // Close on click outside
+  const updatePos = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const panelH = 260;
+    const below = window.innerHeight - r.bottom;
+    const up = below < panelH && r.top > below;
+    setPos({ top: up ? r.top - 4 : r.bottom + 4, left: r.left, width: r.width, up });
+  }, []);
+
+  // Close on click outside + 重新定位
   useEffect(() => {
     if (!open) return;
+    updatePos();
     function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        handleClose();
-      }
+      const t = e.target as Node;
+      if (containerRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      handleClose();
+    }
+    function onScrollResize() {
+      updatePos();
     }
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [open, handleClose]);
+    window.addEventListener('resize', onScrollResize);
+    window.addEventListener('scroll', onScrollResize, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      window.removeEventListener('resize', onScrollResize);
+      window.removeEventListener('scroll', onScrollResize, true);
+    };
+  }, [open, handleClose, updatePos]);
 
   // Close on Escape
   useEffect(() => {
@@ -72,6 +96,7 @@ export function CustomSelect({
 
       {/* Trigger button */}
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
@@ -98,9 +123,18 @@ export function CustomSelect({
         />
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute z-50 mt-1 w-full min-w-max rounded-xl border border-stone-200 bg-white py-1 shadow-lg">
+      {/* Dropdown：fixed 浮层，z 高于对话框 */}
+      {open && pos && (
+        <div
+          ref={panelRef}
+          className="fixed z-[60] rounded-xl border border-stone-200 bg-white py-1 shadow-xl"
+          style={{
+            top: pos.up ? undefined : pos.top,
+            bottom: pos.up ? window.innerHeight - pos.top : undefined,
+            left: pos.left,
+            minWidth: pos.width,
+          }}
+        >
           <ul className="max-h-60 overflow-auto">
             {options.map((option) => {
               const isSelected = option.value === value;

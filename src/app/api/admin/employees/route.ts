@@ -44,7 +44,7 @@ export async function GET(request: Request) {
       where.examAssignments = { some: { examId } };
     }
 
-    const [items, total] = await Promise.all([
+    const [items, total, roleRows] = await Promise.all([
       prisma.user.findMany({
         where,
         select: {
@@ -68,6 +68,12 @@ export async function GET(request: Request) {
         take: pageSize,
       }),
       prisma.user.count({ where }),
+      prisma.user.findMany({
+        where: { role: { not: '' } },
+        select: { role: true },
+        distinct: ['role'],
+        orderBy: { role: 'asc' },
+      }),
     ]);
 
     const employees = items.map((u) => ({
@@ -93,6 +99,7 @@ export async function GET(request: Request) {
         page,
         pageSize,
         totalPages: Math.ceil(total / pageSize),
+        availableRoles: roleRows.map((r) => r.role).filter(Boolean),
       },
     });
   } catch (error) {

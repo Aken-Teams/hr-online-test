@@ -22,9 +22,11 @@ interface ScoreRow {
 
 interface Props {
   examId: string;
+  /** 考试归档后唯读，隐藏导入/重置操作 */
+  readOnly?: boolean;
 }
 
-export default function TabScores({ examId }: Props) {
+export default function TabScores({ examId, readOnly = false }: Props) {
   const { toast } = useToast();
   const [scores, setScores] = useState<ScoreRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,15 +153,17 @@ export default function TabScores({ examId }: Props) {
 
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <input ref={fileRef} type="file" accept=".xls,.xlsx" className="hidden" onChange={handleImport} />
-            <Button variant="secondary" onClick={() => fileRef.current?.click()} loading={uploading}>
-              <Upload className="h-4 w-4" />
-              导入实操分
-            </Button>
+            {!readOnly && (
+              <Button variant="secondary" onClick={() => fileRef.current?.click()} loading={uploading}>
+                <Upload className="h-4 w-4" />
+                导入实操分
+              </Button>
+            )}
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Download className="h-4 w-4" />
               下载模板
             </Button>
-            {scores.length > 0 && (
+            {!readOnly && scores.length > 0 && (
               <Button variant="outline" onClick={() => setShowResetDialog(true)}>
                 <RotateCcw className="h-4 w-4" />
                 重置成绩
@@ -192,7 +196,7 @@ export default function TabScores({ examId }: Props) {
               <tbody>
                 {paged.map((s) => (
                   <tr key={s.sessionId} className="border-b border-stone-50">
-                    <td className="py-2 pr-3">{s.employeeNo?.startsWith('AUTO_') ? '-' : s.employeeNo}</td>
+                    <td className="py-2 pr-3">{s.employeeNo?.startsWith('AUTO_') ? <span className="text-stone-300 italic">未分配</span> : s.employeeNo}</td>
                     <td className="py-2 pr-3 font-medium">{s.name}</td>
                     <td className="py-2 pr-3 text-stone-600">{s.department}</td>
                     <td className="py-2 pr-3 text-stone-600">{s.process ?? '-'}</td>

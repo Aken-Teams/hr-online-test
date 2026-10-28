@@ -10,6 +10,14 @@ import { Progress } from '@/components/ui/Progress';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ArrowLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+} from 'recharts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,7 +53,7 @@ interface SessionDetailData {
     gradeLabel: string;
     categoryScores: Record<
       string,
-      { earnedPoints: number; maxPoints: number; count: number; correctCount: number }
+      { earnedPoints: number; maxPoints: number; totalCount?: number; count?: number; correctCount: number }
     >;
     isFullyGraded: boolean;
     practicalScore: number | null;
@@ -467,50 +475,50 @@ export default function SessionDetailPage() {
               {/* Stats grid */}
               {showPracticalSection ? (
                 <div className="grid w-full flex-1 grid-cols-2 gap-2.5 sm:grid-cols-5 sm:gap-3">
-                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                    <p className="text-xs text-stone-500">线上分 <span className="text-stone-400">({Math.round((data.theoryWeight ?? 0.4) * 100)}%)</span></p>
-                    <p className="mt-0.5 text-lg font-bold text-stone-800">
+                  <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-center transition-colors hover:border-stone-300">
+                    <p className="mb-0.5 text-xs text-stone-500">线上分 <span className="text-stone-400">({Math.round((data.theoryWeight ?? 0.4) * 100)}%)</span></p>
+                    <p className="mt-1 text-xl font-bold text-stone-800">
                       {r.totalScore}<span className="text-sm font-normal text-stone-400"> / {r.maxPossibleScore}</span>
                     </p>
                   </div>
-                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                    <p className="text-xs text-stone-500">实操分 <span className="text-stone-400">({Math.round((data.practicalWeight ?? 0.6) * 100)}%)</span></p>
-                    <p className="mt-0.5 text-lg font-bold text-stone-800">{r.practicalScore ?? '--'}</p>
+                  <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-center transition-colors hover:border-stone-300">
+                    <p className="mb-0.5 text-xs text-stone-500">实操分 <span className="text-stone-400">({Math.round((data.practicalWeight ?? 0.6) * 100)}%)</span></p>
+                    <p className="mt-1 text-xl font-bold text-stone-800">{r.practicalScore ?? '--'}</p>
                   </div>
-                  <div className="rounded-lg bg-teal-50 px-3 py-2.5 text-center">
+                  <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-center">
                     <p className="text-xs font-medium text-teal-600">综合分</p>
-                    <p className="mt-0.5 text-lg font-bold text-teal-700">{r.combinedScore ?? '--'}</p>
+                    <p className="mt-1 text-xl font-bold text-teal-700">{r.combinedScore ?? '--'}</p>
                   </div>
-                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                    <p className="text-xs text-stone-500">正确 / 总题</p>
-                    <p className="mt-0.5 text-lg font-bold text-stone-800">{r.correctCount} / {totalQ}</p>
+                  <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-center transition-colors hover:border-stone-300">
+                    <p className="mb-0.5 text-xs text-stone-500">正确 / 总题</p>
+                    <p className="mt-1 text-xl font-bold text-stone-800">{r.correctCount} / {totalQ}</p>
                   </div>
-                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                    <p className="text-xs text-stone-500">用时</p>
-                    <p className="mt-0.5 text-lg font-bold text-stone-800">
+                  <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-center transition-colors hover:border-stone-300">
+                    <p className="mb-0.5 text-xs text-stone-500">用时</p>
+                    <p className="mt-1 text-xl font-bold text-stone-800">
                       {r.timeTakenSeconds > 0 ? formatTime(r.timeTakenSeconds) : '--'}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="grid w-full flex-1 grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                    <p className="text-xs text-stone-500">正确率</p>
-                    <p className="mt-0.5 text-lg font-bold text-stone-800">{correctPct}%</p>
+                  <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-center transition-colors hover:border-stone-300">
+                    <p className="mb-0.5 text-xs text-stone-500">正确率</p>
+                    <p className="mt-1 text-xl font-bold text-stone-800">{correctPct}%</p>
                   </div>
-                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                    <p className="text-xs text-stone-500">正确 / 总题数</p>
-                    <p className="mt-0.5 text-lg font-bold text-stone-800">{r.correctCount} / {totalQ}</p>
+                  <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-center transition-colors hover:border-stone-300">
+                    <p className="mb-0.5 text-xs text-stone-500">正确 / 总题数</p>
+                    <p className="mt-1 text-xl font-bold text-stone-800">{r.correctCount} / {totalQ}</p>
                   </div>
-                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
-                    <p className="text-xs text-stone-500">用时</p>
-                    <p className="mt-0.5 text-lg font-bold text-stone-800">
+                  <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-center transition-colors hover:border-stone-300">
+                    <p className="mb-0.5 text-xs text-stone-500">用时</p>
+                    <p className="mt-1 text-xl font-bold text-stone-800">
                       {r.timeTakenSeconds > 0 ? formatTime(r.timeTakenSeconds) : '--'}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-center">
+                  <div className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-center transition-colors hover:border-stone-300">
                     <p className="text-xs text-stone-500">未答题</p>
-                    <p className="mt-0.5 text-lg font-bold text-stone-800">{data.unansweredCount}</p>
+                    <p className="mt-1 text-xl font-bold text-stone-800">{data.unansweredCount}</p>
                   </div>
                 </div>
               )}
@@ -528,29 +536,76 @@ export default function SessionDetailPage() {
       })()}
 
       {/* Category breakdown */}
-      {r?.categoryScores && Object.keys(r.categoryScores).length > 0 && (
+      {r?.categoryScores && Object.keys(r.categoryScores).length > 0 && (() => {
+        const entries = Object.entries(r.categoryScores);
+        const radarData = entries.map(([type, cat]) => ({
+          type: TYPE_LABELS[type] ?? type,
+          得分率: cat.maxPoints > 0 ? Math.round((cat.earnedPoints / cat.maxPoints) * 100) : 0,
+        }));
+        return (
         <Card title="题型得分明细">
-          <div className="space-y-3">
-            {Object.entries(r.categoryScores).map(([type, cat]) => {
-              const pct = cat.maxPoints > 0 ? Math.round((cat.earnedPoints / cat.maxPoints) * 100) : 0;
-              return (
-                <div key={type}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-stone-700">{TYPE_LABELS[type] ?? type}</span>
-                    <span className="text-sm font-medium text-stone-800">
-                      {cat.earnedPoints} / {cat.maxPoints} 分
-                      <span className="ml-2 text-xs text-stone-400">
-                        （{cat.correctCount}/{cat.count} 题对）
+          <div className="grid gap-5 lg:grid-cols-[1fr_320px] lg:items-center">
+            {/* 左：各题型数据 */}
+            <div className="space-y-2.5">
+              {entries.map(([type, cat]) => {
+                const pct = cat.maxPoints > 0 ? Math.round((cat.earnedPoints / cat.maxPoints) * 100) : 0;
+                return (
+                  <div
+                    key={type}
+                    className="rounded-xl border border-stone-200 bg-white px-4 py-3 transition-colors hover:border-stone-300"
+                  >
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-sm font-semibold text-stone-800">
+                        {TYPE_LABELS[type] ?? type}
+                        <span className="rounded bg-stone-100 px-1.5 py-0.5 text-xs font-normal text-stone-500">
+                          答对 {cat.correctCount}/{cat.totalCount ?? cat.count ?? 0}
+                        </span>
                       </span>
-                    </span>
+                      <span className="text-sm font-semibold text-stone-800">
+                        {cat.earnedPoints} / {cat.maxPoints} 分
+                        <span
+                          className={`ml-2 text-xs font-bold ${pct >= 60 ? 'text-teal-600' : 'text-red-500'}`}
+                        >
+                          {pct}%
+                        </span>
+                      </span>
+                    </div>
+                    <Progress value={pct} color={pct >= 60 ? 'teal' : 'red'} className="h-1.5" />
                   </div>
-                  <Progress value={pct} color={pct >= 60 ? 'teal' : 'red'} />
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {/* 右：雷达图 */}
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={radarData} outerRadius="72%">
+                  <PolarGrid stroke="#e7e5e4" />
+                  <PolarAngleAxis
+                    dataKey="type"
+                    tick={{ fontSize: 12, fill: '#57534e' }}
+                  />
+                  <PolarRadiusAxis
+                    domain={[0, 100]}
+                    tickCount={5}
+                    tick={{ fontSize: 10, fill: '#a8a29e' }}
+                    axisLine={false}
+                  />
+                  <Radar
+                    name="得分率"
+                    dataKey="得分率"
+                    stroke="#0d9488"
+                    fill="#0d9488"
+                    fillOpacity={0.35}
+                    strokeWidth={2}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </Card>
-      )}
+        );
+      })()}
 
       {/* Question detail tabs by type */}
       <div>

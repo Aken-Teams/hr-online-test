@@ -39,6 +39,8 @@ interface EmployeeOption {
 
 interface Props {
   examId: string;
+  /** 考试归档后唯读，隐藏所有修改操作 */
+  readOnly?: boolean;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -200,6 +202,7 @@ function BatchSelector({
   batchChanged,
   previousBatchName,
   onUpdated,
+  readOnly = false,
 }: {
   examId: string;
   assignmentId: string;
@@ -209,10 +212,11 @@ function BatchSelector({
   batchChanged: boolean;
   previousBatchName: string | null;
   onUpdated: () => void;
+  readOnly?: boolean;
 }) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const completed = ['COMPLETED', 'SUBMITTED', 'AUTO_SUBMITTED'].includes(sessionStatus);
+  const completed = readOnly || ['COMPLETED', 'SUBMITTED', 'AUTO_SUBMITTED'].includes(sessionStatus);
 
   async function handleChange(newBatchId: string | null) {
     if (newBatchId === currentBatchId) return;
@@ -269,7 +273,7 @@ function BatchSelector({
   );
 }
 
-export default function TabParticipants({ examId }: Props) {
+export default function TabParticipants({ examId, readOnly = false }: Props) {
   const { toast } = useToast();
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [examBatches, setExamBatches] = useState<ExamBatch[]>([]);
@@ -567,6 +571,7 @@ export default function TabParticipants({ examId }: Props) {
                     batchChanged={p.batchChanged}
                     previousBatchName={p.previousBatchName}
                     onUpdated={loadParticipants}
+                    readOnly={readOnly}
                   />
                 </td>
               )}
@@ -582,7 +587,7 @@ export default function TabParticipants({ examId }: Props) {
                 </span>
               </td>
               <td className="py-2">
-                {p.sessionStatus === 'NOT_STARTED' && (
+                {!readOnly && p.sessionStatus === 'NOT_STARTED' && (
                   <button
                     type="button"
                     onClick={() => handleDelete(p.id)}
@@ -820,28 +825,36 @@ export default function TabParticipants({ examId }: Props) {
                   </button>
                 )}
                 <div className="flex items-center gap-2 ml-auto">
-                  <Button variant="ghost" size="sm" onClick={handleDeleteAll} className="text-red-500 hover:bg-red-50 hover:text-red-600">
-                    <Trash2 className="h-3.5 w-3.5" />
-                    清空名单
-                  </Button>
-                  <div className="h-4 w-px bg-stone-200" />
+                  {!readOnly && (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={handleDeleteAll} className="text-red-500 hover:bg-red-50 hover:text-red-600">
+                        <Trash2 className="h-3.5 w-3.5" />
+                        清空名单
+                      </Button>
+                      <div className="h-4 w-px bg-stone-200" />
+                    </>
+                  )}
                   <Button variant="outline" size="sm" onClick={handleExport}>
                     <Download className="h-3.5 w-3.5" />
                     导出
                   </Button>
-                  <Button variant="outline" size="sm" onClick={openAddModal}>
-                    <UserPlus className="h-3.5 w-3.5" />
-                    新增人员
-                  </Button>
-                  <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
-                    <Upload className="h-3.5 w-3.5" />
-                    导入名单
-                  </Button>
+                  {!readOnly && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={openAddModal}>
+                        <UserPlus className="h-3.5 w-3.5" />
+                        新增人员
+                      </Button>
+                      <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
+                        <Upload className="h-3.5 w-3.5" />
+                        导入名单
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
 
-            {participants.length === 0 && (
+            {participants.length === 0 && !readOnly && (
               <div className="flex items-center gap-2 justify-end">
                 <Button variant="outline" size="sm" onClick={openAddModal}>
                   <UserPlus className="h-3.5 w-3.5" />

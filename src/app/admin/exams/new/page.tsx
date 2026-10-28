@@ -15,7 +15,7 @@ import Step5Confirm from './steps/Step5Confirm';
 
 const STEPS: StepDef[] = [
   { key: 'basic', label: '基本信息' },
-  { key: 'rules', label: '题目规则' },
+  { key: 'rules', label: '考试规则' },
   { key: 'questions', label: '导入题库' },
   { key: 'participants', label: '导入人员' },
   { key: 'confirm', label: '确认创建' },
@@ -83,6 +83,7 @@ export default function CreateExamPage() {
         totalScore,
         openAt: step1.openAt || null,
         closeAt: step1.closeAt || null,
+        forceSubmitOnTabSwitch: step1.forceSubmitOnTabSwitch,
         resultQueryOpenAt: step1.resultQueryOpenAt || null,
         resultQueryCloseAt: step1.resultQueryCloseAt || null,
         shuffleQuestions: step1.shuffleQuestions,
@@ -150,6 +151,7 @@ export default function CreateExamPage() {
         totalScore,
         openAt: step1.openAt || null,
         closeAt: step1.closeAt || null,
+        forceSubmitOnTabSwitch: step1.forceSubmitOnTabSwitch,
         resultQueryOpenAt: step1.resultQueryOpenAt || null,
         resultQueryCloseAt: step1.resultQueryCloseAt || null,
         shuffleQuestions: step1.shuffleQuestions,
@@ -200,10 +202,30 @@ export default function CreateExamPage() {
     }
   }
 
+  /** 返回时间逻辑错误讯息，无错回 null */
+  function validateTimes(): string | null {
+    const { openAt, closeAt, resultQueryOpenAt, resultQueryCloseAt } = step1;
+    if (openAt && closeAt && new Date(closeAt) < new Date(openAt)) {
+      return '考试截止时间不能早于开放时间';
+    }
+    if (resultQueryOpenAt && closeAt && new Date(resultQueryOpenAt) < new Date(closeAt)) {
+      return '成绩开放时间不能早于考试截止时间';
+    }
+    if (resultQueryOpenAt && resultQueryCloseAt && new Date(resultQueryCloseAt) < new Date(resultQueryOpenAt)) {
+      return '成绩截止时间不能早于成绩开放时间';
+    }
+    return null;
+  }
+
   async function handleNext() {
     if (currentStep === 0) {
       if (!step1.title.trim()) {
         toast('请输入考试标题', 'warning');
+        return;
+      }
+      const timeErr = validateTimes();
+      if (timeErr) {
+        toast(timeErr, 'warning');
         return;
       }
     }
@@ -241,7 +263,7 @@ export default function CreateExamPage() {
 
       {/* Step content */}
       {currentStep === 0 && <Step1BasicInfo data={step1} onChange={setStep1} />}
-      {currentStep === 1 && <Step2QuestionRules rules={rules} onChange={setRules} shuffleQuestions={step1.shuffleQuestions} />}
+      {currentStep === 1 && <Step2QuestionRules rules={rules} onChange={setRules} shuffleQuestions={step1.shuffleQuestions} basicData={step1} onBasicChange={setStep1} />}
       {currentStep === 2 && (
         <Step3ImportQuestions examId={examId} results={questionResults} onResults={setQuestionResults} />
       )}
