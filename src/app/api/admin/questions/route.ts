@@ -38,10 +38,12 @@ export async function GET(request: Request) {
     if (level) {
       where.level = level;
     }
-    if (isActive !== null && isActive !== '') {
-      where.isActive = isActive === 'true';
+    if (isActive === 'all') {
+      // No filter: show both active and inactive
+    } else if (isActive === 'false') {
+      where.isActive = false;
     } else {
-      where.isActive = true; // Default: only show active questions
+      where.isActive = true; // Default ('' / null / 'true'): only active questions
     }
     if (search) {
       where.content = { contains: search };

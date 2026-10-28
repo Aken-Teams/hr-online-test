@@ -156,6 +156,66 @@ export async function PUT(
   }
 }
 
+/**
+ * PATCH: toggle a question's active status (restore / deactivate).
+ * Body: { isActive: boolean }
+ */
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const admin = await getAdminFromCookie();
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: '未登录或无权限' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+    const body = await request.json().catch(() => ({}));
+    const isActive = body?.isActive;
+
+    if (typeof isActive !== 'boolean') {
+      return NextResponse.json(
+        { success: false, error: 'isActive 必须为布尔值' },
+        { status: 400 }
+      );
+    }
+
+    const existing = await prisma.question.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: '题目不存在' },
+        { status: 404 }
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.question.update({ where: { id }, data: { isActive } });
+      await tx.auditLog.create({
+        data: {
+          adminId: admin.adminId,
+          action: 'QUESTION_UPDATED',
+          details: { questionId: id, isActive, op: isActive ? 'restore' : 'deactivate' },
+        },
+      });
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: { id, isActive, message: isActive ? '题目已恢复启用' : '题目已停用' },
+    });
+  } catch (error) {
+    console.error('Toggle question active error:', error);
+    return NextResponse.json(
+      { success: false, error: '服务器内部错误' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }

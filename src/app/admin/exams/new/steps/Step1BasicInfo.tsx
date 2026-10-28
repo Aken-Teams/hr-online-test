@@ -130,12 +130,14 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
             required
             type="datetime-local"
             value={data.closeAt}
+            min={data.openAt || undefined}
             onChange={(e) => set('closeAt', e.target.value)}
           />
           <Input
             label="成绩开放时间"
             type="datetime-local"
             value={data.resultQueryOpenAt}
+            min={data.closeAt || data.openAt || undefined}
             onChange={(e) => set('resultQueryOpenAt', e.target.value)}
           />
           <Input

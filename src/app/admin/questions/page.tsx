@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/Table';
 import { useToast } from '@/components/ui/Toast';
 import { QUESTION_TYPE_LABELS, QUESTION_CATEGORY_LABELS } from '@/lib/constants';
-import { Pencil, Trash2, ImageIcon, Download } from 'lucide-react';
+import { Pencil, Trash2, ImageIcon, Download, RotateCcw } from 'lucide-react';
 import { ExportDialog } from '@/components/shared/ExportDialog';
 import type { QuestionData, QuestionType, PaginatedResponse } from '@/types/exam';
 
@@ -74,6 +74,7 @@ export default function QuestionListPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [processFilter, setProcessFilter] = useState('');
   const [examFilter, setExamFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active'); // active | inactive | all
   const [search, setSearch] = useState('');
 
   // Dynamic filter options from DB
@@ -138,6 +139,8 @@ export default function QuestionListPage() {
       if (categoryFilter) params.set('category', categoryFilter);
       if (processFilter) params.set('process', processFilter);
       if (examFilter) params.set('examSourceId', examFilter);
+      if (statusFilter === 'inactive') params.set('isActive', 'false');
+      else if (statusFilter === 'all') params.set('isActive', 'all');
       if (search.trim()) params.set('search', search.trim());
 
       const res = await fetch(`/api/admin/questions?${params.toString()}`);
@@ -152,7 +155,7 @@ export default function QuestionListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, typeFilter, deptFilter, levelFilter, categoryFilter, processFilter, examFilter, search, toast]);
+  }, [page, typeFilter, deptFilter, levelFilter, categoryFilter, processFilter, examFilter, statusFilter, search, toast]);
 
   useEffect(() => {
     fetchQuestions();
@@ -178,6 +181,21 @@ export default function QuestionListPage() {
       setDeleting(false);
     }
   }, [deleteId, toast, fetchQuestions]);
+
+  const handleRestore = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/questions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true }),
+      });
+      if (!res.ok) throw new Error('恢复失败');
+      toast('题目已恢复启用', 'success');
+      fetchQuestions();
+    } catch {
+      toast('恢复失败', 'error');
+    }
+  }, [toast, fetchQuestions]);
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -287,6 +305,16 @@ export default function QuestionListPage() {
             value={levelFilter}
             onChange={(val) => setLevelFilter(val)}
           />
+          <CustomSelect
+            label="状态"
+            options={[
+              { value: 'active', label: '启用' },
+              { value: 'inactive', label: '停用' },
+              { value: 'all', label: '全部' },
+            ]}
+            value={statusFilter}
+            onChange={(val) => { setStatusFilter(val); setPage(1); }}
+          />
           {filterOpts.processes.length > 0 && (
             <CustomSelect
               label="工序"
@@ -350,6 +378,7 @@ export default function QuestionListPage() {
                       {QUESTION_TYPE_LABELS[q.type] ?? q.type}
                     </Badge>
                     <span className="text-xs text-stone-400">{q.points} 分</span>
+                    {!q.isActive && <Badge variant="default" className="shrink-0 whitespace-nowrap">已停用</Badge>}
                   </div>
                   <p className="mt-1.5 text-sm text-stone-700 leading-relaxed">
                     {truncate(q.content, 80)}
@@ -365,13 +394,23 @@ export default function QuestionListPage() {
                       <Pencil className="h-3 w-3" />
                       编辑
                     </button>
-                    <button
-                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
-                      onClick={() => setDeleteId(q.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      删除
-                    </button>
+                    {q.isActive ? (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                        onClick={() => setDeleteId(q.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        删除
+                      </button>
+                    ) : (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                        onClick={() => handleRestore(q.id)}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        恢复
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -419,7 +458,7 @@ export default function QuestionListPage() {
                       </TableCell>
                       <TableCell className="max-w-xs">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm" title={q.content}>
+                          <span className="min-w-0 truncate text-sm" title={q.content}>
                             {truncate(q.content, 60)}
                           </span>
                           {q.options?.some((o) => o.imageUrl) && (
@@ -427,6 +466,7 @@ export default function QuestionListPage() {
                               <ImageIcon className="h-3.5 w-3.5 shrink-0 text-teal-500" />
                             </span>
                           )}
+                          {!q.isActive && <Badge variant="default" className="shrink-0 whitespace-nowrap">已停用</Badge>}
                         </div>
                       </TableCell>
                       <TableCell className="text-xs text-stone-500 max-w-[120px] truncate" title={q.examSourceTitle ?? ''}>
@@ -450,13 +490,23 @@ export default function QuestionListPage() {
                             <Pencil className="h-3 w-3" />
                             编辑
                           </button>
-                          <button
-                            className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
-                            onClick={() => setDeleteId(q.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            删除
-                          </button>
+                          {q.isActive ? (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                              onClick={() => setDeleteId(q.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              删除
+                            </button>
+                          ) : (
+                            <button
+                              className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                              onClick={() => handleRestore(q.id)}
+                            >
+                              <RotateCcw className="h-3 w-3" />
+                              恢复
+                            </button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
