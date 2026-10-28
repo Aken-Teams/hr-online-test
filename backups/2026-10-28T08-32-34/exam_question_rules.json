@@ -1,0 +1,182 @@
+[
+  {
+    "id": "cmova2pgi0ly64bhlcsnbvph3",
+    "examId": "cmov9z0410eto4bhlpnhq59nu",
+    "questionType": "SINGLE_CHOICE",
+    "count": 20,
+    "pointsPerQuestion": 2,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmova2pgi0ly74bhl31sowpyc",
+    "examId": "cmov9z0410eto4bhlpnhq59nu",
+    "questionType": "MULTI_CHOICE",
+    "count": 10,
+    "pointsPerQuestion": 3,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmova2pgi0ly84bhlvii12o7s",
+    "examId": "cmov9z0410eto4bhlpnhq59nu",
+    "questionType": "TRUE_FALSE",
+    "count": 20,
+    "pointsPerQuestion": 1,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmoxomgtq0739bscgwuzoa1cr",
+    "examId": "cmowpjk671alo125elnw31otc",
+    "questionType": "SINGLE_CHOICE",
+    "count": 20,
+    "pointsPerQuestion": 2,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmoxomgtq073abscgy5l6i6i1",
+    "examId": "cmowpjk671alo125elnw31otc",
+    "questionType": "MULTI_CHOICE",
+    "count": 10,
+    "pointsPerQuestion": 3,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmoxomgtq073bbscg2cas4bl5",
+    "examId": "cmowpjk671alo125elnw31otc",
+    "questionType": "TRUE_FALSE",
+    "count": 20,
+    "pointsPerQuestion": 1,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmozu5n1d10skbscgrn8p3kt0",
+    "examId": "cmozsjrl00tq4bscg0ntehr4y",
+    "questionType": "SINGLE_CHOICE",
+    "count": 20,
+    "pointsPerQuestion": 2,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmozu5n1d10slbscg15093liv",
+    "examId": "cmozsjrl00tq4bscg0ntehr4y",
+    "questionType": "MULTI_CHOICE",
+    "count": 10,
+    "pointsPerQuestion": 3,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmozu5n1d10smbscg7041m7ct",
+    "examId": "cmozsjrl00tq4bscg0ntehr4y",
+    "questionType": "TRUE_FALSE",
+    "count": 20,
+    "pointsPerQuestion": 1,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmozuei9117v3bscg1dmmxg45",
+    "examId": "cmozucb0v10t2bscg3wodlcw3",
+    "questionType": "SINGLE_CHOICE",
+    "count": 20,
+    "pointsPerQuestion": 2,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmozuei9117v4bscgvn26m4jm",
+    "examId": "cmozucb0v10t2bscg3wodlcw3",
+    "questionType": "MULTI_CHOICE",
+    "count": 10,
+    "pointsPerQuestion": 3,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmozuei9117v5bscgg49h75tc",
+    "examId": "cmozucb0v10t2bscg3wodlcw3",
+    "questionType": "TRUE_FALSE",
+    "count": 20,
+    "pointsPerQuestion": 1,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmp0ix5du22lcbscgtwja149k",
+    "examId": "cmp0iwaus1vk5bscgwmhtn136",
+    "questionType": "SINGLE_CHOICE",
+    "count": 20,
+    "pointsPerQuestion": 2,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmp0ix5du22ldbscg8vx9h9g0",
+    "examId": "cmp0iwaus1vk5bscgwmhtn136",
+    "questionType": "MULTI_CHOICE",
+    "count": 10,
+    "pointsPerQuestion": 3,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmp0ix5du22lebscgz0bjw7lr",
+    "examId": "cmp0iwaus1vk5bscgwmhtn136",
+    "questionType": "TRUE_FALSE",
+    "count": 20,
+    "pointsPerQuestion": 1,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmp1w32pn2a1lbscgtaocqxug",
+    "examId": "cmp1w0xus230gbscgfywh40lw",
+    "questionType": "SINGLE_CHOICE",
+    "count": 20,
+    "pointsPerQuestion": 2,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmp1w32pn2a1mbscgu0rjpm8b",
+    "examId": "cmp1w0xus230gbscgfywh40lw",
+    "questionType": "MULTI_CHOICE",
+    "count": 10,
+    "pointsPerQuestion": 3,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  },
+  {
+    "id": "cmp1w32pn2a1nbscg3bm2ws8w",
+    "examId": "cmp1w0xus230gbscgfywh40lw",
+    "questionType": "TRUE_FALSE",
+    "count": 20,
+    "pointsPerQuestion": 1,
+    "department": null,
+    "level": null,
+    "commonRatio": 0
+  }
+]

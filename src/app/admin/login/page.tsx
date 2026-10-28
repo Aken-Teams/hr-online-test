@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ShieldCheck } from 'lucide-react';
 
 const FEATURES = [
   {
@@ -36,38 +37,63 @@ const FEATURES = [
   },
 ];
 
+/** AD 可用网域；预设徐州厂（本案考场） */
+const AD_DOMAINS = [
+  { code: 'PJXZ', label: '强茂徐州' },
+  { code: 'PANJIT', label: 'PANJIT（台湾）' },
+  { code: 'PYNMAX', label: '环茂' },
+  { code: 'WXPJ', label: '无锡强茂' },
+  { code: 'PJWS', label: '强茂深圳' },
+  { code: 'GDPJ', label: '苏州群鑫' },
+  { code: 'PJSD', label: '山东强茂' },
+];
+
 export default function AdminLoginPage() {
   const router = useRouter();
+  /** ad = AD 工号登录（预设）；local = 系统管理员账号 */
+  const [mode, setMode] = useState<'ad' | 'local'>('ad');
+  const [domain, setDomain] = useState('PJXZ');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  function switchMode(next: 'ad' | 'local') {
+    setMode(next);
+    setError('');
+    setPassword('');
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
 
     if (!username.trim() || !password.trim()) {
-      setError('请输入用户名和密码');
+      setError(mode === 'ad' ? '请输入工号和密码' : '请输入用户名和密码');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(mode === 'ad' ? '/api/auth/ad-login' : '/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role: 'admin' }),
+        body: JSON.stringify(
+          mode === 'ad'
+            ? { username: username.trim(), password, domain }
+            : { username, password, role: 'admin' }
+        ),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setError(data.error || '登录失败，请检查用户名和密码');
+        setError(data.error || '登录失败，请检查账号和密码');
         return;
       }
 
-      router.replace('/admin');
+      // 评卷人仅开放阅卷相关页面，直接导向考试列表
+      router.replace(data.data?.role === 'GRADER' ? '/admin/exams' : '/admin');
     } catch {
       setError('网络错误，请稍后重试');
     } finally {
@@ -132,28 +158,50 @@ export default function AdminLoginPage() {
         <div className="mb-5 flex flex-col items-center md:hidden">
           <Image src="/logo.png" alt="智考云" width={48} height={48} className="h-12 w-12" />
           <h1 className="mt-2 text-base font-bold text-stone-800">考核管理后台</h1>
-          <p className="mt-0.5 text-xs text-stone-400">请使用管理员账号登录</p>
+          <p className="mt-0.5 text-xs text-stone-400">
+            {mode === 'ad' ? '使用 AD 工号登录系统' : '使用系统管理员账号登录'}
+          </p>
         </div>
 
         <div className="w-full max-w-sm">
           <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
             {/* Card header (desktop only) */}
             <div className="hidden border-b border-stone-100 px-6 py-5 md:block">
-              <h2 className="text-lg font-semibold text-stone-800">管理员登录</h2>
+              <h2 className="text-lg font-semibold text-stone-800">
+                {mode === 'ad' ? '员工登录' : '管理员登录'}
+              </h2>
               <p className="mt-1 text-xs text-stone-400">
-                请使用管理员账号登录系统
+                {mode === 'ad' ? '使用 AD 工号登录系统' : '使用系统管理员账号登录'}
               </p>
             </div>
 
             {/* Form */}
             <div className="px-6 py-6">
               <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === 'ad' && (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-stone-700">组织</label>
+                    <select
+                      value={domain}
+                      onChange={(e) => setDomain(e.target.value)}
+                      disabled={loading}
+                      className="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      {AD_DOMAINS.map((d) => (
+                        <option key={d.code} value={d.code}>
+                          {d.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <Input
-                  label="用户名"
+                  label={mode === 'ad' ? '工号' : '用户名'}
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="请输入用户名"
+                  placeholder={mode === 'ad' ? '请输入 AD 工号' : '请输入用户名'}
                   autoComplete="username"
                   disabled={loading}
                 />
@@ -179,9 +227,35 @@ export default function AdminLoginPage() {
                   className="w-full"
                   loading={loading}
                 >
-                  登录
+                  {mode === 'ad' ? '登录' : '建立连线'}
                 </Button>
               </form>
+
+              {/* 登录方式切换 */}
+              <div className="mt-5">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-stone-200" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-white px-2 text-xs text-stone-400">其他</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => switchMode(mode === 'ad' ? 'local' : 'ad')}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-stone-200 px-4 py-2.5 text-sm text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50"
+                >
+                  {mode === 'ad' ? (
+                    <>
+                      <ShieldCheck className="h-4 w-4 text-teal-600" />
+                      管理员账号登录
+                    </>
+                  ) : (
+                    <>返回 AD 登录</>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/shared/Logo';
 import { Button } from '@/components/ui/Button';
 import { ToastProvider } from '@/components/ui/Toast';
-import { LogOut, CircleUserRound, LayoutDashboard, Users, ClipboardList, Database, BarChart3, ShieldCheck, Menu, X } from 'lucide-react';
+import { LogOut, CircleUserRound, LayoutDashboard, Users, ClipboardList, Database, BarChart3, ShieldCheck, Network, Menu, X } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Sidebar navigation items
@@ -50,6 +50,13 @@ const NAV_ITEMS: NavItem[] = [
     label: '数据报表',
     href: '/admin/reports',
     icon: <BarChart3 className="h-5 w-5" />,
+  },
+  {
+    key: 'organization',
+    label: '组织查询',
+    href: '/admin/organization',
+    icon: <Network className="h-5 w-5" />,
+    roles: ['SUPER_ADMIN', 'HR'],
   },
   {
     key: 'accounts',

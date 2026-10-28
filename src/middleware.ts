@@ -15,6 +15,8 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secr
 
 /** 評卷人可存取的 API（前綴比對，另依 HTTP method 限制） */
 const GRADER_API_RULES: { prefix: string; methods: string[] }[] = [
+  // AD 人員查詢／組織樹僅限人資與系統管理員，評卷人不開放
+
   { prefix: '/api/admin/grading', methods: ['GET', 'POST'] },
   // 閱卷頁需要考試清單與基本資訊，唯讀即可
   { prefix: '/api/admin/exams', methods: ['GET'] },

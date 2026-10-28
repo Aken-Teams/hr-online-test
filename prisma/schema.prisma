@@ -40,6 +40,10 @@ model Admin {
   isShared        Boolean      @default(false) @map("is_shared")
   /// 帳號來源：LOCAL = 系統自建，AD = 網域帳號
   authSource      String       @default("LOCAL") @map("auth_source")
+  /// 綁定的 AD 工號（authSource = AD 時必填）
+  adUsername      String?      @map("ad_username")
+  /// AD 網域代碼，例如徐州廠 PJXZ
+  adDomain        String?      @map("ad_domain")
   /// 首次登入是否強制修改密碼
   mustChangePassword Boolean   @default(false) @map("must_change_password")
   lastLoginAt     DateTime?    @map("last_login_at")
@@ -49,6 +53,7 @@ model Admin {
   auditLogs       AuditLog[]   @relation("AdminActor")
   processScopes   AdminScope[]
 
+  @@unique([adDomain, adUsername])
   @@map("admins")
 }
 

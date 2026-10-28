@@ -23,6 +23,8 @@ interface AccountRow {
   isActive: boolean;
   isShared: boolean;
   authSource: string;
+  adUsername: string | null;
+  adDomain: string | null;
   mustChangePassword: boolean;
   lastLoginAt: string | null;
   createdAt: string;
@@ -42,22 +44,37 @@ const ROLE_BADGE: Record<AccountRow['role'], 'danger' | 'info' | 'success'> = {
   GRADER: 'success',
 };
 
+interface AdUser {
+  username: string;
+  displayName: string;
+  department?: string | null;
+  title?: string | null;
+  email?: string | null;
+}
+
 interface FormState {
+  /** LOCAL = 系统自建帐密；AD = 绑定网域账号 */
+  authSource: 'LOCAL' | 'AD';
   username: string;
   displayName: string;
   password: string;
   role: AccountRow['role'];
   isShared: boolean;
   processes: string[];
+  adUsername: string;
+  adDomain: string;
 }
 
 const EMPTY_FORM: FormState = {
+  authSource: 'AD',
   username: '',
   displayName: '',
   password: '',
   role: 'GRADER',
   isShared: false,
   processes: [],
+  adUsername: '',
+  adDomain: 'PJXZ',
 };
 
 // ---------------------------------------------------------------------------
@@ -76,6 +93,16 @@ export default function AdminAccountsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
+  const [adConfig, setAdConfig] = useState<{
+    configured: boolean;
+    defaultDomain: string;
+    domains: { code: string; label: string }[];
+  }>({ configured: false, defaultDomain: 'PJXZ', domains: [] });
+  const [adQuery, setAdQuery] = useState('');
+  const [adResults, setAdResults] = useState<AdUser[]>([]);
+  const [adSearching, setAdSearching] = useState(false);
+  const [adSelected, setAdSelected] = useState<AdUser | null>(null);
+
   const [editing, setEditing] = useState<AccountRow | null>(null);
   const [editProcesses, setEditProcesses] = useState<string[]>([]);
   const [newPassword, setNewPassword] = useState('');
@@ -91,6 +118,10 @@ export default function AdminAccountsPage() {
       if (!res.ok || !json.success) throw new Error(json.error ?? '加载失败');
       setAccounts(json.data.accounts);
       setAvailableProcesses(json.data.availableProcesses);
+      if (json.data.ad) {
+        setAdConfig(json.data.ad);
+        setForm((f) => (f.adDomain ? f : { ...f, adDomain: json.data.ad.defaultDomain }));
+      }
     } catch {
       toast('加载账号列表失败', 'error');
     } finally {
@@ -118,8 +149,55 @@ export default function AdminAccountsPage() {
 
   // ---- actions ------------------------------------------------------------
 
+  /** 以姓名或工号搜寻 AD 使用者（至少 2 个字） */
+  async function handleAdSearch() {
+    const q = adQuery.trim();
+    if (q.length < 2) {
+      toast('请输入至少 2 个字的姓名或完整工号', 'warning');
+      return;
+    }
+    setAdSearching(true);
+    try {
+      // 先试工号精准查询，查无再走姓名模糊查询
+      const byId = await fetch(
+        `/api/admin/ad/users?username=${encodeURIComponent(q)}&domain=${form.adDomain}`
+      );
+      const byIdJson = await byId.json();
+      if (byId.ok && byIdJson.success && byIdJson.data.user) {
+        setAdResults([byIdJson.data.user]);
+        return;
+      }
+
+      const res = await fetch(
+        `/api/admin/ad/users?q=${encodeURIComponent(q)}&domain=${form.adDomain}&limit=20`
+      );
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error ?? '查询失败');
+      setAdResults(json.data.users);
+      if (json.data.users.length === 0) toast('AD 中查无此人', 'warning');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'AD 查询失败', 'error');
+    } finally {
+      setAdSearching(false);
+    }
+  }
+
+  function pickAdUser(user: AdUser) {
+    setAdSelected(user);
+    setForm((f) => ({
+      ...f,
+      adUsername: user.username,
+      displayName: user.displayName || user.username,
+    }));
+  }
+
   async function handleCreate() {
-    if (!form.username || !form.displayName || !form.password) {
+    if (form.authSource === 'AD') {
+      if (!form.adUsername) {
+        toast('请先搜寻并选择要绑定的 AD 账号', 'warning');
+        return;
+      }
+    } else if (!form.username || !form.displayName || !form.password) {
       toast('请填写账号、显示名称与密码', 'warning');
       return;
     }
@@ -137,9 +215,17 @@ export default function AdminAccountsPage() {
       });
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error ?? '建立失败');
-      toast(`账号 ${form.username} 已建立`, 'success');
+      toast(
+        form.authSource === 'AD'
+          ? `已绑定 AD 账号 ${form.adUsername}`
+          : `账号 ${form.username} 已建立`,
+        'success'
+      );
       setCreateOpen(false);
-      setForm(EMPTY_FORM);
+      setForm({ ...EMPTY_FORM, adDomain: adConfig.defaultDomain });
+      setAdQuery('');
+      setAdResults([]);
+      setAdSelected(null);
       await fetchAccounts();
     } catch (err) {
       toast(err instanceof Error ? err.message : '建立账号失败', 'error');
@@ -260,7 +346,11 @@ export default function AdminAccountsPage() {
                   <div className="text-xs text-stone-500">
                     {a.username}
                     {a.isShared && <span className="ml-1 text-amber-600">· 共用账号</span>}
-                    {a.authSource === 'AD' && <span className="ml-1 text-blue-600">· AD</span>}
+                    {a.authSource === 'AD' && (
+                      <span className="ml-1 text-blue-600">
+                        · AD {a.adDomain}/{a.adUsername}
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className="px-4 py-3">
@@ -339,28 +429,121 @@ export default function AdminAccountsPage() {
           }
         >
           <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input
-                label="账号"
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
-                placeholder="grader_saw"
-              />
-              <Input
-                label="显示名称"
-                value={form.displayName}
-                onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-                placeholder="SAW 工序评卷人"
-              />
+            {/* 账号来源 */}
+            <div className="flex gap-2">
+              {([
+                { key: 'AD', label: 'AD 账号绑定' },
+                { key: 'LOCAL', label: '系统自建账号' },
+              ] as const).map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  disabled={o.key === 'AD' && !adConfig.configured}
+                  onClick={() => setForm({ ...form, authSource: o.key })}
+                  className={cn(
+                    'flex-1 rounded-lg border px-3 py-2 text-sm transition-colors',
+                    form.authSource === o.key
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : 'border-stone-200 text-stone-600 hover:bg-stone-50',
+                    o.key === 'AD' && !adConfig.configured && 'cursor-not-allowed opacity-50'
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
             </div>
 
-            <Input
-              label="初始密码"
-              type="text"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="至少 6 个字符，首次登入须修改"
-            />
+            {form.authSource === 'AD' ? (
+              <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/60 p-3">
+                <div className="flex gap-2">
+                  <select
+                    value={form.adDomain}
+                    onChange={(e) => setForm({ ...form, adDomain: e.target.value })}
+                    className="w-36 rounded-lg border border-stone-300 bg-white px-2 py-2 text-sm"
+                  >
+                    {adConfig.domains.map((d) => (
+                      <option key={d.code} value={d.code}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={adQuery}
+                    onChange={(e) => setAdQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAdSearch();
+                      }
+                    }}
+                    placeholder="输入姓名（至少 2 字）或完整工号"
+                    className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                  />
+                  <Button variant="secondary" loading={adSearching} onClick={handleAdSearch}>
+                    搜寻
+                  </Button>
+                </div>
+
+                {adResults.length > 0 && (
+                  <div className="max-h-44 space-y-1 overflow-y-auto">
+                    {adResults.map((u) => (
+                      <button
+                        key={u.username}
+                        type="button"
+                        onClick={() => pickAdUser(u)}
+                        className={cn(
+                          'flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors',
+                          adSelected?.username === u.username
+                            ? 'border-teal-500 bg-teal-50'
+                            : 'border-stone-200 bg-white hover:bg-stone-50'
+                        )}
+                      >
+                        <span>
+                          <span className="font-medium text-stone-800">{u.displayName}</span>
+                          <span className="ml-2 text-xs text-stone-500">{u.username}</span>
+                        </span>
+                        <span className="text-xs text-stone-400">
+                          {u.department ?? ''} {u.title ?? ''}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {adSelected && (
+                  <p className="text-xs text-teal-700">
+                    已选择：{adSelected.displayName}（{adSelected.username}）
+                    {adSelected.department ? ` · ${adSelected.department}` : ''}
+                    　密码由 AD 验证，系统不另存密码
+                  </p>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    label="账号"
+                    value={form.username}
+                    onChange={(e) => setForm({ ...form, username: e.target.value })}
+                    placeholder="grader_saw"
+                  />
+                  <Input
+                    label="显示名称"
+                    value={form.displayName}
+                    onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+                    placeholder="SAW 工序评卷人"
+                  />
+                </div>
+
+                <Input
+                  label="初始密码"
+                  type="text"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder="至少 6 个字符，首次登入须修改"
+                />
+              </>
+            )}
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-stone-700">角色</label>
@@ -383,7 +566,12 @@ export default function AdminAccountsPage() {
               </div>
             </div>
 
-            <label className="flex items-start gap-2 text-sm text-stone-700">
+            <label
+              className={cn(
+                'flex items-start gap-2 text-sm text-stone-700',
+                form.authSource === 'AD' && 'hidden'
+              )}
+            >
               <input
                 type="checkbox"
                 checked={form.isShared}
@@ -427,13 +615,19 @@ export default function AdminAccountsPage() {
           }
         >
           <div className="space-y-4">
-            <Input
-              label="重设密码（留空表示不变更）"
-              type="text"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="至少 6 个字符"
-            />
+            {editing.authSource === 'AD' ? (
+              <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                AD 账号（{editing.adDomain}/{editing.adUsername}），密码由网域验证，系统不提供重设。
+              </p>
+            ) : (
+              <Input
+                label="重设密码（留空表示不变更）"
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="至少 6 个字符"
+              />
+            )}
             {editing.role === 'GRADER' ? (
               <ProcessPicker
                 all={availableProcesses}
