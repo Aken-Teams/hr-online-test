@@ -21,6 +21,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try {
   const admin = await getAdminFromCookie();
   if (!admin) {
     return NextResponse.json({ success: false, error: '未登录或无权限' }, { status: 401 });
@@ -130,6 +131,10 @@ export async function PATCH(
   });
 
   return NextResponse.json({ success: true, data: { id } });
+  } catch (error) {
+    console.error('Update account error:', error);
+    return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 });
+  }
 }
 
 /** DELETE /api/admin/accounts/[id] — 停用帳號（保留評分紀錄，不實體刪除） */
@@ -137,6 +142,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try {
   const admin = await getAdminFromCookie();
   if (!admin) {
     return NextResponse.json({ success: false, error: '未登录或无权限' }, { status: 401 });
@@ -167,4 +173,8 @@ export async function DELETE(
   ]);
 
   return NextResponse.json({ success: true, data: { id } });
+  } catch (error) {
+    console.error('Deactivate account error:', error);
+    return NextResponse.json({ success: false, error: '服务器内部错误' }, { status: 500 });
+  }
 }

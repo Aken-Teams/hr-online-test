@@ -94,24 +94,22 @@ export async function canAccessSession(
   return found !== null;
 }
 
-/** 取得系統中所有曾出現過的工序（供帳號指派下拉選單） */
+/**
+ * 供評卷人指派用的工序清單。
+ *
+ * 依「題庫中有簡答題的工序」呈現——評卷人只批改簡答題，沒有簡答題庫的
+ * 工序不需要指派評卷人。這也自動排除了誤填成人名的髒資料（那些 process
+ * 下沒有任何簡答題）。
+ */
 export async function listKnownProcesses(): Promise<string[]> {
-  const [assignments, questions] = await Promise.all([
-    prisma.examAssignment.findMany({
-      where: { process: { not: null } },
-      select: { process: true },
-      distinct: ['process'],
-    }),
-    prisma.question.findMany({
-      where: { process: { not: null } },
-      select: { process: true },
-      distinct: ['process'],
-    }),
-  ]);
+  const processes = await prisma.question.findMany({
+    where: { type: 'SHORT_ANSWER', process: { not: null } },
+    select: { process: true },
+    distinct: ['process'],
+  });
 
   const set = new Set<string>();
-  for (const a of assignments) if (a.process) set.add(a.process);
-  for (const q of questions) if (q.process) set.add(q.process);
+  for (const q of processes) if (q.process) set.add(q.process);
 
   return [...set].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
 }

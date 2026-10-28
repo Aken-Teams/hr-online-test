@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
+import { ChevronDown, Check, Eye, EyeOff, Shuffle } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -94,6 +95,13 @@ export default function AdminAccountsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
+  // 查询 / 筛选 / 分页
+  const [query, setQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
+
   const [adConfig, setAdConfig] = useState<{
     configured: boolean;
     defaultDomain: string;
@@ -147,6 +155,31 @@ export default function AdminAccountsPage() {
     () => availableProcesses.filter((p) => !coveredProcesses.has(p)),
     [availableProcesses, coveredProcesses]
   );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return accounts.filter((a) => {
+      if (roleFilter && a.role !== roleFilter) return false;
+      if (statusFilter === 'active' && !a.isActive) return false;
+      if (statusFilter === 'inactive' && a.isActive) return false;
+      if (q) {
+        const hay = [a.username, a.displayName, a.adUsername ?? '', ...a.processes]
+          .join(' ')
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [accounts, query, roleFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const paged = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+  // 筛选条件变动时回到第一页
+  useEffect(() => {
+    setPage(1);
+  }, [query, roleFilter, statusFilter]);
 
   // ---- actions ------------------------------------------------------------
 
@@ -326,6 +359,40 @@ export default function AdminAccountsPage() {
         </div>
       )}
 
+      {/* 查询 / 筛选工具列 */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="搜寻账号、姓名或工序"
+          className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 sm:max-w-xs"
+        />
+        <div className="w-full sm:w-36">
+          <CustomSelect
+            options={[
+              { value: '', label: '全部角色' },
+              { value: 'GRADER', label: '评卷人' },
+              { value: 'HR', label: '人资' },
+              { value: 'SUPER_ADMIN', label: '系统管理员' },
+            ]}
+            value={roleFilter}
+            onChange={setRoleFilter}
+          />
+        </div>
+        <div className="w-full sm:w-32">
+          <CustomSelect
+            options={[
+              { value: '', label: '全部状态' },
+              { value: 'active', label: '启用' },
+              { value: 'inactive', label: '停用' },
+            ]}
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
+        </div>
+        <span className="text-xs text-stone-400 sm:ml-auto">共 {filtered.length} 个账号</span>
+      </div>
+
       {/* 账号列表 */}
       <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
         <table className="w-full text-sm">
@@ -340,16 +407,21 @@ export default function AdminAccountsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
-            {accounts.map((a) => (
+            {paged.map((a) => (
               <tr key={a.id} className={cn(!a.isActive && 'bg-stone-50/60 text-stone-400')}>
                 <td className="px-4 py-3">
                   <div className="font-medium text-stone-800">{a.displayName}</div>
-                  <div className="text-xs text-stone-500">
-                    {a.username}
-                    {a.isShared && <span className="ml-1 text-amber-600">· 共用账号</span>}
-                    {a.authSource === 'AD' && (
-                      <span className="ml-1 text-blue-600">
-                        · AD {a.adDomain}/{a.adUsername}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                    {a.authSource === 'AD' ? (
+                      <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+                        AD · {a.adDomain} · {a.adUsername}
+                      </span>
+                    ) : (
+                      <span className="font-mono text-xs text-stone-500">{a.username}</span>
+                    )}
+                    {a.isShared && (
+                      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">
+                        共用
                       </span>
                     )}
                   </div>
@@ -410,6 +482,34 @@ export default function AdminAccountsPage() {
             ))}
           </tbody>
         </table>
+        {filtered.length === 0 && (
+          <p className="px-4 py-10 text-center text-sm text-stone-400">没有符合条件的账号</p>
+        )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-stone-100 px-4 py-3 text-sm">
+            <span className="text-stone-500">
+              第 {pageSafe} / {totalPages} 页
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={pageSafe <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                上一页
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={pageSafe >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                下一页
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 新增账号 */}
@@ -418,6 +518,7 @@ export default function AdminAccountsPage() {
           open
           onClose={() => setCreateOpen(false)}
           title="新增后台账号"
+          className="max-w-xl"
           footer={
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setCreateOpen(false)}>
@@ -456,29 +557,35 @@ export default function AdminAccountsPage() {
 
             {form.authSource === 'AD' ? (
               <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/60 p-3">
-                <div className="flex gap-2">
-                  <div className="w-40 shrink-0">
-                    <CustomSelect
-                      options={adConfig.domains.map((d) => ({ value: d.code, label: d.label }))}
-                      value={form.adDomain}
-                      onChange={(v) => setForm({ ...form, adDomain: v })}
-                    />
-                  </div>
-                  <input
-                    value={adQuery}
-                    onChange={(e) => setAdQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAdSearch();
-                      }
-                    }}
-                    placeholder="输入姓名（至少 2 字）或完整工号"
-                    className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                <div className="space-y-2">
+                  <CustomSelect
+                    label="组织"
+                    options={adConfig.domains.map((d) => ({ value: d.code, label: d.label }))}
+                    value={form.adDomain}
+                    onChange={(v) => setForm({ ...form, adDomain: v })}
                   />
-                  <Button variant="secondary" loading={adSearching} onClick={handleAdSearch}>
-                    搜寻
-                  </Button>
+                  <div className="flex gap-2">
+                    <input
+                      value={adQuery}
+                      onChange={(e) => setAdQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAdSearch();
+                        }
+                      }}
+                      placeholder="输入姓名（至少 2 字）或完整工号"
+                      className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                    <Button
+                      variant="secondary"
+                      loading={adSearching}
+                      onClick={handleAdSearch}
+                      className="shrink-0"
+                    >
+                      搜寻
+                    </Button>
+                  </div>
                 </div>
 
                 {adResults.length > 0 && (
@@ -508,11 +615,16 @@ export default function AdminAccountsPage() {
                 )}
 
                 {adSelected && (
-                  <p className="text-xs text-teal-700">
-                    已选择：{adSelected.displayName}（{adSelected.username}）
-                    {adSelected.department ? ` · ${adSelected.department}` : ''}
-                    　密码由 AD 验证，系统不另存密码
-                  </p>
+                  <div className="flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2">
+                    <Check className="h-4 w-4 shrink-0 text-teal-600" />
+                    <div className="min-w-0 text-sm">
+                      <span className="font-medium text-stone-800">{adSelected.displayName}</span>
+                      <span className="ml-1.5 text-xs text-stone-500">
+                        {adSelected.username}
+                        {adSelected.department ? ` · ${adSelected.department}` : ''}
+                      </span>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : (
@@ -532,11 +644,10 @@ export default function AdminAccountsPage() {
                   />
                 </div>
 
-                <Input
+                <PasswordField
                   label="初始密码"
-                  type="text"
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  onChange={(v) => setForm({ ...form, password: v })}
                   placeholder="至少 6 个字符，首次登入须修改"
                 />
               </>
@@ -544,44 +655,40 @@ export default function AdminAccountsPage() {
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-stone-700">角色</label>
-              <div className="flex gap-2">
-                {(['GRADER', 'HR', 'SUPER_ADMIN'] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setForm({ ...form, role: r })}
-                    className={cn(
-                      'rounded-lg border px-3 py-1.5 text-sm transition-colors',
-                      form.role === r
-                        ? 'border-teal-500 bg-teal-50 text-teal-700'
-                        : 'border-stone-200 text-stone-600 hover:bg-stone-50'
-                    )}
-                  >
-                    {ROLE_LABELS[r]}
-                  </button>
-                ))}
-              </div>
+              <RoleTabs value={form.role} onChange={(role) => setForm({ ...form, role })} />
             </div>
 
-            <label
-              className={cn(
-                'flex items-start gap-2 text-sm text-stone-700',
-                form.authSource === 'AD' && 'hidden'
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={form.isShared}
-                onChange={(e) => setForm({ ...form, isShared: e.target.checked })}
-                className="mt-0.5"
-              />
-              <span>
-                共用账号（整个工序共用一组帐密）
-                <span className="block text-xs text-stone-500">
-                  稽核纪录只能追溯到工序，无法追溯到个人
-                </span>
-              </span>
-            </label>
+            {/* 共用账号：仅评卷人 + 系统自建账号才有意义 */}
+            {form.role === 'GRADER' && form.authSource !== 'AD' && (
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-stone-700">账号类型</label>
+                <div className="grid grid-cols-2 gap-1 rounded-lg bg-stone-100 p-1">
+                  {([
+                    { shared: false, label: '个人账号' },
+                    { shared: true, label: '工序共用' },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.label}
+                      type="button"
+                      onClick={() => setForm({ ...form, isShared: o.shared })}
+                      className={cn(
+                        'rounded-md py-1.5 text-sm font-medium transition-colors',
+                        form.isShared === o.shared
+                          ? 'bg-white text-teal-700 shadow-sm'
+                          : 'text-stone-500 hover:text-stone-700'
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-stone-500">
+                  {form.isShared
+                    ? '整个工序共用一组帐密，评分仅追溯到工序'
+                    : '每位评卷人各自的账号，评分可追溯到个人'}
+                </p>
+              </div>
+            )}
 
             {form.role === 'GRADER' && (
               <ProcessPicker
@@ -617,11 +724,10 @@ export default function AdminAccountsPage() {
                 AD 账号（{editing.adDomain}/{editing.adUsername}），密码由网域验证，系统不提供重设。
               </p>
             ) : (
-              <Input
+              <PasswordField
                 label="重设密码（留空表示不变更）"
-                type="text"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={setNewPassword}
                 placeholder="至少 6 个字符"
               />
             )}
@@ -644,7 +750,108 @@ export default function AdminAccountsPage() {
 }
 
 // ---------------------------------------------------------------------------
-// 工序多选
+// 角色等宽 Tab
+// ---------------------------------------------------------------------------
+
+function RoleTabs({
+  value,
+  onChange,
+}: {
+  value: AccountRow['role'];
+  onChange: (role: AccountRow['role']) => void;
+}) {
+  const roles: AccountRow['role'][] = ['GRADER', 'HR', 'SUPER_ADMIN'];
+  return (
+    <div className="grid grid-cols-3 gap-1 rounded-lg bg-stone-100 p-1">
+      {roles.map((r) => (
+        <button
+          key={r}
+          type="button"
+          onClick={() => onChange(r)}
+          className={cn(
+            'rounded-md py-1.5 text-sm font-medium transition-colors',
+            value === r ? 'bg-white text-teal-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'
+          )}
+        >
+          {ROLE_LABELS[r]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 密码栏位（显示切换 + 随机产生）
+// ---------------------------------------------------------------------------
+
+/** 产生易读的随机密码：避开易混淆字元，含大小写、数字与符号 */
+function randomPassword(length = 10): string {
+  const sets = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnpqrstuvwxyz', '23456789', '!@#$%*'];
+  const all = sets.join('');
+  const pick = (s: string) => s[Math.floor(Math.random() * s.length)];
+  // 确保每类至少一个，其余随机，再打散
+  const chars = sets.map(pick);
+  while (chars.length < length) chars.push(pick(all));
+  for (let i = chars.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
+}
+
+function PasswordField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-stone-700">{label}</label>
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <input
+            type={show ? 'text' : 'password'}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            autoComplete="new-password"
+            className="block w-full rounded-lg border border-stone-300 px-3 py-2 pr-10 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+          />
+          <button
+            type="button"
+            onClick={() => setShow((v) => !v)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+            title={show ? '隐藏密码' : '显示密码'}
+          >
+            {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          className="shrink-0"
+          onClick={() => {
+            onChange(randomPassword());
+            setShow(true);
+          }}
+        >
+          <Shuffle className="mr-1 h-4 w-4" />
+          产生
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 工序多选下拉（面板内 checkbox）
 // ---------------------------------------------------------------------------
 
 function ProcessPicker({
@@ -656,6 +863,53 @@ function ProcessPicker({
   selected: string[];
   onChange: (next: string[]) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // 面板用 fixed 定位浮出对话框的捲动容器（避免被 overflow 裁切）
+  const [pos, setPos] = useState<{ top: number; left: number; width: number; up: boolean } | null>(
+    null
+  );
+
+  const updatePos = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const panelHeight = 320; // 预估面板高度
+    const spaceBelow = window.innerHeight - r.bottom;
+    const up = spaceBelow < panelHeight && r.top > spaceBelow;
+    setPos({
+      top: up ? r.top - 4 : r.bottom + 4,
+      left: r.left,
+      width: r.width,
+      up,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePos();
+    function onDoc(e: MouseEvent) {
+      const t = e.target as Node;
+      if (ref.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
+    }
+    // 对话框内容捲动或视窗缩放时重新定位
+    function onScrollOrResize() {
+      updatePos();
+    }
+    document.addEventListener('mousedown', onDoc);
+    window.addEventListener('resize', onScrollOrResize);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      window.removeEventListener('resize', onScrollOrResize);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+    };
+  }, [open, updatePos]);
+
   const toggle = (process: string) => {
     onChange(
       selected.includes(process)
@@ -664,49 +918,107 @@ function ProcessPicker({
     );
   };
 
+  const filtered = q.trim()
+    ? all.filter((p) => p.toLowerCase().includes(q.trim().toLowerCase()))
+    : all;
+
   return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between">
-        <label className="text-sm font-medium text-stone-700">
-          负责工序（可多选，已选 {selected.length} 个）
-        </label>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="text-xs text-teal-600 hover:underline"
-            onClick={() => onChange(all)}
-          >
-            全选
-          </button>
-          <button
-            type="button"
-            className="text-xs text-stone-500 hover:underline"
-            onClick={() => onChange([])}
-          >
-            清空
-          </button>
-        </div>
-      </div>
-      <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto rounded-lg border border-stone-200 p-2">
-        {all.length === 0 && (
-          <p className="px-1 py-2 text-xs text-stone-400">尚无工序资料，请先汇入应考名单</p>
-        )}
-        {all.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => toggle(p)}
-            className={cn(
-              'rounded-md border px-2.5 py-1 text-xs transition-colors',
-              selected.includes(p)
-                ? 'border-teal-500 bg-teal-50 text-teal-700'
-                : 'border-stone-200 text-stone-600 hover:bg-stone-50'
+    <div ref={ref} className="relative">
+      <label className="mb-1.5 block text-sm font-medium text-stone-700">
+        负责工序（可多选，已选 {selected.length} 个）
+      </label>
+
+      {/* 触发器 */}
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 rounded-lg border border-stone-300 px-3 py-2 text-left text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
+      >
+        <span className="flex min-w-0 flex-1 flex-wrap gap-1">
+          {selected.length === 0 ? (
+            <span className="text-stone-400">请选择负责工序</span>
+          ) : (
+            selected.map((p) => (
+              <span
+                key={p}
+                className="rounded bg-teal-50 px-1.5 py-0.5 text-xs text-teal-700"
+              >
+                {p}
+              </span>
+            ))
+          )}
+        </span>
+        <ChevronDown
+          className={cn('h-4 w-4 shrink-0 text-stone-400 transition-transform', open && 'rotate-180')}
+        />
+      </button>
+
+      {/* 下拉面板：fixed 浮层，z 高于对话框（z-50） */}
+      {open && pos && (
+        <div
+          ref={panelRef}
+          className="fixed z-[60] rounded-lg border border-stone-200 bg-white shadow-xl"
+          style={{
+            top: pos.up ? undefined : pos.top,
+            bottom: pos.up ? window.innerHeight - pos.top : undefined,
+            left: pos.left,
+            width: pos.width,
+          }}
+        >
+          <div className="flex items-center gap-2 border-b border-stone-100 p-2">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="搜寻工序"
+              className="min-w-0 flex-1 rounded-md border border-stone-200 px-2 py-1 text-sm focus:border-teal-500 focus:outline-none"
+            />
+            <button
+              type="button"
+              className="shrink-0 text-xs text-teal-600 hover:underline"
+              onClick={() => onChange(all)}
+            >
+              全选
+            </button>
+            <button
+              type="button"
+              className="shrink-0 text-xs text-stone-500 hover:underline"
+              onClick={() => onChange([])}
+            >
+              清空
+            </button>
+          </div>
+          <div className="max-h-56 overflow-y-auto p-1">
+            {all.length === 0 && (
+              <p className="px-2 py-3 text-xs text-stone-400">尚无工序资料，请先汇入题库</p>
             )}
-          >
-            {p}
-          </button>
-        ))}
-      </div>
+            {filtered.map((p) => {
+              const checked = selected.includes(p);
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => toggle(p)}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-stone-50"
+                >
+                  <span
+                    className={cn(
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+                      checked ? 'border-teal-500 bg-teal-600 text-white' : 'border-stone-300'
+                    )}
+                  >
+                    {checked && <Check className="h-3 w-3" />}
+                  </span>
+                  <span className="text-stone-700">{p}</span>
+                </button>
+              );
+            })}
+            {filtered.length === 0 && all.length > 0 && (
+              <p className="px-2 py-3 text-xs text-stone-400">无符合的工序</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

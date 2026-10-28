@@ -42,7 +42,7 @@ const FEATURES = [
 const AD_DOMAINS = [
   { code: 'PJXZ', label: '强茂徐州', hint: '本厂' },
   { code: 'PANJIT', label: 'PANJIT 台湾', hint: '' },
-  { code: 'PYNMAX', label: '环茂', hint: '' },
+  { code: 'PYNMAX', label: '璟茂', hint: '' },
   { code: 'WXPJ', label: '无锡强茂', hint: '' },
   { code: 'PJWS', label: '强茂深圳', hint: '' },
   { code: 'GDPJ', label: '苏州群鑫', hint: '' },

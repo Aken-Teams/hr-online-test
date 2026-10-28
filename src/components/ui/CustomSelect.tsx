@@ -100,7 +100,7 @@ export function CustomSelect({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border border-stone-200 bg-white py-1 shadow-lg">
+        <div className="absolute z-50 mt-1 w-full min-w-max rounded-xl border border-stone-200 bg-white py-1 shadow-lg">
           <ul className="max-h-60 overflow-auto">
             {options.map((option) => {
               const isSelected = option.value === value;
@@ -125,7 +125,7 @@ export function CustomSelect({
                         isSelected ? 'text-teal-600' : 'invisible',
                       )}
                     />
-                    {option.label}
+                    <span className="whitespace-nowrap">{option.label}</span>
                   </button>
                 </li>
               );

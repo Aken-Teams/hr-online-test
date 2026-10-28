@@ -18,12 +18,12 @@ const TIMEOUT_MS = Number(process.env.AD_TIMEOUT_MS || 30_000);
 /** 可用網域（對應閘道文件；本案預設徐州廠） */
 export const AD_DOMAINS = [
   { code: 'PJXZ', label: '强茂徐州' },
-  { code: 'PANJIT', label: 'PANJIT（台灣）' },
-  { code: 'PYNMAX', label: '環茂' },
-  { code: 'WXPJ', label: '無錫強茂' },
-  { code: 'PJWS', label: '強茂深圳' },
-  { code: 'GDPJ', label: '蘇州群鑫' },
-  { code: 'PJSD', label: '山東強茂' },
+  { code: 'PANJIT', label: 'PANJIT 台湾' },
+  { code: 'PYNMAX', label: '璟茂' },
+  { code: 'WXPJ', label: '无锡强茂' },
+  { code: 'PJWS', label: '强茂深圳' },
+  { code: 'GDPJ', label: '苏州群鑫' },
+  { code: 'PJSD', label: '山东强茂' },
 ] as const;
 
 export const DEFAULT_AD_DOMAIN = process.env.AD_DEFAULT_DOMAIN || 'PJXZ';
