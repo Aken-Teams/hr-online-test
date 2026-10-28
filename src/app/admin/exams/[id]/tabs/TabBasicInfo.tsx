@@ -73,6 +73,8 @@ interface Props {
   isArchived?: boolean;
   saving: boolean;
   onSave: () => void;
+  /** 'basic' = 基本信息相关；'rules' = 考试规则相关 */
+  section?: 'basic' | 'rules';
 }
 
 export default function TabBasicInfo(props: Props) {
@@ -89,6 +91,7 @@ export default function TabBasicInfo(props: Props) {
     forceSubmitOnTabSwitch, setForceSubmitOnTabSwitch,
     enableFaceAuth, setEnableFaceAuth,
     rules, setRules, batches, setBatches, existingBatchCount, totalScore, isFullyEditable, isArchived, saving, onSave,
+    section = 'basic',
   } = props;
 
   function addRule() {
@@ -143,8 +146,12 @@ export default function TabBasicInfo(props: Props) {
     setDragOverIndex(null);
   }
 
+  const showBasic = section === 'basic';
+  const showRules = section === 'rules';
+
   return (
     <div className={`space-y-6 ${isArchived ? 'pointer-events-none opacity-75' : ''}`}>
+      {showBasic && (
       <Card title="基本信息">
         <div className="space-y-4">
           <Input label="考试标题" required value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -167,7 +174,9 @@ export default function TabBasicInfo(props: Props) {
           </div>
         </div>
       </Card>
+      )}
 
+      {showRules && (
       <Card title="权重与配比">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Input label="理论权重(%)" type="number" value={theoryWeight} onChange={(e) => { const v = Number(e.target.value); setTheoryWeight(v); setPracticalWeight(100 - v); }} min={0} max={100} />
@@ -176,7 +185,9 @@ export default function TabBasicInfo(props: Props) {
           <Input label="基本题比例(%)" type="number" value={basicQuestionRatio} onChange={(e) => setBasicQuestionRatio(Number(e.target.value))} min={0} max={100} />
         </div>
       </Card>
+      )}
 
+      {showBasic && (
       <Card title="时间设置">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Input label="考试开放时间" type="datetime-local" value={openAt} onChange={(e) => setOpenAt(e.target.value)} />
@@ -185,7 +196,9 @@ export default function TabBasicInfo(props: Props) {
           <Input label="成绩截止时间" type="datetime-local" value={resultQueryCloseAt} onChange={(e) => setResultQueryCloseAt(e.target.value)} />
         </div>
       </Card>
+      )}
 
+      {showBasic && (
       <Card title="梯次设置（可选）">
         <p className="text-xs text-stone-500 mb-3">
           将考试分为多个时段，每个梯次只在指定时间窗口内允许开考。不设梯次则使用上方的考试开放/截止时间。
@@ -270,7 +283,9 @@ export default function TabBasicInfo(props: Props) {
           )}
         </div>
       </Card>
+      )}
 
+      {showRules && (
       <Card title="考试设置">
         <div className="space-y-4">
           <ToggleRow label="随机出题" description="题目顺序随机打乱" checked={shuffleQuestions} onChange={setShuffleQuestions} />
@@ -297,7 +312,9 @@ export default function TabBasicInfo(props: Props) {
           </div>
         </div>
       </Card>
+      )}
 
+      {showRules && (
       <Card title={isFullyEditable ? '题目规则' : '题目规则（已锁定）'} className="overflow-visible">
         <div className="space-y-3">
           {canDragRules && (
@@ -341,6 +358,7 @@ export default function TabBasicInfo(props: Props) {
           <div className="text-sm text-stone-500">总分：<span className="font-semibold text-stone-800">{totalScore}</span> 分</div>
         </div>
       </Card>
+      )}
 
       {!isArchived && (
         <div className="flex justify-end pb-6">

@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Recent sessions */}
-      <Card title="最近考试记录">
+      <Card title={`最近考试记录（最近 ${recentSessions.length} 笔）`}>
         {recentSessions.length === 0 ? (
           <p className="py-8 text-center text-sm text-stone-400">暂无考试记录</p>
         ) : (

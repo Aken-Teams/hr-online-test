@@ -27,12 +27,14 @@ interface QuestionRule {
 
 const TABS_DRAFT = [
   { key: 'basic', label: '基本信息' },
+  { key: 'rules', label: '考试规则' },
   { key: 'questions', label: '题库管理' },
   { key: 'participants', label: '应考人员' },
 ];
 
 const TABS_FULL = [
   { key: 'basic', label: '基本信息' },
+  { key: 'rules', label: '考试规则' },
   { key: 'questions', label: '题库管理' },
   { key: 'participants', label: '应考人员' },
   { key: 'scores', label: '成绩管理' },
@@ -288,6 +290,7 @@ export default function EditExamPage() {
     <div className="space-y-6">
       <PageHeader
         title={isArchived ? '查看考试' : '编辑考试'}
+        backHref="/admin/exams"
         actions={
           <div className="flex items-center gap-2">
             {examStatus === 'DRAFT' && (
@@ -296,20 +299,16 @@ export default function EditExamPage() {
                 发布考试
               </Button>
             )}
-            <Button variant="outline" onClick={() => router.push('/admin/exams')}>
-              <ArrowLeft className="h-4 w-4" />
-              返回列表
-            </Button>
           </div>
         }
       />
 
       {isArchived && (
-        <div className="flex items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-stone-500" />
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
           <div>
-            <p className="text-sm font-medium text-stone-700">考试已归档，仅供查看</p>
-            <p className="mt-0.5 text-xs text-stone-500">归档的考试无法修改任何设置。</p>
+            <p className="text-sm font-medium text-amber-800">考试已归档，仅供查看</p>
+            <p className="mt-0.5 text-xs text-amber-700">归档的考试无法修改任何设置。</p>
           </div>
         </div>
       )}
@@ -355,6 +354,40 @@ export default function EditExamPage() {
           isArchived={isArchived}
           saving={saving}
           onSave={handleSave}
+          section="basic"
+        />
+      )}
+
+      {activeTab === 'rules' && (
+        <TabBasicInfo
+          title={title} setTitle={setTitle}
+          description={description} setDescription={setDescription}
+          timeLimitMinutes={timeLimitMinutes} setTimeLimitMinutes={setTimeLimitMinutes}
+          passScore={passScore} setPassScore={setPassScore}
+          theoryWeight={theoryWeight} setTheoryWeight={setTheoryWeight}
+          practicalWeight={practicalWeight} setPracticalWeight={setPracticalWeight}
+          compositePassScore={compositePassScore} setCompositePassScore={setCompositePassScore}
+          basicQuestionRatio={basicQuestionRatio} setBasicQuestionRatio={setBasicQuestionRatio}
+          openAt={openAt} setOpenAt={setOpenAt}
+          closeAt={closeAt} setCloseAt={setCloseAt}
+          resultQueryOpenAt={resultQueryOpenAt} setResultQueryOpenAt={setResultQueryOpenAt}
+          resultQueryCloseAt={resultQueryCloseAt} setResultQueryCloseAt={setResultQueryCloseAt}
+          shuffleQuestions={shuffleQuestions} setShuffleQuestions={setShuffleQuestions}
+          shuffleOptions={shuffleOptions} setShuffleOptions={setShuffleOptions}
+          showCorrectAnswers={showCorrectAnswers} setShowCorrectAnswers={setShowCorrectAnswers}
+          isPracticeMode={isPracticeMode} setIsPracticeMode={setIsPracticeMode}
+          tabSwitchLimit={tabSwitchLimit} setTabSwitchLimit={setTabSwitchLimit}
+          forceSubmitOnTabSwitch={forceSubmitOnTabSwitch} setForceSubmitOnTabSwitch={setForceSubmitOnTabSwitch}
+          enableFaceAuth={enableFaceAuth} setEnableFaceAuth={setEnableFaceAuth}
+          rules={rules} setRules={setRules}
+          batches={batches} setBatches={setBatches}
+          existingBatchCount={existingBatchCount}
+          totalScore={totalScore}
+          isFullyEditable={isFullyEditable}
+          isArchived={isArchived}
+          saving={saving}
+          onSave={handleSave}
+          section="rules"
         />
       )}
 

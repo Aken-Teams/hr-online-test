@@ -64,6 +64,8 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [examsLoading, setExamsLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [rankPage, setRankPage] = useState(1);
+  const RANK_PAGE_SIZE = 20;
 
   // Load exam list
   useEffect(() => {
@@ -134,7 +136,20 @@ export default function ReportsPage() {
     }
   }
 
+  useEffect(() => {
+    setRankPage(1);
+  }, [selectedExamId]);
+
   const examOptions = exams.map((e) => ({ value: e.id, label: e.title }));
+
+  // 排名分頁
+  const allRankings = analytics?.rankings ?? [];
+  const rankTotalPages = Math.max(1, Math.ceil(allRankings.length / RANK_PAGE_SIZE));
+  const rankPageSafe = Math.min(rankPage, rankTotalPages);
+  const pagedRankings = allRankings.slice(
+    (rankPageSafe - 1) * RANK_PAGE_SIZE,
+    rankPageSafe * RANK_PAGE_SIZE
+  );
 
   // Find the max count for chart scaling
   const maxDistCount = analytics?.scoreDistribution
@@ -296,10 +311,10 @@ export default function ReportsPage() {
 
           {/* Ranking table */}
           {analytics.rankings && analytics.rankings.length > 0 && (
-            <Card title="成绩排名">
+            <Card title={`成绩排名（共 ${allRankings.length} 人）`}>
               {/* Mobile: card list */}
               <div className="space-y-3 md:hidden">
-                {analytics.rankings.map((r) => (
+                {pagedRankings.map((r) => (
                   <div
                     key={`m-${r.employeeNo}-${r.rank}`}
                     className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
@@ -360,7 +375,7 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {analytics.rankings.map((r) => (
+                    {pagedRankings.map((r) => (
                       <tr key={`${r.employeeNo}-${r.rank}`} className="border-b border-stone-100 last:border-0">
                         <td className="py-2.5 pr-4 w-12">
                           <span className={
@@ -398,6 +413,31 @@ export default function ReportsPage() {
                   </tbody>
                 </table>
               </div>
+              {rankTotalPages > 1 && (
+                <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-3 text-sm">
+                  <span className="text-stone-500">
+                    第 {rankPageSafe} / {rankTotalPages} 页
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={rankPageSafe <= 1}
+                      onClick={() => setRankPage((p) => Math.max(1, p - 1))}
+                    >
+                      上一页
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={rankPageSafe >= rankTotalPages}
+                      onClick={() => setRankPage((p) => Math.min(rankTotalPages, p + 1))}
+                    >
+                      下一页
+                    </Button>
+                  </div>
+                </div>
+              )}
             </Card>
           )}
 

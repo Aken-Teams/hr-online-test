@@ -139,6 +139,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Auth guard (skip for login page)
   useEffect(() => {
     if (isLoginPage) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(true);
       return;
     }
@@ -146,13 +147,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!token) {
       router.replace('/admin/login');
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRole(readRoleFromToken(token));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(true);
     }
   }, [router, isLoginPage]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSidebarOpen(false);
   }, [pathname]);
 

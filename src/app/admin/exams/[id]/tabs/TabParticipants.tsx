@@ -246,9 +246,8 @@ function BatchSelector({
       {saving ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin text-stone-400" />
       ) : (
-        <div className="min-w-[90px]">
+        <div className="min-w-[140px]">
           <SelectBox
-            size="sm"
             value={currentBatchId ?? ''}
             onChange={(v) => handleChange(v || null)}
             options={[
@@ -295,6 +294,9 @@ export default function TabParticipants({ examId }: Props) {
   const [filterLevel, setFilterLevel] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBatch, setFilterBatch] = useState('');
+  const [partPage, setPartPage] = useState(1);
+  const PART_PAGE_SIZE = 10;
+  // 篩選條件变动时回到第一页（见下方 effect）
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -503,6 +505,18 @@ export default function TabParticipants({ examId }: Props) {
     setFilterBatch('');
     setSearchQuery('');
   }
+
+  useEffect(() => {
+    setPartPage(1);
+  }, [searchQuery, filterDept, filterProcess, filterLevel, filterStatus, filterBatch, viewMode]);
+
+  // 平铺檢視分頁
+  const partTotalPages = Math.max(1, Math.ceil(filtered.length / PART_PAGE_SIZE));
+  const partPageSafe = Math.min(partPage, partTotalPages);
+  const pagedFiltered = filtered.slice(
+    (partPageSafe - 1) * PART_PAGE_SIZE,
+    partPageSafe * PART_PAGE_SIZE
+  );
 
   // Group participants by batch for grouped view
   const grouped = useMemo(() => {
@@ -851,7 +865,7 @@ export default function TabParticipants({ examId }: Props) {
                 )}
                 <div className="overflow-x-auto">
                   {viewMode === 'flat' ? (
-                    <ParticipantTable rows={filtered} />
+                    <ParticipantTable rows={pagedFiltered} />
                   ) : (
                     <div className="space-y-4">
                       {grouped.map(([key, group]) => (
@@ -869,6 +883,31 @@ export default function TabParticipants({ examId }: Props) {
                     </div>
                   )}
                 </div>
+                {viewMode === 'flat' && partTotalPages > 1 && (
+                  <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-3 text-sm">
+                    <span className="text-stone-500">
+                      第 {partPageSafe} / {partTotalPages} 页，共 {filtered.length} 人
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={partPageSafe <= 1}
+                        onClick={() => setPartPage((p) => Math.max(1, p - 1))}
+                      >
+                        上一页
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={partPageSafe >= partTotalPages}
+                        onClick={() => setPartPage((p) => Math.min(partTotalPages, p + 1))}
+                      >
+                        下一页
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>

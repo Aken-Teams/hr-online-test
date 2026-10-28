@@ -261,13 +261,8 @@ export default function QuestionImportPage() {
     <div className="space-y-6">
       <PageHeader
         title="导入题库"
+        backHref="/admin/questions"
         description="从 Excel 文件批量导入题目到指定考试"
-        actions={
-          <Button variant="outline" onClick={() => router.push('/admin/questions')}>
-            <ArrowLeft className="h-4 w-4" />
-            返回列表
-          </Button>
-        }
       />
 
       {/* Exam selection */}

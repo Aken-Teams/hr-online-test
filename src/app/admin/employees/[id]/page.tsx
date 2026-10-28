@@ -196,13 +196,8 @@ export default function EmployeeDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={employee.name}
+        backHref="/admin/employees"
         description={`${employee.employeeNo?.startsWith('AUTO_') ? '待分配工号' : employee.employeeNo} · ${employee.department}${employee.role && employee.role !== '未分配' ? ` · ${employee.role}` : ''}`}
-        actions={
-          <Button variant="outline" onClick={() => router.push('/admin/employees')}>
-            <ArrowLeft className="h-4 w-4" />
-            返回列表
-          </Button>
-        }
       />
 
       {/* Basic info */}

@@ -269,12 +269,7 @@ export default function EditQuestionPage() {
     <div className="space-y-6">
       <PageHeader
         title="编辑题目"
-        actions={
-          <Button variant="outline" onClick={() => router.push('/admin/questions')}>
-            <ArrowLeft className="h-4 w-4" />
-            返回列表
-          </Button>
-        }
+        backHref="/admin/questions"
       />
 
       {/* Common fields */}

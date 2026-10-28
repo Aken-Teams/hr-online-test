@@ -215,12 +215,7 @@ export default function CreateQuestionPage() {
     <div className="space-y-6">
       <PageHeader
         title="新建题目"
-        actions={
-          <Button variant="outline" onClick={() => router.push('/admin/questions')}>
-            <ArrowLeft className="h-4 w-4" />
-            返回列表
-          </Button>
-        }
+        backHref="/admin/questions"
       />
 
       {/* Common fields */}

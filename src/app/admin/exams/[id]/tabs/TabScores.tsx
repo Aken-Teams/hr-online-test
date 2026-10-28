@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Upload, Download, Loader2, RotateCcw } from 'lucide-react';
@@ -31,6 +32,10 @@ export default function TabScores({ examId }: Props) {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetting, setResetting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState('');
+  const [processFilter, setProcessFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     loadScores();
@@ -47,6 +52,32 @@ export default function TabScores({ examId }: Props) {
       setLoading(false);
     }
   }
+
+  const processOptions = useMemo(() => {
+    const set = new Set<string>();
+    scores.forEach((s) => s.process && set.add(s.process));
+    return [...set].sort();
+  }, [scores]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return scores.filter((s) => {
+      if (processFilter && (s.process ?? '') !== processFilter) return false;
+      if (q) {
+        const hay = [s.name, s.employeeNo, s.department, s.process ?? ''].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [scores, query, processFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const paged = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query, processFilter]);
 
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -92,29 +123,58 @@ export default function TabScores({ examId }: Props) {
   return (
     <div className="space-y-6">
       <Card title="成绩管理">
-        <div className="flex items-center gap-3 mb-4 flex-wrap">
-          <input ref={fileRef} type="file" accept=".xls,.xlsx" className="hidden" onChange={handleImport} />
-          <Button variant="secondary" onClick={() => fileRef.current?.click()} loading={uploading}>
-            <Upload className="h-4 w-4" />
-            导入实操分
-          </Button>
-          <Button variant="outline" onClick={handleDownloadTemplate}>
-            <Download className="h-4 w-4" />
-            下载模板
-          </Button>
-          {scores.length > 0 && (
-            <Button variant="outline" onClick={() => setShowResetDialog(true)}>
-              <RotateCcw className="h-4 w-4" />
-              重置成绩
-            </Button>
+        {/* 查询筛选（左） + 操作按钮（右）同一列 */}
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+          {!loading && scores.length > 0 ? (
+            <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="搜寻姓名、工号或工序"
+                className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 sm:max-w-xs"
+              />
+              <div className="w-full sm:w-40">
+                <CustomSelect
+                  options={[
+                    { value: '', label: '全部工序' },
+                    ...processOptions.map((p) => ({ value: p, label: p })),
+                  ]}
+                  value={processFilter}
+                  onChange={setProcessFilter}
+                />
+              </div>
+              <span className="text-xs text-stone-400">共 {filtered.length} 人</span>
+            </div>
+          ) : (
+            <div className="flex-1" />
           )}
-          {uploading && <span className="flex items-center gap-1 text-sm text-stone-500"><Loader2 className="h-4 w-4 animate-spin" />导入中...</span>}
+
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <input ref={fileRef} type="file" accept=".xls,.xlsx" className="hidden" onChange={handleImport} />
+            <Button variant="secondary" onClick={() => fileRef.current?.click()} loading={uploading}>
+              <Upload className="h-4 w-4" />
+              导入实操分
+            </Button>
+            <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4" />
+              下载模板
+            </Button>
+            {scores.length > 0 && (
+              <Button variant="outline" onClick={() => setShowResetDialog(true)}>
+                <RotateCcw className="h-4 w-4" />
+                重置成绩
+              </Button>
+            )}
+            {uploading && <span className="flex items-center gap-1 text-sm text-stone-500"><Loader2 className="h-4 w-4 animate-spin" />导入中...</span>}
+          </div>
         </div>
 
         {loading ? (
           <p className="text-sm text-stone-400 text-center py-8">加载中...</p>
         ) : scores.length === 0 ? (
           <p className="text-sm text-stone-400 text-center py-8">暂无成绩数据</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-sm text-stone-400 text-center py-8">没有符合条件的成绩</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -130,7 +190,7 @@ export default function TabScores({ examId }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {scores.map((s) => (
+                {paged.map((s) => (
                   <tr key={s.sessionId} className="border-b border-stone-50">
                     <td className="py-2 pr-3">{s.employeeNo?.startsWith('AUTO_') ? '-' : s.employeeNo}</td>
                     <td className="py-2 pr-3 font-medium">{s.name}</td>
@@ -143,6 +203,31 @@ export default function TabScores({ examId }: Props) {
                 ))}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-3 text-sm">
+                <span className="text-stone-500">
+                  第 {pageSafe} / {totalPages} 页
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={pageSafe <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    上一页
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={pageSafe >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    下一页
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Card>

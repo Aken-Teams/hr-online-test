@@ -416,15 +416,8 @@ export default function SessionDetailPage() {
       <PageHeader
         title={`${data.employee.name} 的考试成绩`}
         description={`${data.examTitle} · ${data.employee.department}${data.employee.employeeNo?.startsWith('AUTO_') ? '' : ` · 工号 ${data.employee.employeeNo}`}`}
-        actions={
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/admin/exams/${examId}/results`)}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            返回成绩列表
-          </Button>
-        }
+        backHref={`/admin/exams/${examId}/results`}
+        backLabel="返回成绩列表"
       />
 
       {/* Score overview */}

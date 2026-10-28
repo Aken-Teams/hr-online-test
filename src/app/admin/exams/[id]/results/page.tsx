@@ -70,6 +70,11 @@ export default function ExamResultsPage() {
   const [showActions, setShowActions] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showPdfConfirm, setShowPdfConfirm] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+  const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const pagedResults = results.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
 
@@ -254,6 +259,7 @@ export default function ExamResultsPage() {
     <div className="space-y-6">
       <PageHeader
         title={summary?.examTitle ? `成绩 - ${summary.examTitle}` : '考试成绩'}
+        backHref="/admin/exams"
         actions={
           <div className="flex items-center gap-2">
             <input
@@ -314,10 +320,6 @@ export default function ExamResultsPage() {
                 </div>
               )}
             </div>
-            <Button variant="outline" onClick={() => router.push('/admin/exams')}>
-              <ArrowLeft className="h-4 w-4" />
-              返回列表
-            </Button>
           </div>
         }
       />
@@ -378,7 +380,7 @@ export default function ExamResultsPage() {
         <Card>
           {/* Mobile: card list */}
           <div className="space-y-3 md:hidden">
-            {results.map((row) => (
+            {pagedResults.map((row) => (
               <div
                 key={row.sessionId}
                 className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
@@ -481,7 +483,7 @@ export default function ExamResultsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.map((row) => {
+                {pagedResults.map((row) => {
                   const compositePass = row.combinedScore != null
                     ? row.combinedScore >= (summary?.compositePassScore ?? 90)
                     : null;
@@ -557,6 +559,31 @@ export default function ExamResultsPage() {
               </TableBody>
             </Table>
           </div>
+          {totalPages > 1 && (
+            <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-3 text-sm">
+              <span className="text-stone-500">
+                第 {pageSafe} / {totalPages} 页，共 {results.length} 人
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={pageSafe <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  上一页
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={pageSafe >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

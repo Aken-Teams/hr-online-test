@@ -227,12 +227,7 @@ export default function CreateExamPage() {
     <div className="space-y-6">
       <PageHeader
         title="创建考试"
-        actions={
-          <Button variant="outline" onClick={() => router.push('/admin/exams')}>
-            <ArrowLeft className="h-4 w-4" />
-            返回列表
-          </Button>
-        }
+        backHref="/admin/exams"
       />
 
       <Stepper

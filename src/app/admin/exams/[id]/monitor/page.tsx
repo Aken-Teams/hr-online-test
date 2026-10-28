@@ -139,13 +139,8 @@ export default function ExamMonitorPage() {
     <div className="space-y-6">
       <PageHeader
         title="实时监控"
+        backHref="/admin/exams"
         description={connected ? '已连接' : '连接断开，尝试重连中...'}
-        actions={
-          <Button variant="outline" onClick={() => router.push('/admin/exams')}>
-            <ArrowLeft className="h-4 w-4" />
-            返回列表
-          </Button>
-        }
       />
 
       {/* Stats bar */}

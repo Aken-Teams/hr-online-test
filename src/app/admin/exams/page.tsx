@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useDebounce } from 'use-debounce';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -22,6 +23,8 @@ import { useToast } from '@/components/ui/Toast';
 import { Pencil, Send, Eye, ClipboardCheck, BarChart3, Square, Play, Archive, Trash2, RefreshCw } from 'lucide-react';
 import { Dialog } from '@/components/ui/Dialog';
 import type { ExamListItem } from '@/types/exam';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { EXAM_STATUS_LABELS } from '@/lib/constants';
 
 // ---------------------------------------------------------------------------
 // Status badge variant mapping (includes display-only statuses)
@@ -59,6 +62,9 @@ export default function ExamListPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState('');
+  const [search] = useDebounce(searchInput, 300);
+  const [statusFilter, setStatusFilter] = useState('');
   const [publishId, setPublishId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [statusAction, setStatusAction] = useState<{ id: string; status: string; label: string } | null>(null);
@@ -77,6 +83,8 @@ export default function ExamListPage() {
       const params = new URLSearchParams();
       params.set('page', String(page));
       params.set('pageSize', '10');
+      if (search.trim()) params.set('search', search.trim());
+      if (statusFilter) params.set('status', statusFilter);
 
       const res = await fetch(`/api/admin/exams?${params.toString()}`);
       if (!res.ok) throw new Error('加载失败');
@@ -90,11 +98,16 @@ export default function ExamListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, toast]);
+  }, [page, search, statusFilter, toast]);
 
   useEffect(() => {
     fetchExams();
   }, [fetchExams]);
+
+  // 查询/筛选变动时回到第一页
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
 
   const handlePublish = useCallback(async () => {
     if (!publishId) return;
@@ -234,12 +247,39 @@ export default function ExamListPage() {
         }
       />
 
+      {/* 查询 / 筛选 */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="搜寻考试标题"
+          className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 sm:max-w-xs"
+        />
+        <div className="w-full sm:w-40">
+          <CustomSelect
+            options={[
+              { value: '', label: '全部状态' },
+              { value: 'DRAFT', label: EXAM_STATUS_LABELS.DRAFT },
+              { value: 'PUBLISHED', label: EXAM_STATUS_LABELS.PUBLISHED },
+              { value: 'ACTIVE', label: EXAM_STATUS_LABELS.ACTIVE },
+              { value: 'CLOSED', label: EXAM_STATUS_LABELS.CLOSED },
+              { value: 'ARCHIVED', label: EXAM_STATUS_LABELS.ARCHIVED },
+            ]}
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
+        </div>
+        <span className="text-xs text-stone-400 sm:ml-auto">共 {total} 场考试</span>
+      </div>
+
       {exams.length === 0 ? (
         <EmptyState
-          title="暂无考试"
-          description="创建第一场考试以开始使用系统"
+          title={search || statusFilter ? '没有符合条件的考试' : '暂无考试'}
+          description={search || statusFilter ? '试试调整搜寻或筛选条件' : '创建第一场考试以开始使用系统'}
           action={
-            <Button onClick={() => router.push('/admin/exams/new')}>创建考试</Button>
+            !search && !statusFilter ? (
+              <Button onClick={() => router.push('/admin/exams/new')}>创建考试</Button>
+            ) : undefined
           }
         />
       ) : (

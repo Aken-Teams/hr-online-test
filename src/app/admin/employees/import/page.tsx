@@ -176,13 +176,8 @@ export default function EmployeeImportPage() {
     <div className="space-y-6">
       <PageHeader
         title="批量导入员工"
+        backHref="/admin/employees"
         description="从 Excel 文件导入员工信息，并可批量上传照片"
-        actions={
-          <Button variant="outline" onClick={() => router.push('/admin/employees')}>
-            <ArrowLeft className="h-4 w-4" />
-            返回列表
-          </Button>
-        }
       />
 
       {/* Excel upload zone */}

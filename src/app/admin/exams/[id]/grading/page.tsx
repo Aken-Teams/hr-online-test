@@ -242,6 +242,7 @@ export default function ExamGradingPage() {
     <div className="space-y-6">
       <PageHeader
         title={data?.examTitle ? `阅卷 - ${data.examTitle}` : '阅卷'}
+        backHref="/admin/exams"
         actions={
           <div className="flex flex-wrap gap-2">
             <Button
@@ -251,10 +252,6 @@ export default function ExamGradingPage() {
               onClick={() => handleAiSuggest()}
             >
               AI 初评待评分题目
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/admin/exams')}>
-              <ArrowLeft className="h-4 w-4" />
-              返回列表
             </Button>
           </div>
         }
