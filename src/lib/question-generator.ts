@@ -126,6 +126,12 @@ async function pickQuestionsForRule(
 ): Promise<string[]> {
   const { questionType, count } = rule;
 
+  // 专业题的「题库部门」：优先用考试规则指定的部门（rule.department），
+  // 没设才退回考生的部门（employeeDept）。这样一场「工务部 SAW Ⅰ级」考试
+  // 只会抽工务部的切割题，不会混到同工序其他部门（如生产部贴膜题）。
+  // 基础题(BASIC)为全公司共用，不卡部门。
+  const bankDept = rule.department || employeeDept || undefined;
+
   // Calculate BASIC vs PROFESSIONAL split
   const basicCount = Math.round(count * basicRatio);
   const professionalCount = count - basicCount;
@@ -167,6 +173,7 @@ async function pickQuestionsForRule(
     const profPool = await fetchPool({
       type: questionType,
       category: 'PROFESSIONAL',
+      department: bankDept,
       process: process || undefined,
       level: level || undefined,
       restrict,
@@ -189,6 +196,7 @@ async function pickQuestionsForRule(
     const profSrc = await fetchPool({
       type: questionType,
       category: 'PROFESSIONAL',
+      department: bankDept,
       process: process || undefined,
       level: level || undefined,
       excludeIds: excludeArray,
@@ -200,6 +208,7 @@ async function pickQuestionsForRule(
       const more = await fetchPool({
         type: questionType,
         category: 'PROFESSIONAL',
+        department: bankDept,
         process: process || undefined,
         level: level || undefined,
         excludeIds: [...excludeArray, ...result],
@@ -214,10 +223,11 @@ async function pickQuestionsForRule(
       });
       take(moreBasic, professionalCount - profFilled, false);
     }
-    // 最后保底：按工序放宽到不分类别
+    // 最后保底：同部门内按工序放宽到不分类别（仍不跨部门，避免混到别的题库）
     if (result.length < count) {
       const broadPool = await fetchPool({
         type: questionType,
+        department: bankDept,
         process: process || undefined,
         level: level || undefined,
         excludeIds: [...excludeArray, ...result],
