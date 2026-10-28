@@ -139,6 +139,29 @@ export async function GET(request: Request) {
       ...gradedAnswers.map(mapAnswer),
     ];
 
+    // 各工序閱卷進度（PRD F2-6）
+    const progressMap = new Map<
+      string,
+      { process: string; pending: number; graded: number; aiSuggested: number }
+    >();
+    for (const a of allManualAnswers) {
+      const process = a.session.assignment?.process ?? a.session.user.role ?? '未分配';
+      if (!progressMap.has(process)) {
+        progressMap.set(process, { process, pending: 0, graded: 0, aiSuggested: 0 });
+      }
+      const row = progressMap.get(process)!;
+      if (a.earnedPoints === null) {
+        row.pending += 1;
+        if (a.aiScore !== null) row.aiSuggested += 1;
+      } else {
+        row.graded += 1;
+      }
+    }
+    const byProcess = [...progressMap.values()].sort((a, b) => {
+      if (b.pending !== a.pending) return b.pending - a.pending;
+      return a.process.localeCompare(b.process, 'zh-Hant');
+    });
+
     return NextResponse.json({
       success: true,
       data: {
@@ -146,6 +169,7 @@ export async function GET(request: Request) {
         totalPending: pendingAnswers.length,
         gradedCount: gradedAnswers.length,
         answers,
+        byProcess,
         // 評卷人僅見所負責工序；null 代表不受限（系統管理員／人資）
         scopedProcesses: scope.processes,
         role: admin.role,

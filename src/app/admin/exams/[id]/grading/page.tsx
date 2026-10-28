@@ -13,6 +13,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/components/ui/Toast';
+import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,6 +31,8 @@ interface PendingAnswer {
   earnedPoints: number | null;
   graderComment: string | null;
   isGraded: boolean;
+  process: string;
+  level: string;
   referenceAnswer?: string | null;
   // AI 初評（PRD F3）：僅供參考，未經評卷人確認不計入成績
   aiScore?: number | null;
@@ -40,11 +43,24 @@ interface PendingAnswer {
   scoreSource?: string | null;
 }
 
+interface ProcessProgress {
+  process: string;
+  pending: number;
+  graded: number;
+  /** 待評分中已有 AI 建議的筆數 */
+  aiSuggested: number;
+}
+
 interface GradingData {
   examTitle: string;
   totalPending: number;
   gradedCount: number;
   answers: PendingAnswer[];
+  /** 各工序閱卷進度（PRD F2-6） */
+  byProcess: ProcessProgress[];
+  /** 評卷人僅見所負責工序；null 代表不受限 */
+  scopedProcesses: string[] | null;
+  role: string;
 }
 
 const QUESTION_TYPE_LABELS: Record<string, string> = {
@@ -68,6 +84,7 @@ export default function ExamGradingPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
   const [searchQuery, setSearchQuery] = useState('');
+  const [processFilter, setProcessFilter] = useState<string>('');
   const [gradingAnswer, setGradingAnswer] = useState<PendingAnswer | null>(null);
   const [gradeScore, setGradeScore] = useState('');
   const [gradeComment, setGradeComment] = useState('');
@@ -104,6 +121,11 @@ export default function ExamGradingPage() {
       filtered = filtered.filter((a) => a.isGraded);
     }
 
+    // 工序篩選（PRD F2-6）
+    if (processFilter) {
+      filtered = filtered.filter((a) => a.process === processFilter);
+    }
+
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -116,7 +138,7 @@ export default function ExamGradingPage() {
     }
 
     return filtered;
-  }, [data?.answers, activeTab, searchQuery]);
+  }, [data?.answers, activeTab, searchQuery, processFilter]);
 
   function openGradingDialog(answer: PendingAnswer) {
     setGradingAnswer(answer);
@@ -257,6 +279,62 @@ export default function ExamGradingPage() {
         </div>
       </div>
 
+      {/* 各工序阅卷进度（PRD F2-6）*/}
+      {(data?.byProcess?.length ?? 0) > 1 && (
+        <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-stone-700">各工序阅卷进度</h3>
+            {processFilter && (
+              <button
+                type="button"
+                onClick={() => setProcessFilter('')}
+                className="text-xs text-teal-600 hover:underline"
+              >
+                清除筛选（目前：{processFilter}）
+              </button>
+            )}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {data!.byProcess.map((p) => {
+              const total = p.pending + p.graded;
+              const pct = total === 0 ? 0 : Math.round((p.graded / total) * 100);
+              const active = processFilter === p.process;
+              return (
+                <button
+                  key={p.process}
+                  type="button"
+                  onClick={() => setProcessFilter(active ? '' : p.process)}
+                  className={cn(
+                    'rounded-lg border px-3 py-2.5 text-left transition-colors',
+                    active
+                      ? 'border-teal-500 bg-teal-50'
+                      : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50'
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-stone-800">{p.process}</span>
+                    <span className="text-xs text-stone-500">
+                      {p.graded} / {total}
+                    </span>
+                  </div>
+                  <div className="mt-1.5">
+                    <Progress value={pct} color={pct === 100 ? 'green' : 'teal'} />
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px]">
+                    <span className={p.pending > 0 ? 'text-orange-600' : 'text-stone-400'}>
+                      待评 {p.pending}
+                    </span>
+                    {p.aiSuggested > 0 && (
+                      <span className="text-violet-500">AI 已初评 {p.aiSuggested}</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Tabs + Search */}
       <div className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
         <div className="flex flex-col gap-2 border-b border-stone-200 px-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
@@ -318,7 +396,11 @@ export default function ExamGradingPage() {
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-stone-500">
-                    {answer.department} · {QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
+                    {answer.department}
+                    {answer.process && <span className="text-teal-600"> · {answer.process}</span>}
+                    {answer.level && ` ${answer.level}`}
+                    {' · '}
+                    {QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
                   </p>
                   <p className="mt-1 line-clamp-2 text-sm text-stone-600 leading-relaxed">
                     {answer.questionContent}
@@ -344,6 +426,7 @@ export default function ExamGradingPage() {
                     <th className="px-4 py-3 font-medium">状态</th>
                     <th className="px-4 py-3 font-medium">考生</th>
                     <th className="px-4 py-3 font-medium">部门</th>
+                    <th className="px-4 py-3 font-medium">工序</th>
                     <th className="px-4 py-3 font-medium">题型</th>
                     <th className="px-4 py-3 font-medium max-w-xs">题目摘要</th>
                     <th className="px-4 py-3 font-medium text-center">满分</th>
@@ -366,6 +449,16 @@ export default function ExamGradingPage() {
                         {answer.employeeName}
                       </td>
                       <td className="px-4 py-3 text-stone-500">{answer.department}</td>
+                      <td className="px-4 py-3">
+                        {answer.process ? (
+                          <span className="rounded bg-teal-50 px-1.5 py-0.5 text-xs text-teal-700">
+                            {answer.process}
+                            {answer.level && ` ${answer.level}`}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-stone-300">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-stone-500">
                         {QUESTION_TYPE_LABELS[answer.questionType] || answer.questionType}
                       </td>
@@ -443,6 +536,13 @@ export default function ExamGradingPage() {
                 <span className="text-stone-500">题型：</span>
                 <span className="text-stone-800">
                   {QUESTION_TYPE_LABELS[gradingAnswer.questionType] || gradingAnswer.questionType}
+                </span>
+              </div>
+              <div>
+                <span className="text-stone-500">工序：</span>
+                <span className="font-medium text-stone-800">
+                  {gradingAnswer.process || '—'}
+                  {gradingAnswer.level ? ` ${gradingAnswer.level}` : ''}
                 </span>
               </div>
               <div>
