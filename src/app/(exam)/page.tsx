@@ -378,6 +378,7 @@ function FaceTab() {
 export default function WelcomePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>('password');
+  const [sheetOpen, setSheetOpen] = useState(false); // 手机版：点验证钮才滑出表单
 
   // If user already has a token and an active exam session, redirect to test page
   useEffect(() => {
@@ -389,67 +390,69 @@ export default function WelcomePage() {
   }, [router]);
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      {/* ===== Left: Introduction (hidden on mobile) ===== */}
-      <div className="relative hidden flex-col justify-center overflow-hidden bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 px-6 py-12 md:flex md:w-[55%] md:px-12 lg:px-20">
-        {/* Decorative shapes */}
-        <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/5" />
-        <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-white/5" />
-        <div className="pointer-events-none absolute bottom-1/3 right-10 h-24 w-24 rounded-full bg-white/5" />
+    <div className="relative min-h-screen md:flex md:flex-row">
+      {/* ===== Left: brand image (desktop) ===== */}
+      <div className="relative hidden overflow-hidden md:block md:w-[55%]">
+        <Image
+          src="/login.png"
+          alt="智考云 · 员工在线技能考核"
+          fill
+          priority
+          sizes="55vw"
+          className="object-cover"
+        />
+      </div>
 
-        <div className="relative mx-auto w-full max-w-lg">
-          {/* Logo — white version */}
-          <div className="mb-8 flex items-center gap-2.5">
-            <Image src="/logo.png" alt="智考云" width={48} height={48} className="h-12 w-12 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-white leading-tight">
-                智考云
-              </span>
-              <span className="text-xs leading-tight text-white/60">
-                企业考核平台
-              </span>
-            </div>
-          </div>
-
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            员工在线技能考核
-          </h1>
-          <p className="mt-2 text-sm text-amber-50/70 sm:text-base">
-            企业员工入职及技能在线测试平台
-          </p>
-
-          {/* Divider */}
-          <div className="mt-8 h-px w-12 bg-amber-100/40" />
-
-          {/* Feature list */}
-          <div className="mt-6 space-y-5">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50/20">
-                  {f.icon}
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-amber-50">{f.title}</h3>
-                  <p className="text-xs text-white/60 leading-relaxed">{f.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-        </div>
+      {/* ===== Mobile: full-screen fixed background image ===== */}
+      <div className="fixed inset-0 md:hidden">
+        <Image
+          src="/login_mobile.png"
+          alt="智考云 · 员工在线技能考核"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
       </div>
 
       {/* ===== Right: Login ===== */}
-      <div className="flex min-h-screen flex-col items-center justify-start px-5 pt-10 pb-6 md:min-h-0 md:justify-center md:px-10 md:py-10 md:w-[45%] lg:px-16">
-        <div className="w-full max-w-sm">
-          {/* Mobile-only compact header */}
-          <div className="mb-5 flex flex-col items-center md:hidden">
-            <Logo size="sm" />
-            <h1 className="mt-2 text-base font-bold text-stone-800">身份验证</h1>
-            <p className="mt-0.5 text-xs text-stone-400">请先验证您的身份以进入考试</p>
+      <div className="relative z-10 md:flex md:min-h-screen md:w-[45%] md:items-center md:justify-center md:px-10 md:py-10 lg:px-16">
+
+        {/* Mobile CTA — tap to reveal the form */}
+        {!sheetOpen && (
+          <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-white/95 via-white/70 to-transparent px-5 pb-[calc(4rem+env(safe-area-inset-bottom))] pt-10 backdrop-blur-[3px] md:hidden">
+            <Button className="w-full py-3.5 text-base font-semibold shadow-xl shadow-teal-900/20" onClick={() => setSheetOpen(true)}>
+              身份验证
+            </Button>
+          </div>
+        )}
+
+        {/* Mobile backdrop */}
+        {sheetOpen && (
+          <div
+            className="fixed inset-0 z-10 bg-black/40 md:hidden"
+            onClick={() => setSheetOpen(false)}
+          />
+        )}
+
+        {/* Sheet (mobile slide-up) / card wrapper (desktop) */}
+        <div className={`fixed inset-x-0 bottom-0 z-20 max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(0,0,0,0.18)] transition-transform duration-300 ${sheetOpen ? 'translate-y-0' : 'translate-y-full'} md:static md:z-auto md:max-h-none md:w-full md:max-w-sm md:translate-y-0 md:overflow-visible md:rounded-none md:bg-transparent md:p-0 md:shadow-none md:transition-none`}>
+          {/* Mobile drag handle */}
+          <button
+            type="button"
+            onClick={() => setSheetOpen(false)}
+            aria-label="收起"
+            className="mx-auto mb-3 block h-1.5 w-10 rounded-full bg-stone-300 md:hidden"
+          />
+
+          {/* Mobile-only title */}
+          <div className="mb-5 text-center md:hidden">
+            <h1 className="text-xl font-bold text-stone-800">身份验证</h1>
+            <p className="mt-1 text-xs text-stone-400">请先验证您的身份以进入考试</p>
           </div>
 
-          <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
+          {/* Login card (bordered on desktop, flat on mobile sheet) */}
+          <div className="md:rounded-2xl md:border md:border-stone-200 md:bg-white md:shadow-sm">
             {/* Card header (desktop only) */}
             <div className="hidden border-b border-stone-100 px-6 py-5 md:block">
               <h2 className="text-lg font-semibold text-stone-800">身份验证</h2>
@@ -458,18 +461,8 @@ export default function WelcomePage() {
               </p>
             </div>
 
-            {/* Face auth tabs hidden — only password verification used for now
-            <div className="px-6 pt-4">
-              <Tabs
-                tabs={VERIFY_TABS as unknown as { key: string; label: string }[]}
-                activeKey={activeTab}
-                onChange={setActiveTab}
-              />
-            </div>
-            */}
-
-            {/* Tab content */}
-            <div className="px-6 py-6">
+            {/* Form body */}
+            <div className="md:px-6 md:py-6">
               <PasswordTab />
             </div>
           </div>
