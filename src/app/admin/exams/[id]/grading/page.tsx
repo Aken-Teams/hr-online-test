@@ -4,11 +4,12 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, SquarePen } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Progress } from '@/components/ui/Progress';
 import { Tabs } from '@/components/ui/Tabs';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Dialog } from '@/components/ui/Dialog';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -85,11 +86,15 @@ export default function ExamGradingPage() {
   const [activeTab, setActiveTab] = useState('pending');
   const [searchQuery, setSearchQuery] = useState('');
   const [processFilter, setProcessFilter] = useState<string>('');
+  const [employeeFilter, setEmployeeFilter] = useState<string>('');
+  const [levelFilter, setLevelFilter] = useState<string>('');
   const [gradingAnswer, setGradingAnswer] = useState<PendingAnswer | null>(null);
   const [gradeScore, setGradeScore] = useState('');
   const [gradeComment, setGradeComment] = useState('');
   const [saving, setSaving] = useState(false);
   const [aiRunning, setAiRunning] = useState(false);
+  const [adoptingAll, setAdoptingAll] = useState(false);
+  const [page, setPage] = useState(1);
 
   const fetchGrading = useCallback(async () => {
     try {
@@ -126,6 +131,16 @@ export default function ExamGradingPage() {
       filtered = filtered.filter((a) => a.process === processFilter);
     }
 
+    // 考生篩選
+    if (employeeFilter) {
+      filtered = filtered.filter((a) => a.employeeName === employeeFilter);
+    }
+
+    // 等級篩選
+    if (levelFilter) {
+      filtered = filtered.filter((a) => a.level === levelFilter);
+    }
+
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -138,7 +153,30 @@ export default function ExamGradingPage() {
     }
 
     return filtered;
-  }, [data?.answers, activeTab, searchQuery, processFilter]);
+  }, [data?.answers, activeTab, searchQuery, processFilter, employeeFilter, levelFilter]);
+
+  // 篩選下拉選項（依現有資料動態產生；只有在真的有多個值時才顯示）
+  const employeeOptions = useMemo(() => {
+    const present = [...new Set((data?.answers ?? []).map((a) => a.employeeName).filter(Boolean))];
+    return [
+      { value: '', label: '全部考生' },
+      ...present.map((n) => ({ value: n, label: n })),
+    ];
+  }, [data?.answers]);
+
+  const levelOptions = useMemo(() => {
+    const present = [...new Set((data?.answers ?? []).map((a) => a.level).filter(Boolean))];
+    return [
+      { value: '', label: '全部等级' },
+      ...present.map((l) => ({ value: l, label: l })),
+    ];
+  }, [data?.answers]);
+
+  const PAGE_SIZE = 15;
+  const totalPages = Math.max(1, Math.ceil(filteredAnswers.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const pagedAnswers = filteredAnswers.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+  useEffect(() => { setPage(1); }, [activeTab, searchQuery, processFilter, employeeFilter, levelFilter]);
 
   function openGradingDialog(answer: PendingAnswer) {
     setGradingAnswer(answer);
@@ -203,7 +241,8 @@ export default function ExamGradingPage() {
         body: JSON.stringify({
           answerId: gradingAnswer.answerId,
           earnedPoints: score,
-          comment: gradeComment.trim() || null,
+          // 省略空评语（schema 不接受 null）
+          comment: gradeComment.trim() || undefined,
         }),
       });
 
@@ -216,6 +255,48 @@ export default function ExamGradingPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function adoptAiScore(answerId: string, aiScore: number): Promise<boolean> {
+    try {
+      const res = await fetch('/api/admin/grading', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // earnedPoints 须为整数（gradingSchema），AI 分数四舍五入；
+        // 不送 comment（schema 不接受 null，且不覆盖评卷人评语）
+        body: JSON.stringify({ answerId, earnedPoints: Math.round(aiScore) }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  // 单题采用 AI 建议分数
+  async function handleAdoptOne(answer: PendingAnswer) {
+    if (answer.aiScore == null) return;
+    setSaving(true);
+    const ok = await adoptAiScore(answer.answerId, answer.aiScore);
+    setSaving(false);
+    toast(ok ? '已采用 AI 建议分数' : '采用失败', ok ? 'success' : 'error');
+    if (ok) fetchGrading();
+  }
+
+  // 批次采用：对所有「待评分且有 AI 建议」的题目套用 AI 分数
+  async function handleAdoptAll() {
+    const toAdopt = (data?.answers ?? []).filter((a) => !a.isGraded && a.aiScore != null);
+    if (toAdopt.length === 0) {
+      toast('没有可采用的 AI 建议（请先运行 AI 初评）', 'warning');
+      return;
+    }
+    setAdoptingAll(true);
+    let ok = 0;
+    for (const a of toAdopt) {
+      if (await adoptAiScore(a.answerId, a.aiScore as number)) ok += 1;
+    }
+    setAdoptingAll(false);
+    toast(`已采用 ${ok} 题 AI 建议分数${ok < toAdopt.length ? `，${toAdopt.length - ok} 题失败` : ''}`, ok > 0 ? 'success' : 'error');
+    fetchGrading();
   }
 
   if (loading) {
@@ -246,12 +327,19 @@ export default function ExamGradingPage() {
         actions={
           <div className="flex flex-wrap gap-2">
             <Button
-              variant="secondary"
+              variant="outline"
               loading={aiRunning}
               disabled={pending === 0}
               onClick={() => handleAiSuggest()}
             >
               AI 初评待评分题目
+            </Button>
+            <Button
+              loading={adoptingAll}
+              disabled={pending === 0}
+              onClick={handleAdoptAll}
+            >
+              采用全部 AI 建议
             </Button>
           </div>
         }
@@ -334,10 +422,26 @@ export default function ExamGradingPage() {
 
       {/* Tabs + Search */}
       <div className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex flex-col gap-2 border-b border-stone-200 px-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+        <div className="flex flex-col gap-2 border-b border-stone-200 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <Tabs tabs={tabs} activeKey={activeTab} onChange={setActiveTab} className="!border-b-0" />
-          <div className="w-full pb-2 sm:w-64 sm:py-2">
-            <div className="relative">
+          <div className="flex flex-col gap-2 pb-1 sm:flex-row sm:items-center sm:pb-0">
+            {employeeOptions.length > 1 && (
+              <CustomSelect
+                options={employeeOptions}
+                value={employeeFilter}
+                onChange={setEmployeeFilter}
+                className="w-full sm:w-40"
+              />
+            )}
+            {levelOptions.length > 2 && (
+              <CustomSelect
+                options={levelOptions}
+                value={levelFilter}
+                onChange={setLevelFilter}
+                className="w-full sm:w-32"
+              />
+            )}
+            <div className="relative w-full sm:w-56">
               <svg
                 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
                 fill="none"
@@ -374,7 +478,7 @@ export default function ExamGradingPage() {
           <>
             {/* Mobile: card list */}
             <div className="space-y-3 p-3 md:hidden">
-              {filteredAnswers.map((answer) => (
+              {pagedAnswers.map((answer) => (
                 <div
                   key={answer.answerId}
                   className="rounded-lg border border-stone-100 bg-stone-50/50 px-3.5 py-3"
@@ -402,14 +506,41 @@ export default function ExamGradingPage() {
                   <p className="mt-1 line-clamp-2 text-sm text-stone-600 leading-relaxed">
                     {answer.questionContent}
                   </p>
-                  <div className="mt-2 flex justify-end">
-                    <Button
-                      size="sm"
-                      variant={answer.isGraded ? 'ghost' : 'primary'}
-                      onClick={() => openGradingDialog(answer)}
-                    >
-                      {answer.isGraded ? '查看' : '评分'}
-                    </Button>
+                  {answer.aiScore != null && (
+                    <p className="mt-1.5 text-xs text-violet-600">
+                      AI 建议：<span className="font-semibold">{answer.aiScore}</span> / {answer.maxPoints}
+                    </p>
+                  )}
+                  <div className="mt-2 flex justify-end gap-2">
+                    {!answer.isGraded && answer.aiScore != null && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={saving}
+                        onClick={() => handleAdoptOne(answer)}
+                      >
+                        采用 AI
+                      </Button>
+                    )}
+                    {answer.isGraded ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openGradingDialog(answer)}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        查看
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => openGradingDialog(answer)}
+                      >
+                        <SquarePen className="h-3.5 w-3.5" />
+                        评分
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -427,12 +558,13 @@ export default function ExamGradingPage() {
                     <th className="px-4 py-3 font-medium">题型</th>
                     <th className="px-4 py-3 font-medium max-w-xs">题目摘要</th>
                     <th className="px-4 py-3 font-medium text-center">满分</th>
+                    <th className="px-4 py-3 font-medium text-center">AI建议</th>
                     <th className="px-4 py-3 font-medium text-center">得分</th>
                     <th className="px-4 py-3 font-medium text-center">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAnswers.map((answer) => (
+                  {pagedAnswers.map((answer) => (
                     <tr
                       key={answer.answerId}
                       className="border-b border-stone-100 last:border-0 hover:bg-stone-50/50 transition-colors"
@@ -468,6 +600,15 @@ export default function ExamGradingPage() {
                         {answer.maxPoints}
                       </td>
                       <td className="px-4 py-3 text-center">
+                        {answer.aiScore != null ? (
+                          <span className="font-medium text-violet-600">
+                            {answer.aiScore}
+                          </span>
+                        ) : (
+                          <span className="text-stone-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         {answer.isGraded ? (
                           <span className="font-semibold text-green-700">
                             {answer.earnedPoints}
@@ -477,19 +618,69 @@ export default function ExamGradingPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <Button
-                          size="sm"
-                          variant={answer.isGraded ? 'ghost' : 'primary'}
-                          onClick={() => openGradingDialog(answer)}
-                        >
-                          {answer.isGraded ? '查看' : '评分'}
-                        </Button>
+                        <div className="flex items-center justify-center gap-2">
+                          {!answer.isGraded && answer.aiScore != null && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={saving}
+                              onClick={() => handleAdoptOne(answer)}
+                            >
+                              采用 AI
+                            </Button>
+                          )}
+                          {answer.isGraded ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openGradingDialog(answer)}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              查看
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              onClick={() => openGradingDialog(answer)}
+                            >
+                              <SquarePen className="h-3.5 w-3.5" />
+                              评分
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-stone-100 px-4 py-3 text-sm">
+                <span className="text-stone-500">
+                  第 {pageSafe} / {totalPages} 页，共 {filteredAnswers.length} 题
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={pageSafe <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    上一页
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={pageSafe >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    下一页
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -596,9 +787,6 @@ export default function ExamGradingPage() {
                   }>
                     信心度 {gradingAnswer.aiConfidence === 'high' ? '高' : gradingAnswer.aiConfidence === 'low' ? '低' : '中'}
                   </Badge>
-                  {gradingAnswer.aiModel && (
-                    <span className="text-[11px] text-violet-400">{gradingAnswer.aiModel}</span>
-                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <p className="text-xl font-bold text-violet-800">

@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/components/ui/Toast';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 interface MyResult {
   sessionId: string;
@@ -111,23 +112,25 @@ export default function ScoresPage() {
               placeholder="搜寻考试名称"
               className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 sm:max-w-xs"
             />
-            <select
+            <CustomSelect
               value={examFilter}
-              onChange={(e) => setExamFilter(e.target.value)}
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 sm:w-48"
-            >
-              <option value="">全部考试</option>
-              {examOptions.map(([id, title]) => <option key={id} value={id}>{title}</option>)}
-            </select>
-            <select
+              onChange={setExamFilter}
+              className="sm:w-48"
+              options={[
+                { value: '', label: '全部考试' },
+                ...examOptions.map(([id, title]) => ({ value: id, label: title })),
+              ]}
+            />
+            <CustomSelect
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 sm:w-36"
-            >
-              <option value="">全部状态</option>
-              <option value="pending">评分中</option>
-              <option value="missed">未参加</option>
-            </select>
+              onChange={setStatusFilter}
+              className="sm:w-36"
+              options={[
+                { value: '', label: '全部状态' },
+                { value: 'pending', label: '评分中' },
+                { value: 'missed', label: '未参加' },
+              ]}
+            />
           </div>
 
           {filtered.length === 0 ? (
