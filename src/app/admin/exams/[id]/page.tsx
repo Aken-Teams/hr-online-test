@@ -74,6 +74,7 @@ export default function EditExamPage() {
   const [showCorrectAnswers, setShowCorrectAnswers] = useState(false);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const [tabSwitchLimit, setTabSwitchLimit] = useState(3);
+  const [forceSubmitOnTabSwitch, setForceSubmitOnTabSwitch] = useState(true);
   const [enableFaceAuth, setEnableFaceAuth] = useState(false);
 
   // Exam status
@@ -123,6 +124,7 @@ export default function EditExamPage() {
       setShowCorrectAnswers(exam.showCorrectAnswers);
       setIsPracticeMode(exam.isPracticeMode);
       setTabSwitchLimit(exam.tabSwitchLimit);
+      setForceSubmitOnTabSwitch(exam.forceSubmitOnTabSwitch ?? true);
       setEnableFaceAuth(exam.enableFaceAuth);
 
       setTheoryWeight(Math.round((exam.theoryWeight ?? 0.4) * 100));
@@ -213,6 +215,7 @@ export default function EditExamPage() {
         showResultImmediately: true,
         isPracticeMode,
         tabSwitchLimit,
+        forceSubmitOnTabSwitch,
         enableFaceAuth,
         maxAttempts: 1,
         questionRules: rules.map((r) => ({
@@ -342,6 +345,7 @@ export default function EditExamPage() {
           showCorrectAnswers={showCorrectAnswers} setShowCorrectAnswers={setShowCorrectAnswers}
           isPracticeMode={isPracticeMode} setIsPracticeMode={setIsPracticeMode}
           tabSwitchLimit={tabSwitchLimit} setTabSwitchLimit={setTabSwitchLimit}
+          forceSubmitOnTabSwitch={forceSubmitOnTabSwitch} setForceSubmitOnTabSwitch={setForceSubmitOnTabSwitch}
           enableFaceAuth={enableFaceAuth} setEnableFaceAuth={setEnableFaceAuth}
           rules={rules} setRules={setRules}
           batches={batches} setBatches={setBatches}

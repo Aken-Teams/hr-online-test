@@ -150,6 +150,7 @@ export async function POST(request: Request) {
           resultQueryOpenAt: data.resultQueryOpenAt ? new Date(data.resultQueryOpenAt) : null,
           resultQueryCloseAt: data.resultQueryCloseAt ? new Date(data.resultQueryCloseAt) : null,
           tabSwitchLimit: data.tabSwitchLimit,
+          forceSubmitOnTabSwitch: data.forceSubmitOnTabSwitch,
           enableFaceAuth: data.enableFaceAuth,
           theoryWeight: data.theoryWeight,
           practicalWeight: data.practicalWeight,

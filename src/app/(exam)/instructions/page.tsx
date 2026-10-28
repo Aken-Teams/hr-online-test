@@ -213,6 +213,14 @@ function InstructionsPage() {
               );
               localStorage.setItem('exam-questions-raw', JSON.stringify(questions));
               localStorage.setItem('exam-session-id', sessionId);
+              // 考試過程控制設定（PRD F4-2 / F4-3）
+              localStorage.setItem(
+                'exam-anti-cheat',
+                JSON.stringify({
+                  tabSwitchLimit: startData.data.tabSwitchLimit ?? 3,
+                  forceSubmitOnTabSwitch: startData.data.forceSubmitOnTabSwitch ?? true,
+                }),
+              );
               router.replace('/test');
               return;
             }
@@ -322,6 +330,15 @@ function InstructionsPage() {
       // Also store raw question data for the test page renderer
       localStorage.setItem('exam-questions-raw', JSON.stringify(questions));
       localStorage.setItem('exam-session-id', sessionId);
+      // 考試過程控制設定（PRD F4-2 / F4-3）
+      localStorage.setItem(
+        'exam-anti-cheat',
+        JSON.stringify({
+          tabSwitchLimit: (data.data as Record<string, unknown>).tabSwitchLimit ?? 3,
+          forceSubmitOnTabSwitch:
+            (data.data as Record<string, unknown>).forceSubmitOnTabSwitch ?? true,
+        }),
+      );
 
       router.push('/test');
     } catch {

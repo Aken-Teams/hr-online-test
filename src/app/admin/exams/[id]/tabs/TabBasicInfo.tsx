@@ -57,6 +57,8 @@ interface Props {
   isPracticeMode: boolean;
   setIsPracticeMode: (v: boolean) => void;
   tabSwitchLimit: number;
+  setForceSubmitOnTabSwitch: (v: boolean) => void;
+  forceSubmitOnTabSwitch: boolean;
   setTabSwitchLimit: (v: number) => void;
   enableFaceAuth: boolean;
   setEnableFaceAuth: (v: boolean) => void;
@@ -84,6 +86,7 @@ export default function TabBasicInfo(props: Props) {
     shuffleQuestions, setShuffleQuestions, shuffleOptions, setShuffleOptions,
     showCorrectAnswers, setShowCorrectAnswers,
     isPracticeMode, setIsPracticeMode, tabSwitchLimit, setTabSwitchLimit,
+    forceSubmitOnTabSwitch, setForceSubmitOnTabSwitch,
     enableFaceAuth, setEnableFaceAuth,
     rules, setRules, batches, setBatches, existingBatchCount, totalScore, isFullyEditable, isArchived, saving, onSave,
   } = props;
@@ -275,10 +278,20 @@ export default function TabBasicInfo(props: Props) {
           <ToggleRow label="显示正确答案" description="提交后展示正确答案" checked={showCorrectAnswers} onChange={setShowCorrectAnswers} />
           <ToggleRow label="练习模式" description="不限作答次数" checked={isPracticeMode} onChange={setIsPracticeMode} />
           {/* 人脸验证功能已隐藏 */}
+          <ToggleRow
+            label="达上限强制交卷"
+            description="关闭时仅提醒与记录，由人资依稽核纪录人工判定（手机黑屏不会被强制交卷）"
+            checked={forceSubmitOnTabSwitch}
+            onChange={setForceSubmitOnTabSwitch}
+          />
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-stone-700">切屏限制</p>
-              <p className="text-xs text-stone-500">最大切屏次数，0 = 不限制</p>
+              <p className="text-sm font-medium text-stone-700">
+                {forceSubmitOnTabSwitch ? '切屏限制' : '离开画面提醒门槛'}
+              </p>
+              <p className="text-xs text-stone-500">
+                {forceSubmitOnTabSwitch ? '最大切屏次数，0 = 不限制' : '仅用于稽核统计，不会强制交卷'}
+              </p>
             </div>
             <input type="number" className="w-20 rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-center focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500" value={tabSwitchLimit} onChange={(e) => setTabSwitchLimit(Number(e.target.value))} min={0} />
           </div>

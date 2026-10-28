@@ -1,0 +1,1781 @@
+{
+  "model": "deepseek-chat",
+  "generatedAt": "2026-10-28T07:04:21.115Z",
+  "sampleSize": 12,
+  "gradedCount": 48,
+  "inBandRate": 93.8,
+  "within2Rate": 95.8,
+  "mae": 0.15,
+  "byLevel": {
+    "full": {
+      "label": "完全正確",
+      "count": 12,
+      "inBand": 12,
+      "avgScore": 10
+    },
+    "partial": {
+      "label": "部分正確",
+      "count": 12,
+      "inBand": 9,
+      "avgScore": 6.3
+    },
+    "wrong": {
+      "label": "概念錯誤",
+      "count": 12,
+      "inBand": 12,
+      "avgScore": 0
+    },
+    "blank": {
+      "label": "極短無效",
+      "count": 12,
+      "inBand": 12,
+      "avgScore": 0
+    }
+  },
+  "confidence": {
+    "high": 44,
+    "medium": 4
+  },
+  "usage": {
+    "prompt": 24075,
+    "completion": 6207
+  },
+  "details": [
+    {
+      "questionIndex": 1,
+      "department": "制程品管部",
+      "process": "MD&TF&PT&TMTT&FQC",
+      "level": "Ⅱ级",
+      "content": "11. CPK代表什么？我们公司对AU品的CPK要求是多少？",
+      "reference": "CPK = 制程能力指数；AU品的CPK≥1.67",
+      "answerLevel": "full",
+      "studentAnswer": "CPK就是制程能力指數，用來衡量制程穩不穩定、能不能穩定做出符合規格的產品。我們公司AU品的CPK要求要達到1.67以上。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生正確答出CPK定義及AU品CPK≥1.67要求，兩個得分點皆命中。",
+      "keyPoints": [
+        {
+          "point": "CPK = 制程能力指数",
+          "hit": true
+        },
+        {
+          "point": "AU品的CPK≥1.67",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 1,
+      "department": "制程品管部",
+      "process": "MD&TF&PT&TMTT&FQC",
+      "level": "Ⅱ级",
+      "content": "11. CPK代表什么？我们公司对AU品的CPK要求是多少？",
+      "reference": "CPK = 制程能力指数；AU品的CPK≥1.67",
+      "answerLevel": "partial",
+      "studentAnswer": "CPK是制程能力指數，就是看制程穩不穩。AU品的要求好像是1.33以上吧。",
+      "score": 5,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "CPK定義答對，但AU品要求答成1.33，未命中第二個得分點。",
+      "keyPoints": [
+        {
+          "point": "CPK = 制程能力指数",
+          "hit": true
+        },
+        {
+          "point": "AU品的CPK≥1.67",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 1,
+      "department": "制程品管部",
+      "process": "MD&TF&PT&TMTT&FQC",
+      "level": "Ⅱ级",
+      "content": "11. CPK代表什么？我们公司对AU品的CPK要求是多少？",
+      "reference": "CPK = 制程能力指数；AU品的CPK≥1.67",
+      "answerLevel": "wrong",
+      "studentAnswer": "CPK是產品的不良率指標，數字越高代表不良越多。AU品要求要小於1.67。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生將CPK誤解為不良率指標且方向錯誤，AU品要求也答成小於1.67，兩點皆未命中。",
+      "keyPoints": [
+        {
+          "point": "CPK = 制程能力指数",
+          "hit": false
+        },
+        {
+          "point": "AU品的CPK≥1.67",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 1,
+      "department": "制程品管部",
+      "process": "MD&TF&PT&TMTT&FQC",
+      "level": "Ⅱ级",
+      "content": "11. CPK代表什么？我们公司对AU品的CPK要求是多少？",
+      "reference": "CPK = 制程能力指数；AU品的CPK≥1.67",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為不知道，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "CPK = 制程能力指数",
+          "hit": false
+        },
+        {
+          "point": "AU品的CPK≥1.67",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 2,
+      "department": "制程品管部",
+      "process": "SAW&DB&WB&QCgate",
+      "level": "Ⅱ级",
+      "content": "管制图控制界限更新时机有哪些？",
+      "reference": "①每半年更新一次；②4M1E 关键因素变更且影响制程变异；③客户有明确要求。",
+      "answerLevel": "full",
+      "studentAnswer": "大概就三個時機啦：平常固定每半年要重新算一次；再來就是人機料法環這些關鍵的東西有變動、而且會影響到製程變異的時候也要更新；還有客戶如果特別交代要改，那就照客戶要求。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生完整命中三個得分點，意思正確。",
+      "keyPoints": [
+        {
+          "point": "每半年更新一次",
+          "hit": true
+        },
+        {
+          "point": "4M1E 关键因素变更且影响制程变异",
+          "hit": true
+        },
+        {
+          "point": "客户有明确要求",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 2,
+      "department": "制程品管部",
+      "process": "SAW&DB&WB&QCgate",
+      "level": "Ⅱ级",
+      "content": "管制图控制界限更新时机有哪些？",
+      "reference": "①每半年更新一次；②4M1E 关键因素变更且影响制程变异；③客户有明确要求。",
+      "answerLevel": "partial",
+      "studentAnswer": "就固定半年更新一次這樣，阿如果有換設備還是換材料那種大變動也要改。",
+      "score": 6,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "命中半年更新與4M1E變更兩點，未提客戶要求，3點中2點得6分。",
+      "keyPoints": [
+        {
+          "point": "每半年更新一次",
+          "hit": true
+        },
+        {
+          "point": "4M1E 关键因素变更且影响制程变异",
+          "hit": true
+        },
+        {
+          "point": "客户有明确要求",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 2,
+      "department": "制程品管部",
+      "process": "SAW&DB&WB&QCgate",
+      "level": "Ⅱ级",
+      "content": "管制图控制界限更新时机有哪些？",
+      "reference": "①每半年更新一次；②4M1E 关键因素变更且影响制程变异；③客户有明确要求。",
+      "answerLevel": "wrong",
+      "studentAnswer": "控制界限是看規格上下限定的，所以只要客戶規格沒改就不用更新，等成品檢驗有異常再調就好。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生誤將控制界限當規格界限，未命中任何更新時機得分點。",
+      "keyPoints": [
+        {
+          "point": "每半年更新一次",
+          "hit": false
+        },
+        {
+          "point": "4M1E 关键因素变更且影响制程变异",
+          "hit": false
+        },
+        {
+          "point": "客户有明确要求",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 2,
+      "department": "制程品管部",
+      "process": "SAW&DB&WB&QCgate",
+      "level": "Ⅱ级",
+      "content": "管制图控制界限更新时机有哪些？",
+      "reference": "①每半年更新一次；②4M1E 关键因素变更且影响制程变异；③客户有明确要求。",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為「不知道」，未命中任何得分點，給0分。",
+      "keyPoints": [
+        {
+          "point": "每半年更新一次",
+          "hit": false
+        },
+        {
+          "point": "4M1E 关键因素变更且影响制程变异",
+          "hit": false
+        },
+        {
+          "point": "客户有明确要求",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 3,
+      "department": "客户质量部",
+      "process": "IQC",
+      "level": "Ⅱ级",
+      "content": "键合线材进料检验中，外观检验发现异常的处置流程是什么？",
+      "reference": "检验发现异常需立即通报工程师，由工程师做二次确认为异常，并依据《P-QC1301 异常及异常品处理程序》执行。",
+      "answerLevel": "full",
+      "studentAnswer": "看到外觀有問題先不要自己亂動，馬上通知工程師過來，工程師會再確認一次是不是真的有異常，確定是的話就照P-QC1301那份異常跟異常品處理的程序去走。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "三項得分點皆以同義表述命中，作答完整。",
+      "keyPoints": [
+        {
+          "point": "發現異常立即通報工程師",
+          "hit": true
+        },
+        {
+          "point": "由工程師二次確認是否為異常",
+          "hit": true
+        },
+        {
+          "point": "依《P-QC1301 異常及異常品處理程序》執行",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 3,
+      "department": "客户质量部",
+      "process": "IQC",
+      "level": "Ⅱ级",
+      "content": "键合线材进料检验中，外观检验发现异常的处置流程是什么？",
+      "reference": "检验发现异常需立即通报工程师，由工程师做二次确认为异常，并依据《P-QC1301 异常及异常品处理程序》执行。",
+      "answerLevel": "partial",
+      "studentAnswer": "發現不對勁就先跟工程師講，然後就照異常處理的規定去做。",
+      "score": 10,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": false,
+      "deviation": 3,
+      "confidence": "medium",
+      "reason": "命中通報工程師與依異常程序處理兩點，未提工程師二次確認，3點中2點得6分。",
+      "keyPoints": [
+        {
+          "point": "發現異常立即通報工程師",
+          "hit": true
+        },
+        {
+          "point": "由工程師二次確認異常",
+          "hit": false
+        },
+        {
+          "point": "依《P-QC1301 異常及異常品處理程序》執行",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 3,
+      "department": "客户质量部",
+      "process": "IQC",
+      "level": "Ⅱ级",
+      "content": "键合线材进料检验中，外观检验发现异常的处置流程是什么？",
+      "reference": "检验发现异常需立即通报工程师，由工程师做二次确认为异常，并依据《P-QC1301 异常及异常品处理程序》执行。",
+      "answerLevel": "wrong",
+      "studentAnswer": "外觀有異常就直接把整批線材退回去給供應商，順便填個報廢單銷帳。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生自行退貨報廢，未通報工程師、未經二次確認、未依程序處理，全未命中。",
+      "keyPoints": [
+        {
+          "point": "發現異常需立即通報工程師",
+          "hit": false
+        },
+        {
+          "point": "由工程師二次確認異常",
+          "hit": false
+        },
+        {
+          "point": "依《P-QC1301 異常及異常品處理程序》執行",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 3,
+      "department": "客户质量部",
+      "process": "IQC",
+      "level": "Ⅱ级",
+      "content": "键合线材进料检验中，外观检验发现异常的处置流程是什么？",
+      "reference": "检验发现异常需立即通报工程师，由工程师做二次确认为异常，并依据《P-QC1301 异常及异常品处理程序》执行。",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為不知道，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "檢驗發現異常需立即通報工程師",
+          "hit": false
+        },
+        {
+          "point": "由工程師做二次確認",
+          "hit": false
+        },
+        {
+          "point": "依《P-QC1301 異常及異常品處理程序》執行",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 4,
+      "department": "客户质量部",
+      "process": "信赖性",
+      "level": "Ⅰ级",
+      "content": "TCT 高低温转移时间要求？",
+      "reference": "不超过 1 分钟",
+      "answerLevel": "full",
+      "studentAnswer": "高低温轉換的時候，從一個溫度到另一個溫度要在1分鐘以內完成，不能拖太久。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生明確指出轉換須在1分鐘以內完成，符合參考答案。",
+      "keyPoints": [
+        {
+          "point": "高低溫轉換時間不超過1分鐘",
+          "hit": true
+        }
+      ],
+      "singlePoint": true
+    },
+    {
+      "questionIndex": 4,
+      "department": "客户质量部",
+      "process": "信赖性",
+      "level": "Ⅰ级",
+      "content": "TCT 高低温转移时间要求？",
+      "reference": "不超过 1 分钟",
+      "answerLevel": "partial",
+      "studentAnswer": "轉移時間不能太長，大概要很快切過去。",
+      "score": 0,
+      "expected": [
+        0,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生僅稱要很快，未給出1分鐘的具體數值，未命中得分點。",
+      "keyPoints": [
+        {
+          "point": "轉移時間不超過1分鐘",
+          "hit": false
+        }
+      ],
+      "singlePoint": true
+    },
+    {
+      "questionIndex": 4,
+      "department": "客户质量部",
+      "process": "信赖性",
+      "level": "Ⅰ级",
+      "content": "TCT 高低温转移时间要求？",
+      "reference": "不超过 1 分钟",
+      "answerLevel": "wrong",
+      "studentAnswer": "轉移時間要超過1分鐘，讓產品慢慢適應溫度。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生稱轉移時間要超過1分鐘，與參考答案相反，未命中。",
+      "keyPoints": [
+        {
+          "point": "轉移時間不超過1分鐘",
+          "hit": false
+        }
+      ],
+      "singlePoint": true
+    },
+    {
+      "questionIndex": 4,
+      "department": "客户质量部",
+      "process": "信赖性",
+      "level": "Ⅰ级",
+      "content": "TCT 高低温转移时间要求？",
+      "reference": "不超过 1 分钟",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生回答不知道，未命中得分點。",
+      "keyPoints": [
+        {
+          "point": "高低温转移时间不超过1分钟",
+          "hit": false
+        }
+      ],
+      "singlePoint": true
+    },
+    {
+      "questionIndex": 5,
+      "department": "工务部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "参数变更要求？",
+      "reference": "立即签名记录，注明原因。",
+      "answerLevel": "full",
+      "studentAnswer": "就是說啊，參數要是有變更，要馬上簽名記錄下來，而且要把為什麼改的原因寫清楚，不能只簽名不寫理由。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生明確答出立即簽名記錄及註明原因，兩個得分點皆命中。",
+      "keyPoints": [
+        {
+          "point": "立即簽名記錄",
+          "hit": true
+        },
+        {
+          "point": "註明變更原因",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 5,
+      "department": "工务部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "参数变更要求？",
+      "reference": "立即签名记录，注明原因。",
+      "answerLevel": "partial",
+      "studentAnswer": "參數變更的時候要簽名記錄，這樣才知道有改過。",
+      "score": 10,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": false,
+      "deviation": 3,
+      "confidence": "high",
+      "reason": "考生提到簽名記錄，但未提及註明變更原因，僅命中一個得分點。",
+      "keyPoints": [
+        {
+          "point": "立即簽名記錄",
+          "hit": true
+        },
+        {
+          "point": "註明變更原因",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 5,
+      "department": "工务部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "参数变更要求？",
+      "reference": "立即签名记录，注明原因。",
+      "answerLevel": "wrong",
+      "studentAnswer": "參數變更就是直接改就好，不用特別記錄，反正機台會自己記。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生稱不用記錄，未命中簽名記錄與註明原因兩得分點。",
+      "keyPoints": [
+        {
+          "point": "立即簽名記錄",
+          "hit": false
+        },
+        {
+          "point": "註明變更原因",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 5,
+      "department": "工务部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "参数变更要求？",
+      "reference": "立即签名记录，注明原因。",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生回答不知道，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "立即簽名記錄",
+          "hit": false
+        },
+        {
+          "point": "註明原因",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 6,
+      "department": "工务部",
+      "process": "MD&TF",
+      "level": "Ⅱ级",
+      "content": "回答T/F设备SOT23-28R切中筋上刀B共几把刀具组成？介绍SOT363-20R每一站刀具作用？",
+      "reference": "设备SOT23-28R切中筋上刀B共28把\nSOT363-20R 第一站为去胶口站，去除塑封体之间的残胶，第二站为切断及预成型，第三站为第二道成型，第四站为最终成型",
+      "answerLevel": "full",
+      "studentAnswer": "SOT23-28R切中筋上刀B是28把刀。SOT363-20R的话，第一站去胶口，把塑封体中间的残胶清掉；第二站是切断兼预成型；第三站做第二道成型；第四站就是最终成型了。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "五個得分點全部命中，內容與參考答案一致。",
+      "keyPoints": [
+        {
+          "point": "SOT23-28R切中筋上刀B共28把",
+          "hit": true
+        },
+        {
+          "point": "第一站去胶口站，去除塑封体之间的残胶",
+          "hit": true
+        },
+        {
+          "point": "第二站切断及预成型",
+          "hit": true
+        },
+        {
+          "point": "第三站第二道成型",
+          "hit": true
+        },
+        {
+          "point": "第四站最终成型",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 6,
+      "department": "工务部",
+      "process": "MD&TF",
+      "level": "Ⅱ级",
+      "content": "回答T/F设备SOT23-28R切中筋上刀B共几把刀具组成？介绍SOT363-20R每一站刀具作用？",
+      "reference": "设备SOT23-28R切中筋上刀B共28把\nSOT363-20R 第一站为去胶口站，去除塑封体之间的残胶，第二站为切断及预成型，第三站为第二道成型，第四站为最终成型",
+      "answerLevel": "partial",
+      "studentAnswer": "SOT23-28R那个切中筋上刀B好像是28把啦。SOT363-20R第一站去胶口，第二站切断跟预成型，后面两站就成型吧，详细有点忘了。",
+      "score": 8,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": false,
+      "deviation": 1,
+      "confidence": "medium",
+      "reason": "命中28把、第一站去胶口、第二站切断预成型；後兩站僅籠統稱成型未分述",
+      "keyPoints": [
+        {
+          "point": "SOT23-28R切中筋上刀B共28把",
+          "hit": true
+        },
+        {
+          "point": "第一站去胶口站，去除塑封体间残胶",
+          "hit": true
+        },
+        {
+          "point": "第二站切断及预成型",
+          "hit": true
+        },
+        {
+          "point": "第三站第二道成型",
+          "hit": false
+        },
+        {
+          "point": "第四站最终成型",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 6,
+      "department": "工务部",
+      "process": "MD&TF",
+      "level": "Ⅱ级",
+      "content": "回答T/F设备SOT23-28R切中筋上刀B共几把刀具组成？介绍SOT363-20R每一站刀具作用？",
+      "reference": "设备SOT23-28R切中筋上刀B共28把\nSOT363-20R 第一站为去胶口站，去除塑封体之间的残胶，第二站为切断及预成型，第三站为第二道成型，第四站为最终成型",
+      "answerLevel": "wrong",
+      "studentAnswer": "SOT23-28R切中筋上刀B大概20把左右。SOT363-20R第一站是成型，第二站去胶口，第三站切断，第四站预成型。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "刀具數量答錯，且四站順序與作用全部錯置，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "SOT23-28R切中筋上刀B共28把",
+          "hit": false
+        },
+        {
+          "point": "第一站為去膠口站，去除塑封體之間的殘膠",
+          "hit": false
+        },
+        {
+          "point": "第二站為切斷及預成型",
+          "hit": false
+        },
+        {
+          "point": "第三站為第二道成型",
+          "hit": false
+        },
+        {
+          "point": "第四站為最終成型",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 6,
+      "department": "工务部",
+      "process": "MD&TF",
+      "level": "Ⅱ级",
+      "content": "回答T/F设备SOT23-28R切中筋上刀B共几把刀具组成？介绍SOT363-20R每一站刀具作用？",
+      "reference": "设备SOT23-28R切中筋上刀B共28把\nSOT363-20R 第一站为去胶口站，去除塑封体之间的残胶，第二站为切断及预成型，第三站为第二道成型，第四站为最终成型",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為「不知道」，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "SOT23-28R切中筋上刀B共28把",
+          "hit": false
+        },
+        {
+          "point": "SOT363-20R第一站去胶口站，去除塑封体间残胶",
+          "hit": false
+        },
+        {
+          "point": "第二站切断及预成型",
+          "hit": false
+        },
+        {
+          "point": "第三站第二道成型",
+          "hit": false
+        },
+        {
+          "point": "第四站最终成型",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 7,
+      "department": "工务部",
+      "process": "Plating",
+      "level": "Ⅰ级",
+      "content": "简述电镀作业流程",
+      "reference": "软化→甩干→高压水→去氧化→活化→预浸→电镀→中和→热水洗→烘干→退火",
+      "answerLevel": "full",
+      "studentAnswer": "先把料件軟化，接著甩乾水分，然後用高壓水沖洗，再來要去氧化、活化，之後預浸一下才進電鍍槽，電鍍完要中和、熱水洗淨、烘乾，最後做退火處理。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生依序完整命中全部11個流程步驟，內容正確。",
+      "keyPoints": [
+        {
+          "point": "軟化",
+          "hit": true
+        },
+        {
+          "point": "甩乾",
+          "hit": true
+        },
+        {
+          "point": "高壓水沖洗",
+          "hit": true
+        },
+        {
+          "point": "去氧化",
+          "hit": true
+        },
+        {
+          "point": "活化",
+          "hit": true
+        },
+        {
+          "point": "預浸",
+          "hit": true
+        },
+        {
+          "point": "電鍍",
+          "hit": true
+        },
+        {
+          "point": "中和",
+          "hit": true
+        },
+        {
+          "point": "熱水洗",
+          "hit": true
+        },
+        {
+          "point": "烘乾",
+          "hit": true
+        },
+        {
+          "point": "退火",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 7,
+      "department": "工务部",
+      "process": "Plating",
+      "level": "Ⅰ级",
+      "content": "简述电镀作业流程",
+      "reference": "软化→甩干→高压水→去氧化→活化→预浸→电镀→中和→热水洗→烘干→退火",
+      "answerLevel": "partial",
+      "studentAnswer": "就是先軟化再甩乾，然後高壓水洗跟去氧化，活化後預浸就開始電鍍，電鍍完烘乾就好了。",
+      "score": 6,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "命中軟化、甩乾、高壓水、去氧化、活化、預浸、電鍍、烘乾共8點，漏中和、熱水洗、退火",
+      "keyPoints": [
+        {
+          "point": "軟化",
+          "hit": true
+        },
+        {
+          "point": "甩乾",
+          "hit": true
+        },
+        {
+          "point": "高壓水",
+          "hit": true
+        },
+        {
+          "point": "去氧化",
+          "hit": true
+        },
+        {
+          "point": "活化",
+          "hit": true
+        },
+        {
+          "point": "預浸",
+          "hit": true
+        },
+        {
+          "point": "電鍍",
+          "hit": true
+        },
+        {
+          "point": "中和",
+          "hit": false
+        },
+        {
+          "point": "熱水洗",
+          "hit": false
+        },
+        {
+          "point": "烘乾",
+          "hit": true
+        },
+        {
+          "point": "退火",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 7,
+      "department": "工务部",
+      "process": "Plating",
+      "level": "Ⅰ级",
+      "content": "简述电镀作业流程",
+      "reference": "软化→甩干→高压水→去氧化→活化→预浸→电镀→中和→热水洗→烘干→退火",
+      "answerLevel": "wrong",
+      "studentAnswer": "電鍍流程就是先酸洗、鹼洗，然後上掛具進槽電鍍，鍍完拿出來晾乾包裝出貨，中間有問題再補鍍。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "僅命中電鍍一步，其餘流程與參考答案不符，且含錯誤步驟。",
+      "keyPoints": [
+        {
+          "point": "軟化",
+          "hit": false
+        },
+        {
+          "point": "甩乾",
+          "hit": false
+        },
+        {
+          "point": "高壓水",
+          "hit": false
+        },
+        {
+          "point": "去氧化",
+          "hit": false
+        },
+        {
+          "point": "活化",
+          "hit": false
+        },
+        {
+          "point": "預浸",
+          "hit": false
+        },
+        {
+          "point": "電鍍",
+          "hit": true
+        },
+        {
+          "point": "中和",
+          "hit": false
+        },
+        {
+          "point": "熱水洗",
+          "hit": false
+        },
+        {
+          "point": "烘乾",
+          "hit": false
+        },
+        {
+          "point": "退火",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 7,
+      "department": "工务部",
+      "process": "Plating",
+      "level": "Ⅰ级",
+      "content": "简述电镀作业流程",
+      "reference": "软化→甩干→高压水→去氧化→活化→预浸→电镀→中和→热水洗→烘干→退火",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為「不知道」，未命中任何流程步驟，給0分。",
+      "keyPoints": [
+        {
+          "point": "軟化→甩乾→高壓水→去氧化→活化→預浸→電鍍→中和→熱水洗→烘乾→退火",
+          "hit": false
+        }
+      ],
+      "singlePoint": true
+    },
+    {
+      "questionIndex": 8,
+      "department": "工务部",
+      "process": "SAW",
+      "level": "Ⅱ级",
+      "content": "请写出旧刀上机使用寿命条件",
+      "reference": "可用刃出量＞60un，可使用米数＞500m",
+      "answerLevel": "full",
+      "studentAnswer": "舊刀要能上機，要看兩個條件：第一個是還能用的刃出量要大於60un，第二個是累計可使用的米數要大於500m，兩個都符合才能裝上去用。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生完整命中兩個得分點，數值與條件皆正確。",
+      "keyPoints": [
+        {
+          "point": "可用刃出量＞60un",
+          "hit": true
+        },
+        {
+          "point": "可使用米數＞500m",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 8,
+      "department": "工务部",
+      "process": "SAW",
+      "level": "Ⅱ级",
+      "content": "请写出旧刀上机使用寿命条件",
+      "reference": "可用刃出量＞60un，可使用米数＞500m",
+      "answerLevel": "partial",
+      "studentAnswer": "舊刀上機的話，刃出量要大於60un就可以了吧。",
+      "score": 6,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "命中刃出量條件，未提及可使用米數條件。",
+      "keyPoints": [
+        {
+          "point": "可用刃出量＞60un",
+          "hit": true
+        },
+        {
+          "point": "可使用米數＞500m",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 8,
+      "department": "工务部",
+      "process": "SAW",
+      "level": "Ⅱ级",
+      "content": "请写出旧刀上机使用寿命条件",
+      "reference": "可用刃出量＞60un，可使用米数＞500m",
+      "answerLevel": "wrong",
+      "studentAnswer": "舊刀只要刃出量小於60un，而且使用米數不到500m就可以上機，越舊越能用。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生將兩項條件方向寫反（小於、不到），未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "可用刃出量＞60um",
+          "hit": false
+        },
+        {
+          "point": "可使用米數＞500m",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 8,
+      "department": "工务部",
+      "process": "SAW",
+      "level": "Ⅱ级",
+      "content": "请写出旧刀上机使用寿命条件",
+      "reference": "可用刃出量＞60un，可使用米数＞500m",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生回答不知道，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "可用刃出量＞60un",
+          "hit": false
+        },
+        {
+          "point": "可使用米数＞500m",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 9,
+      "department": "工务部",
+      "process": "TMTT",
+      "level": "Ⅰ级",
+      "content": "简述TMTT设备的关机流程的注意事项",
+      "reference": "1.确保应用程序退出后再关闭电脑；2.关闭镭射机电源；3.确认各电脑主机关闭后关闭UPS，再断设备总电源",
+      "answerLevel": "full",
+      "studentAnswer": "先要確定機台程式都關掉、電腦也正常關機，才不會傷到資料；接著把雷射機的電源切掉；最後看看每台電腦主機都關好了，再關UPS，最後才切總電源。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生依序命中程式關閉、雷射機斷電、關UPS後切總電源三個得分點。",
+      "keyPoints": [
+        {
+          "point": "確保應用程式退出後再關閉電腦",
+          "hit": true
+        },
+        {
+          "point": "關閉雷射機電源",
+          "hit": true
+        },
+        {
+          "point": "確認各電腦主機關閉後關閉UPS，再斷設備總電源",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 9,
+      "department": "工务部",
+      "process": "TMTT",
+      "level": "Ⅰ级",
+      "content": "简述TMTT设备的关机流程的注意事项",
+      "reference": "1.确保应用程序退出后再关闭电脑；2.关闭镭射机电源；3.确认各电脑主机关闭后关闭UPS，再断设备总电源",
+      "answerLevel": "partial",
+      "studentAnswer": "先關電腦再關機台電源就好，UPS最後關。",
+      "score": 6,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "medium",
+      "reason": "僅命中UPS最後關及總電源順序，未提及應用程式退出與雷射機電源。",
+      "keyPoints": [
+        {
+          "point": "确保应用程序退出后再关闭电脑",
+          "hit": false
+        },
+        {
+          "point": "关闭镭射机电源",
+          "hit": false
+        },
+        {
+          "point": "确认各电脑主机关闭后关闭UPS，再断设备总电源",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 9,
+      "department": "工务部",
+      "process": "TMTT",
+      "level": "Ⅰ级",
+      "content": "简述TMTT设备的关机流程的注意事项",
+      "reference": "1.确保应用程序退出后再关闭电脑；2.关闭镭射机电源；3.确认各电脑主机关闭后关闭UPS，再断设备总电源",
+      "answerLevel": "wrong",
+      "studentAnswer": "先切總電源比較安全，然後再關電腦跟雷射機，UPS不用關。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生流程與注意事項完全相反，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "確保應用程式退出後再關閉電腦",
+          "hit": false
+        },
+        {
+          "point": "關閉雷射機電源",
+          "hit": false
+        },
+        {
+          "point": "確認各電腦主機關閉後關閉UPS，再斷設備總電源",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 9,
+      "department": "工务部",
+      "process": "TMTT",
+      "level": "Ⅰ级",
+      "content": "简述TMTT设备的关机流程的注意事项",
+      "reference": "1.确保应用程序退出后再关闭电脑；2.关闭镭射机电源；3.确认各电脑主机关闭后关闭UPS，再断设备总电源",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為「不知道」，未命中任何得分點，給0分。",
+      "keyPoints": [
+        {
+          "point": "确保应用程序退出后再关闭电脑",
+          "hit": false
+        },
+        {
+          "point": "关闭镭射机电源",
+          "hit": false
+        },
+        {
+          "point": "确认各电脑主机关闭后关闭UPS，再断设备总电源",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 10,
+      "department": "工务部",
+      "process": "WB",
+      "level": "Ⅱ级",
+      "content": "简述 SKW Config 覆盖后操作",
+      "reference": "校正 Bond Force；确认基准面；轨道 / 加热块",
+      "answerLevel": "full",
+      "studentAnswer": "SKW Config 覆蓋後，要先重新校正 Bond Force，然後確認基準面有沒有跑掉，最後檢查軌道跟加熱塊的狀態是否正常。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生完整命中三個得分點，內容與參考答案一致。",
+      "keyPoints": [
+        {
+          "point": "校正 Bond Force",
+          "hit": true
+        },
+        {
+          "point": "確認基準面",
+          "hit": true
+        },
+        {
+          "point": "檢查軌道／加熱塊",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 10,
+      "department": "工务部",
+      "process": "WB",
+      "level": "Ⅱ级",
+      "content": "简述 SKW Config 覆盖后操作",
+      "reference": "校正 Bond Force；确认基准面；轨道 / 加热块",
+      "answerLevel": "partial",
+      "studentAnswer": "覆蓋完要先校正 Bond Force，其他像基準面那些也要看一下。",
+      "score": 6,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "命中校正Bond Force與確認基準面兩點，未提及軌道／加熱塊。",
+      "keyPoints": [
+        {
+          "point": "校正 Bond Force",
+          "hit": true
+        },
+        {
+          "point": "確認基準面",
+          "hit": true
+        },
+        {
+          "point": "軌道／加熱塊",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 10,
+      "department": "工务部",
+      "process": "WB",
+      "level": "Ⅱ级",
+      "content": "简述 SKW Config 覆盖后操作",
+      "reference": "校正 Bond Force；确认基准面；轨道 / 加热块",
+      "answerLevel": "wrong",
+      "studentAnswer": "覆蓋後直接把機台重開機，等它自己初始化就好，不用再調什麼。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生稱重開機即可、無需調整，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "校正 Bond Force",
+          "hit": false
+        },
+        {
+          "point": "確認基準面",
+          "hit": false
+        },
+        {
+          "point": "軌道／加熱塊",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 10,
+      "department": "工务部",
+      "process": "WB",
+      "level": "Ⅱ级",
+      "content": "简述 SKW Config 覆盖后操作",
+      "reference": "校正 Bond Force；确认基准面；轨道 / 加热块",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為不知道，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "校正 Bond Force",
+          "hit": false
+        },
+        {
+          "point": "確認基準面",
+          "hit": false
+        },
+        {
+          "point": "軌道／加熱塊",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 11,
+      "department": "工程研发部",
+      "process": "FA",
+      "level": "Ⅱ级",
+      "content": "弹坑实验铝层未完全去除的原因及解决方法？",
+      "reference": "原因：浸泡时间不足、温度不够、配比错误；\n解决：延长浸泡时间、确认加热温度、重新配比试剂。",
+      "answerLevel": "full",
+      "studentAnswer": "我覺得吼，會沒清乾淨通常是泡的時間太短啦，還有就是藥水溫度沒到、比例配錯了。要處理就是泡久一點，加熱溫度給它確認一下，藥水比例重新配過再來。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生完整命中六個得分點，意思與參考答案一致。",
+      "keyPoints": [
+        {
+          "point": "原因：浸泡時間不足",
+          "hit": true
+        },
+        {
+          "point": "原因：溫度不夠",
+          "hit": true
+        },
+        {
+          "point": "原因：配比錯誤",
+          "hit": true
+        },
+        {
+          "point": "解決：延長浸泡時間",
+          "hit": true
+        },
+        {
+          "point": "解決：確認加熱溫度",
+          "hit": true
+        },
+        {
+          "point": "解決：重新配比試劑",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 11,
+      "department": "工程研发部",
+      "process": "FA",
+      "level": "Ⅱ级",
+      "content": "弹坑实验铝层未完全去除的原因及解决方法？",
+      "reference": "原因：浸泡时间不足、温度不够、配比错误；\n解决：延长浸泡时间、确认加热温度、重新配比试剂。",
+      "answerLevel": "partial",
+      "studentAnswer": "應該是泡不夠久吧，時間要拉長一點，然後溫度也要看一下有沒有對。",
+      "score": 6,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "命中浸泡時間不足、溫度不夠及對應解決方法，未提及配比錯誤與重新配比。",
+      "keyPoints": [
+        {
+          "point": "原因：浸泡時間不足",
+          "hit": true
+        },
+        {
+          "point": "原因：溫度不夠",
+          "hit": true
+        },
+        {
+          "point": "原因：配比錯誤",
+          "hit": false
+        },
+        {
+          "point": "解決：延長浸泡時間",
+          "hit": true
+        },
+        {
+          "point": "解決：確認加熱溫度",
+          "hit": true
+        },
+        {
+          "point": "解決：重新配比試劑",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 11,
+      "department": "工程研发部",
+      "process": "FA",
+      "level": "Ⅱ级",
+      "content": "弹坑实验铝层未完全去除的原因及解决方法？",
+      "reference": "原因：浸泡时间不足、温度不够、配比错误；\n解决：延长浸泡时间、确认加热温度、重新配比试剂。",
+      "answerLevel": "wrong",
+      "studentAnswer": "這個就是鋁層太厚啦，要換刀片重新刮，還是把蝕刻機的轉速調高就不會殘留了。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生答鋁層太厚、換刀片、調轉速，均未命中參考答案任何得分點。",
+      "keyPoints": [
+        {
+          "point": "原因：浸泡時間不足、溫度不夠、配比錯誤",
+          "hit": false
+        },
+        {
+          "point": "解決：延長浸泡時間、確認加熱溫度、重新配比試劑",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 11,
+      "department": "工程研发部",
+      "process": "FA",
+      "level": "Ⅱ级",
+      "content": "弹坑实验铝层未完全去除的原因及解决方法？",
+      "reference": "原因：浸泡时间不足、温度不够、配比错误；\n解决：延长浸泡时间、确认加热温度、重新配比试剂。",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為「不知道」，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "原因：浸泡时间不足、温度不够、配比错误",
+          "hit": false
+        },
+        {
+          "point": "解决：延长浸泡时间、确认加热温度、重新配比试剂",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 12,
+      "department": "生产部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "操作员发现晶粒背面顶针印异常时如何处理？",
+      "reference": "立即停机报修，通知领班，按照OCAP处理，异常产品隔离，对已生产产品追溯检查顶针印，更换顶针并确认合格后再生产。",
+      "answerLevel": "full",
+      "studentAnswer": "先停機通報領班跟設備，照OCAP流程走，有問題的產品先隔離起來，之前做過的要回頭檢查頂針印，頂針換掉確認OK才能再生產。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答完整命中所有得分點，意思正確。",
+      "keyPoints": [
+        {
+          "point": "立即停机报修",
+          "hit": true
+        },
+        {
+          "point": "通知领班",
+          "hit": true
+        },
+        {
+          "point": "按照OCAP处理",
+          "hit": true
+        },
+        {
+          "point": "异常产品隔离",
+          "hit": true
+        },
+        {
+          "point": "对已生产产品追溯检查顶针印",
+          "hit": true
+        },
+        {
+          "point": "更换顶针并确认合格后再生产",
+          "hit": true
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 12,
+      "department": "生产部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "操作员发现晶粒背面顶针印异常时如何处理？",
+      "reference": "立即停机报修，通知领班，按照OCAP处理，异常产品隔离，对已生产产品追溯检查顶针印，更换顶针并确认合格后再生产。",
+      "answerLevel": "partial",
+      "studentAnswer": "看到頂針印怪怪的就先停機，然後叫修跟跟領班講，產品先隔離，換完頂針再繼續做。",
+      "score": 6,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "medium",
+      "reason": "命中停機報修、通知領班、產品隔離三點，未提OCAP、追溯及確認合格再生產。",
+      "keyPoints": [
+        {
+          "point": "立即停機報修",
+          "hit": true
+        },
+        {
+          "point": "通知領班",
+          "hit": true
+        },
+        {
+          "point": "按照OCAP處理",
+          "hit": false
+        },
+        {
+          "point": "異常產品隔離",
+          "hit": true
+        },
+        {
+          "point": "對已生產產品追溯檢查頂針印",
+          "hit": false
+        },
+        {
+          "point": "更換頂針並確認合格後再生產",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 12,
+      "department": "生产部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "操作员发现晶粒背面顶针印异常时如何处理？",
+      "reference": "立即停机报修，通知领班，按照OCAP处理，异常产品隔离，对已生产产品追溯检查顶针印，更换顶针并确认合格后再生产。",
+      "answerLevel": "wrong",
+      "studentAnswer": "頂針印異常應該是模具問題，先調壓力跟溫度，調完直接繼續生產，有問題的之後再挑。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生主張自行調參數後繼續生產、事後再挑，與停機隔離追溯等要點全不符。",
+      "keyPoints": [
+        {
+          "point": "立即停機報修",
+          "hit": false
+        },
+        {
+          "point": "通知領班",
+          "hit": false
+        },
+        {
+          "point": "按照OCAP處理",
+          "hit": false
+        },
+        {
+          "point": "異常產品隔離",
+          "hit": false
+        },
+        {
+          "point": "對已生產產品追溯檢查頂針印",
+          "hit": false
+        },
+        {
+          "point": "更換頂針並確認合格後再生產",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    },
+    {
+      "questionIndex": 12,
+      "department": "生产部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "操作员发现晶粒背面顶针印异常时如何处理？",
+      "reference": "立即停机报修，通知领班，按照OCAP处理，异常产品隔离，对已生产产品追溯检查顶针印，更换顶针并确认合格后再生产。",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道。",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為不知道，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "立即停机报修",
+          "hit": false
+        },
+        {
+          "point": "通知领班",
+          "hit": false
+        },
+        {
+          "point": "按照OCAP处理",
+          "hit": false
+        },
+        {
+          "point": "异常产品隔离",
+          "hit": false
+        },
+        {
+          "point": "对已生产产品追溯检查顶针印",
+          "hit": false
+        },
+        {
+          "point": "更换顶针并确认合格后再生产",
+          "hit": false
+        }
+      ],
+      "singlePoint": false
+    }
+  ]
+}

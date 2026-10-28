@@ -27,8 +27,11 @@ const XLSX = require('xlsx');
 
 const ROOT = path.resolve(__dirname, '..');
 const BANK_DIR = path.join(ROOT, 'data', '部门专业知识90%');
-const API_URL = 'https://api.deepseek.com/v1/chat/completions';
-const MODEL = 'deepseek-chat';
+// 與 src/lib/ai-grading.ts 使用同一組環境變數，之後要改測地端模型
+// （vLLM / Ollama / LM Studio 等 OpenAI 相容端點）只需調整 .env，無須改程式
+const BASE_URL = (process.env.AI_GRADING_BASE_URL || 'https://api.deepseek.com/v1').replace(/\/$/, '');
+const API_URL = `${BASE_URL}/chat/completions`;
+const MODEL = process.env.AI_GRADING_MODEL || 'deepseek-chat';
 const CONCURRENCY = 4;
 const MAX_POINTS = 10;
 
@@ -66,7 +69,8 @@ function loadEnv() {
 }
 
 loadEnv();
-const API_KEY = process.env.deepseek_api_key || process.env.DEEPSEEK_API_KEY;
+const API_KEY =
+  process.env.AI_GRADING_API_KEY || process.env.deepseek_api_key || process.env.DEEPSEEK_API_KEY;
 
 // ---------------------------------------------------------------------------
 // 題庫讀取
@@ -171,6 +175,19 @@ async function callDeepSeek(messages, { temperature = 0.2, maxTokens = 900 } = {
   }
 }
 
+/** 與 src/lib/ai-grading.ts 的 computeScoreFromKeyPoints 保持一致 */
+function computeScoreFromKeyPoints(keyPoints, maxPoints, fallbackScore) {
+  if (!keyPoints.length) {
+    const s = Math.max(0, Math.min(Number(fallbackScore) || 0, maxPoints));
+    return Math.round(s / 2) * 2;
+  }
+  const hits = keyPoints.filter((kp) => kp.hit).length;
+  if (hits === 0) return 0;
+  if (hits === keyPoints.length) return maxPoints;
+  if (keyPoints.length === 1) return maxPoints;
+  return Math.max(0, Math.min(maxPoints, Math.floor((hits / keyPoints.length) * maxPoints / 2) * 2));
+}
+
 function parseJson(text) {
   const m = text.match(/\{[\s\S]*\}/);
   if (!m) throw new Error(`回應非 JSON：${text.slice(0, 200)}`);
@@ -212,10 +229,12 @@ const GRADING_SYSTEM = `你是半導體封裝廠技能考核的簡答題閱卷�
 評分規則：
 1. 先把參考答案拆成數個「得分點」（通常 2~5 個）。
 2. 逐一判斷考生作答是否命中各得分點；意思正確即可命中，不要求用字相同。
-3. 總分 {MAX_POINTS} 分，依命中比例給分，只給偶數分（0、2、4、6、8、10）。
-4. 空白、與題目無關、或明顯胡謅者給 0 分。
-5. 僅憑參考答案判斷，不要自行補充廠內未提及的知識。
-6. confidence 表示你對此分數的把握：high / medium / low。作答模糊、參考答案過於簡略、或需要現場知識才能判斷時給 low。
+2-1. 先確認考生是否在回答本題：若作答描述的是相反流程或不同情境（例如題目問關機順序卻回答開機順序），即使出現相同的關鍵字，所有得分點一律判為未命中。
+3. 總分 {MAX_POINTS} 分，依「命中得分點數 / 總得分點數 × {MAX_POINTS}」計算，向下取整到偶數（例如 3 個得分點命中 2 個＝6 分，不是 8 分）。
+4. 參考答案若只有 1 個得分點，則答對給滿分、答錯給 0 分，不給中間分。
+5. 空白、與題目無關、或明顯胡謅者給 0 分。
+6. 僅憑參考答案判斷，不要自行補充廠內未提及的知識；考生語氣不確定但內容正確者仍算命中。
+7. confidence 表示你對此分數的把握：high / medium / low。作答模糊、參考答案過於簡略、或需要現場知識才能判斷時給 low。
 
 回傳 JSON：
 {
@@ -269,9 +288,10 @@ function arg(name, fallback) {
 
 async function main() {
   if (!API_KEY) {
-    console.error('找不到 deepseek_api_key，請確認 .env 設定。');
+    console.error('找不到 API 金鑰，請於 .env 設定 deepseek_api_key 或 AI_GRADING_API_KEY。');
     process.exit(1);
   }
+  console.log(`模型：${MODEL}（${BASE_URL}）`);
 
   const n = Number(arg('n', '6'));
   const outFile = arg('out', path.join(ROOT, 'scripts', 'ai-grading-spike-report.json'));
@@ -323,8 +343,12 @@ async function main() {
     );
     addUsage(res.usage);
     const r = parseJson(res.content);
-    const [lo, hi] = EXPECTED_BAND[t.level];
-    const score = Number(r.score);
+    // 與 src/lib/ai-grading.ts 相同：分數由得分點命中率推導，不採用模型自評分數
+    const keyPoints = Array.isArray(r.keyPoints) ? r.keyPoints : [];
+    const score = computeScoreFromKeyPoints(keyPoints, MAX_POINTS, Number(r.score));
+    const singlePoint = keyPoints.length <= 1;
+    const [lo, hi] =
+      singlePoint && t.level === 'partial' ? [0, MAX_POINTS] : EXPECTED_BAND[t.level];
     const inBand = score >= lo && score <= hi;
     const deviation = score < lo ? lo - score : score > hi ? score - hi : 0;
     console.log(
@@ -346,6 +370,7 @@ async function main() {
       confidence: r.confidence,
       reason: r.reason,
       keyPoints: r.keyPoints,
+      singlePoint,
     };
   });
 

@@ -98,6 +98,7 @@ export interface ExamData {
   resultQueryOpenAt?: Date | string | null;
   resultQueryCloseAt?: Date | string | null;
   tabSwitchLimit: number;
+  forceSubmitOnTabSwitch?: boolean;
   enableFaceAuth: boolean;
   theoryWeight: number;
   practicalWeight: number;

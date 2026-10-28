@@ -1,0 +1,805 @@
+{
+  "model": "deepseek-chat",
+  "generatedAt": "2026-10-28T07:01:33.578Z",
+  "sampleSize": 6,
+  "gradedCount": 24,
+  "inBandRate": 87.5,
+  "within2Rate": 91.7,
+  "mae": 0.29,
+  "byLevel": {
+    "full": {
+      "label": "完全正確",
+      "count": 6,
+      "inBand": 6,
+      "avgScore": 10
+    },
+    "partial": {
+      "label": "部分正確",
+      "count": 6,
+      "inBand": 3,
+      "avgScore": 7.3
+    },
+    "wrong": {
+      "label": "概念錯誤",
+      "count": 6,
+      "inBand": 6,
+      "avgScore": 0.3
+    },
+    "blank": {
+      "label": "極短無效",
+      "count": 6,
+      "inBand": 6,
+      "avgScore": 0
+    }
+  },
+  "confidence": {
+    "high": 23,
+    "medium": 1
+  },
+  "usage": {
+    "prompt": 10382,
+    "completion": 2793
+  },
+  "details": [
+    {
+      "questionIndex": 1,
+      "department": "制程品管部",
+      "process": "MD&TF&PT&TMTT&FQC",
+      "level": "Ⅱ级",
+      "content": "11. CPK代表什么？我们公司对AU品的CPK要求是多少？",
+      "reference": "CPK = 制程能力指数；AU品的CPK≥1.67",
+      "answerLevel": "full",
+      "studentAnswer": "CPK就是制程能力指數啦，用來看看我們製程穩不穩、能不能達到規格。我們公司AU品要求CPK要大於等於1.67。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生正確答出CPK為制程能力指數及AU品要求≥1.67，兩個得分點皆命中。",
+      "keyPoints": [
+        {
+          "point": "CPK = 制程能力指数",
+          "hit": true
+        },
+        {
+          "point": "AU品的CPK≥1.67",
+          "hit": true
+        }
+      ]
+    },
+    {
+      "questionIndex": 1,
+      "department": "制程品管部",
+      "process": "MD&TF&PT&TMTT&FQC",
+      "level": "Ⅱ级",
+      "content": "11. CPK代表什么？我们公司对AU品的CPK要求是多少？",
+      "reference": "CPK = 制程能力指数；AU品的CPK≥1.67",
+      "answerLevel": "partial",
+      "studentAnswer": "CPK是製程能力指數，就是看製程好不好的指標。AU品的標準……好像是1.33吧。",
+      "score": 4,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "CPK定義答對，但AU品要求答成1.33，未命中標準值。",
+      "keyPoints": [
+        {
+          "point": "CPK = 制程能力指数",
+          "hit": true
+        },
+        {
+          "point": "AU品的CPK≥1.67",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 1,
+      "department": "制程品管部",
+      "process": "MD&TF&PT&TMTT&FQC",
+      "level": "Ⅱ级",
+      "content": "11. CPK代表什么？我们公司对AU品的CPK要求是多少？",
+      "reference": "CPK = 制程能力指数；AU品的CPK≥1.67",
+      "answerLevel": "wrong",
+      "studentAnswer": "CPK是控制圖的一種，用來管制產品的不良率，AU品要求是0.67以下。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生將CPK誤答為控制圖且AU要求答成0.67以下，兩得分點皆未命中。",
+      "keyPoints": [
+        {
+          "point": "CPK = 制程能力指数",
+          "hit": false
+        },
+        {
+          "point": "AU品的CPK≥1.67",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 1,
+      "department": "制程品管部",
+      "process": "MD&TF&PT&TMTT&FQC",
+      "level": "Ⅱ级",
+      "content": "11. CPK代表什么？我们公司对AU品的CPK要求是多少？",
+      "reference": "CPK = 制程能力指数；AU品的CPK≥1.67",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為不知道，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "CPK = 制程能力指数",
+          "hit": false
+        },
+        {
+          "point": "AU品的CPK≥1.67",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 2,
+      "department": "制程品管部",
+      "process": "SAW&DB&WB&QCgate",
+      "level": "Ⅱ级",
+      "content": "管制图控制界限更新时机有哪些？",
+      "reference": "①每半年更新一次；②4M1E 关键因素变更且影响制程变异；③客户有明确要求。",
+      "answerLevel": "full",
+      "studentAnswer": "大概三種時機啦：一個是固定每半年要更新一次；再來就是4M1E這些關鍵因素有變動、而且會影響到製程變異的時候；還有客戶如果特別指定的話也要照辦。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "三項得分點皆完整命中，意思正確。",
+      "keyPoints": [
+        {
+          "point": "每半年更新一次",
+          "hit": true
+        },
+        {
+          "point": "4M1E 关键因素变更且影响制程变异",
+          "hit": true
+        },
+        {
+          "point": "客户有明确要求",
+          "hit": true
+        }
+      ]
+    },
+    {
+      "questionIndex": 2,
+      "department": "制程品管部",
+      "process": "SAW&DB&WB&QCgate",
+      "level": "Ⅱ级",
+      "content": "管制图控制界限更新时机有哪些？",
+      "reference": "①每半年更新一次；②4M1E 关键因素变更且影响制程变异；③客户有明确要求。",
+      "answerLevel": "partial",
+      "studentAnswer": "就每半年要更新一次吧，還有製程有變的時候也要更新。",
+      "score": 6,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "命中前兩點，未提及客戶要求，依比例給6分。",
+      "keyPoints": [
+        {
+          "point": "每半年更新一次",
+          "hit": true
+        },
+        {
+          "point": "4M1E 关键因素变更且影响制程变异",
+          "hit": true
+        },
+        {
+          "point": "客户有明确要求",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 2,
+      "department": "制程品管部",
+      "process": "SAW&DB&WB&QCgate",
+      "level": "Ⅱ级",
+      "content": "管制图控制界限更新时机有哪些？",
+      "reference": "①每半年更新一次；②4M1E 关键因素变更且影响制程变异；③客户有明确要求。",
+      "answerLevel": "wrong",
+      "studentAnswer": "控制界限是固定的不能亂改，只有產品規格變了才要重新算，平常照著跑就對了。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生称控制界限固定不能改、仅规格变更才重算，与参考答案三点均不符。",
+      "keyPoints": [
+        {
+          "point": "每半年更新一次",
+          "hit": false
+        },
+        {
+          "point": "4M1E 关键因素变更且影响制程变异",
+          "hit": false
+        },
+        {
+          "point": "客户有明确要求",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 2,
+      "department": "制程品管部",
+      "process": "SAW&DB&WB&QCgate",
+      "level": "Ⅱ级",
+      "content": "管制图控制界限更新时机有哪些？",
+      "reference": "①每半年更新一次；②4M1E 关键因素变更且影响制程变异；③客户有明确要求。",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為「不知道」，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "每半年更新一次",
+          "hit": false
+        },
+        {
+          "point": "4M1E 关键因素变更且影响制程变异",
+          "hit": false
+        },
+        {
+          "point": "客户有明确要求",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 3,
+      "department": "客户质量部",
+      "process": "IQC",
+      "level": "Ⅱ级",
+      "content": "键合线材进料检验中，外观检验发现异常的处置流程是什么？",
+      "reference": "检验发现异常需立即通报工程师，由工程师做二次确认为异常，并依据《P-QC1301 异常及异常品处理程序》执行。",
+      "answerLevel": "full",
+      "studentAnswer": "外觀檢查有問題的話，先馬上通知工程師，工程師會再確認一次是不是真的異常，確定後就照P-QC1301異常及異常品處理程序來走。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "三個得分點皆完整命中，意思與參考答案一致。",
+      "keyPoints": [
+        {
+          "point": "發現異常立即通報工程師",
+          "hit": true
+        },
+        {
+          "point": "由工程師二次確認是否為異常",
+          "hit": true
+        },
+        {
+          "point": "依《P-QC1301 異常及異常品處理程序》執行",
+          "hit": true
+        }
+      ]
+    },
+    {
+      "questionIndex": 3,
+      "department": "客户质量部",
+      "process": "IQC",
+      "level": "Ⅱ级",
+      "content": "键合线材进料检验中，外观检验发现异常的处置流程是什么？",
+      "reference": "检验发现异常需立即通报工程师，由工程师做二次确认为异常，并依据《P-QC1301 异常及异常品处理程序》执行。",
+      "answerLevel": "partial",
+      "studentAnswer": "看到外觀不對就先跟工程師講，然後依異常處理程序處理。",
+      "score": 8,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": false,
+      "deviation": 1,
+      "confidence": "high",
+      "reason": "命中通報工程師與依異常處理程序兩點，未提工程師二次確認。",
+      "keyPoints": [
+        {
+          "point": "發現異常需立即通報工程師",
+          "hit": true
+        },
+        {
+          "point": "由工程師做二次確認判定異常",
+          "hit": false
+        },
+        {
+          "point": "依《P-QC1301 異常及異常品處理程序》執行",
+          "hit": true
+        }
+      ]
+    },
+    {
+      "questionIndex": 3,
+      "department": "客户质量部",
+      "process": "IQC",
+      "level": "Ⅱ级",
+      "content": "键合线材进料检验中，外观检验发现异常的处置流程是什么？",
+      "reference": "检验发现异常需立即通报工程师，由工程师做二次确认为异常，并依据《P-QC1301 异常及异常品处理程序》执行。",
+      "answerLevel": "wrong",
+      "studentAnswer": "外觀有異常就直接把線材上線使用，反正只是外觀問題不影響。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生主張外觀異常仍直接上線使用，未通報、未確認、未依程序處理，完全未命中得分點。",
+      "keyPoints": [
+        {
+          "point": "發現異常需立即通報工程師",
+          "hit": false
+        },
+        {
+          "point": "由工程師做二次確認",
+          "hit": false
+        },
+        {
+          "point": "依《P-QC1301 異常及異常品處理程序》執行",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 3,
+      "department": "客户质量部",
+      "process": "IQC",
+      "level": "Ⅱ级",
+      "content": "键合线材进料检验中，外观检验发现异常的处置流程是什么？",
+      "reference": "检验发现异常需立即通报工程师，由工程师做二次确认为异常，并依据《P-QC1301 异常及异常品处理程序》执行。",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道。",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為「不知道」，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "立即通报工程师",
+          "hit": false
+        },
+        {
+          "point": "由工程师二次确认异常",
+          "hit": false
+        },
+        {
+          "point": "依《P-QC1301 异常及异常品处理程序》执行",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 4,
+      "department": "客户质量部",
+      "process": "信赖性",
+      "level": "Ⅰ级",
+      "content": "TCT 高低温转移时间要求？",
+      "reference": "不超过 1 分钟",
+      "answerLevel": "full",
+      "studentAnswer": "從高溫槽拿出來到放進低溫槽，這中間轉移的過程不能超過一分鐘，就是說一分鐘內要完成轉換。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生明確指出轉移過程須在一分鐘內完成，完全命中參考答案。",
+      "keyPoints": [
+        {
+          "point": "轉移時間不超過1分鐘",
+          "hit": true
+        }
+      ]
+    },
+    {
+      "questionIndex": 4,
+      "department": "客户质量部",
+      "process": "信赖性",
+      "level": "Ⅰ级",
+      "content": "TCT 高低温转移时间要求？",
+      "reference": "不超过 1 分钟",
+      "answerLevel": "partial",
+      "studentAnswer": "轉移時間大概要控制在很短，好像是一分鐘左右吧，不要拖太久。",
+      "score": 10,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": false,
+      "deviation": 3,
+      "confidence": "high",
+      "reason": "考生指出約一分鐘且不宜過久，符合不超過1分鐘之要求。",
+      "keyPoints": [
+        {
+          "point": "轉移時間不超過1分鐘",
+          "hit": true
+        }
+      ]
+    },
+    {
+      "questionIndex": 4,
+      "department": "客户质量部",
+      "process": "信赖性",
+      "level": "Ⅰ级",
+      "content": "TCT 高低温转移时间要求？",
+      "reference": "不超过 1 分钟",
+      "answerLevel": "wrong",
+      "studentAnswer": "轉移時間要超過一分鐘，讓產品有足夠時間適應溫度變化。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生答超過一分鐘，與參考答案相反，未命中得分點。",
+      "keyPoints": [
+        {
+          "point": "轉移時間不超過1分鐘",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 4,
+      "department": "客户质量部",
+      "process": "信赖性",
+      "level": "Ⅰ级",
+      "content": "TCT 高低温转移时间要求？",
+      "reference": "不超过 1 分钟",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生回答不知道，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "TCT 高低温转移时间不超过 1 分钟",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 5,
+      "department": "工务部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "参数变更要求？",
+      "reference": "立即签名记录，注明原因。",
+      "answerLevel": "full",
+      "studentAnswer": "就是說啊，如果製程參數要改，一定要馬上在記錄表上簽名，而且要寫清楚為什麼要改，這樣才不會出問題。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生明確提到馬上簽名記錄並寫清楚變更原因，兩個得分點皆命中。",
+      "keyPoints": [
+        {
+          "point": "立即簽名記錄",
+          "hit": true
+        },
+        {
+          "point": "註明原因",
+          "hit": true
+        }
+      ]
+    },
+    {
+      "questionIndex": 5,
+      "department": "工务部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "参数变更要求？",
+      "reference": "立即签名记录，注明原因。",
+      "answerLevel": "partial",
+      "studentAnswer": "參數變更的話要簽名記錄，不過原因好像也要寫吧？我有點忘記了。",
+      "score": 10,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": false,
+      "deviation": 3,
+      "confidence": "high",
+      "reason": "考生答出簽名記錄與寫原因，雖語氣不確定但意思正確。",
+      "keyPoints": [
+        {
+          "point": "立即簽名記錄",
+          "hit": true
+        },
+        {
+          "point": "註明原因",
+          "hit": true
+        }
+      ]
+    },
+    {
+      "questionIndex": 5,
+      "department": "工务部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "参数变更要求？",
+      "reference": "立即签名记录，注明原因。",
+      "answerLevel": "wrong",
+      "studentAnswer": "參數變更就是直接改機台設定就好，不用特別記錄啦，反正之後會有人檢查。",
+      "score": 0,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生主張不用記錄，完全未命中簽名記錄與註明原因兩得分點。",
+      "keyPoints": [
+        {
+          "point": "立即簽名記錄",
+          "hit": false
+        },
+        {
+          "point": "註明變更原因",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 5,
+      "department": "工务部",
+      "process": "DB",
+      "level": "Ⅰ级",
+      "content": "参数变更要求？",
+      "reference": "立即签名记录，注明原因。",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道。",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生回答不知道，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "立即簽名記錄",
+          "hit": false
+        },
+        {
+          "point": "註明原因",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 6,
+      "department": "工务部",
+      "process": "MD&TF",
+      "level": "Ⅱ级",
+      "content": "回答T/F设备SOT23-28R切中筋上刀B共几把刀具组成？介绍SOT363-20R每一站刀具作用？",
+      "reference": "设备SOT23-28R切中筋上刀B共28把\nSOT363-20R 第一站为去胶口站，去除塑封体之间的残胶，第二站为切断及预成型，第三站为第二道成型，第四站为最终成型",
+      "answerLevel": "full",
+      "studentAnswer": "SOT23-28R切中筋上刀B是28把。SOT363-20R四站：第一站去胶口，清掉塑封体之间的残胶；第二站切断加预成型；第三站做第二道成型；第四站最终成型。",
+      "score": 10,
+      "expected": [
+        8,
+        10
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生完整命中28把及四站刀具作用，與參考答案一致。",
+      "keyPoints": [
+        {
+          "point": "SOT23-28R切中筋上刀B共28把",
+          "hit": true
+        },
+        {
+          "point": "第一站去胶口站，去除塑封体之间的残胶",
+          "hit": true
+        },
+        {
+          "point": "第二站切断及预成型",
+          "hit": true
+        },
+        {
+          "point": "第三站第二道成型",
+          "hit": true
+        },
+        {
+          "point": "第四站最终成型",
+          "hit": true
+        }
+      ]
+    },
+    {
+      "questionIndex": 6,
+      "department": "工务部",
+      "process": "MD&TF",
+      "level": "Ⅱ级",
+      "content": "回答T/F设备SOT23-28R切中筋上刀B共几把刀具组成？介绍SOT363-20R每一站刀具作用？",
+      "reference": "设备SOT23-28R切中筋上刀B共28把\nSOT363-20R 第一站为去胶口站，去除塑封体之间的残胶，第二站为切断及预成型，第三站为第二道成型，第四站为最终成型",
+      "answerLevel": "partial",
+      "studentAnswer": "切中筋上刀B好像是28把吧。SOT363-20R第一站去胶，第二站切断，后面还有成型站，具体第几站记不太清。",
+      "score": 6,
+      "expected": [
+        3,
+        7
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "medium",
+      "reason": "答對刀具數與前兩站作用，後兩站成型未具體說明，僅命中3/5。",
+      "keyPoints": [
+        {
+          "point": "SOT23-28R切中筋上刀B共28把",
+          "hit": true
+        },
+        {
+          "point": "第一站为去胶口站，去除塑封体之间的残胶",
+          "hit": true
+        },
+        {
+          "point": "第二站为切断及预成型",
+          "hit": true
+        },
+        {
+          "point": "第三站为第二道成型",
+          "hit": false
+        },
+        {
+          "point": "第四站为最终成型",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 6,
+      "department": "工务部",
+      "process": "MD&TF",
+      "level": "Ⅱ级",
+      "content": "回答T/F设备SOT23-28R切中筋上刀B共几把刀具组成？介绍SOT363-20R每一站刀具作用？",
+      "reference": "设备SOT23-28R切中筋上刀B共28把\nSOT363-20R 第一站为去胶口站，去除塑封体之间的残胶，第二站为切断及预成型，第三站为第二道成型，第四站为最终成型",
+      "answerLevel": "wrong",
+      "studentAnswer": "切中筋上刀B应该是14把。SOT363-20R第一站是成型，第二站是去胶，第三站切断，第四站包装。",
+      "score": 2,
+      "expected": [
+        0,
+        2
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "刀具數答錯，四站作用僅部分沾邊但順序與內容皆不符，僅給基本分。",
+      "keyPoints": [
+        {
+          "point": "SOT23-28R切中筋上刀B共28把",
+          "hit": false
+        },
+        {
+          "point": "第一站為去膠口站，去除塑封體之間的殘膠",
+          "hit": false
+        },
+        {
+          "point": "第二站為切斷及預成型",
+          "hit": false
+        },
+        {
+          "point": "第三站為第二道成型",
+          "hit": false
+        },
+        {
+          "point": "第四站為最終成型",
+          "hit": false
+        }
+      ]
+    },
+    {
+      "questionIndex": 6,
+      "department": "工务部",
+      "process": "MD&TF",
+      "level": "Ⅱ级",
+      "content": "回答T/F设备SOT23-28R切中筋上刀B共几把刀具组成？介绍SOT363-20R每一站刀具作用？",
+      "reference": "设备SOT23-28R切中筋上刀B共28把\nSOT363-20R 第一站为去胶口站，去除塑封体之间的残胶，第二站为切断及预成型，第三站为第二道成型，第四站为最终成型",
+      "answerLevel": "blank",
+      "studentAnswer": "不知道",
+      "score": 0,
+      "expected": [
+        0,
+        1
+      ],
+      "inBand": true,
+      "deviation": 0,
+      "confidence": "high",
+      "reason": "考生作答為「不知道」，未命中任何得分點。",
+      "keyPoints": [
+        {
+          "point": "SOT23-28R切中筋上刀B共28把",
+          "hit": false
+        },
+        {
+          "point": "第一站去胶口站，去除塑封体之间的残胶",
+          "hit": false
+        },
+        {
+          "point": "第二站切断及预成型",
+          "hit": false
+        },
+        {
+          "point": "第三站第二道成型",
+          "hit": false
+        },
+        {
+          "point": "第四站最终成型",
+          "hit": false
+        }
+      ]
+    }
+  ]
+}

@@ -91,7 +91,7 @@ export async function PATCH(
       }),
       prisma.auditLog.create({
         data: {
-          adminId: admin.id,
+          adminId: admin.adminId,
           action: 'BATCH_REASSIGNED',
           details: {
             assignmentId,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/Logo';
 import { Button } from '@/components/ui/Button';
@@ -45,6 +45,35 @@ const QUESTION_TYPE_BADGE: Record<string, 'default' | 'info' | 'success' | 'warn
 };
 
 const SHORT_ANSWER_MAX_CHARS = 2000;
+
+interface AntiCheatSettings {
+  /** 離開畫面的提醒／強制交卷門檻（後台考試設定，PRD F4-3） */
+  tabSwitchLimit: number;
+  /** 達門檻是否強制交卷；關閉時僅提醒與記錄（PRD F4-2） */
+  forceSubmitOnTabSwitch: boolean;
+}
+
+const DEFAULT_ANTI_CHEAT: AntiCheatSettings = {
+  tabSwitchLimit: 3,
+  forceSubmitOnTabSwitch: true,
+};
+
+/** 由開始考試時寫入的設定還原；讀不到時採保守預設（維持強制交卷） */
+function readAntiCheatSettings(): AntiCheatSettings {
+  if (typeof window === 'undefined') return DEFAULT_ANTI_CHEAT;
+  try {
+    const raw = window.localStorage.getItem('exam-anti-cheat');
+    if (!raw) return DEFAULT_ANTI_CHEAT;
+    const parsed = JSON.parse(raw);
+    const limit = Number(parsed?.tabSwitchLimit);
+    return {
+      tabSwitchLimit: limit > 0 ? limit : DEFAULT_ANTI_CHEAT.tabSwitchLimit,
+      forceSubmitOnTabSwitch: parsed?.forceSubmitOnTabSwitch !== false,
+    };
+  } catch {
+    return DEFAULT_ANTI_CHEAT;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Question renderers
@@ -646,38 +675,45 @@ export default function TestPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [sessionId]);
 
-  // Tab detection
-  const tabSwitchLimitRef = useState(3)[0]; // default; overridden if exam data available
+  // ---- Tab / screen-off detection (PRD F4-1 ~ F4-3) ------------------------
+  // 手機瀏覽器無法區分「熄屏／鎖屏」與「切換 App」，兩者都只是頁面進入背景。
+  // 因此是否強制交卷由後台設定決定：關閉時僅提醒一次並記錄，交由人資人工判定。
+  const [antiCheat] = useState(readAntiCheatSettings);
   const [forceSubmitCountdown, setForceSubmitCountdown] = useState<number | null>(null);
+  const leaveWarnedRef = useRef(false);
+
+  const auditLeave = useCallback(
+    (action: 'TAB_SWITCH' | 'TAB_SWITCH_EXCEEDED', count: number) => {
+      if (!sessionId) return;
+      fetch(`/api/exam/${sessionId}/audit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, detail: `Tab switch count: ${count}` }),
+      }).catch(() => {});
+    },
+    [sessionId],
+  );
 
   useTabDetection((count) => {
-    if (count >= tabSwitchLimitRef) {
+    const { tabSwitchLimit, forceSubmitOnTabSwitch } = antiCheat;
+
+    if (!forceSubmitOnTabSwitch) {
+      // 僅提醒一次（避免熄屏多次反覆打擾），但每次離開都記錄供事後查核
+      auditLeave(count >= tabSwitchLimit ? 'TAB_SWITCH_EXCEEDED' : 'TAB_SWITCH', count);
+      if (!leaveWarnedRef.current) {
+        leaveWarnedRef.current = true;
+        toast('请保持在考试画面作答，离开画面的次数会被记录', 'warning');
+      }
+      return;
+    }
+
+    if (count >= tabSwitchLimit) {
       // Show countdown overlay instead of immediate submit
       setForceSubmitCountdown(5);
-      // Audit the event
-      if (sessionId) {
-        fetch(`/api/exam/${sessionId}/audit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'TAB_SWITCH_EXCEEDED',
-            detail: `Tab switch count: ${count}`,
-          }),
-        }).catch(() => {});
-      }
+      auditLeave('TAB_SWITCH_EXCEEDED', count);
     } else if (count > 0) {
-      toast(`警告：您已切屏 ${count} 次，累计 ${tabSwitchLimitRef} 次将强制交卷`, 'warning');
-      // Audit single switch event
-      if (sessionId) {
-        fetch(`/api/exam/${sessionId}/audit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'TAB_SWITCH',
-            detail: `Tab switch count: ${count}`,
-          }),
-        }).catch(() => {});
-      }
+      toast(`警告：您已切屏 ${count} 次，累计 ${tabSwitchLimit} 次将强制交卷`, 'warning');
+      auditLeave('TAB_SWITCH', count);
     }
   });
 

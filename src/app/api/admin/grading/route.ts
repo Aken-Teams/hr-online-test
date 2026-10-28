@@ -114,6 +114,13 @@ export async function GET(request: Request) {
       isGraded: a.earnedPoints != null,
       referenceAnswer: a.question.referenceAnswer,
       gradingRubric: a.question.gradingRubric,
+      // AI 初評（僅供參考，未經評卷人確認不計入成績）
+      aiScore: a.aiScore,
+      aiReason: a.aiReason,
+      aiKeyPoints: a.aiKeyPoints,
+      aiConfidence: a.aiConfidence,
+      aiModel: a.aiModel,
+      scoreSource: a.scoreSource,
     });
 
     // Pending answers first, then graded ones
@@ -203,6 +210,14 @@ export async function POST(request: Request) {
         const maxPoints = examQuestion?.points ?? answer.question.points;
         const earnedPoints = Math.max(0, Math.min(grade.earnedPoints, maxPoints));
 
+        // 分數來源標示（PRD F3-4）：與 AI 建議相同視為採用，其餘視為人工修改
+        const scoreSource =
+          answer.aiScore == null
+            ? 'MANUAL'
+            : earnedPoints === answer.aiScore
+              ? 'AI_ACCEPTED'
+              : 'AI_MODIFIED';
+
         await tx.answer.update({
           where: { id: grade.answerId },
           data: {
@@ -211,6 +226,7 @@ export async function POST(request: Request) {
             gradedBy: admin.adminId,
             gradedAt: now,
             graderComment: grade.comment ?? null,
+            scoreSource,
           },
         });
 

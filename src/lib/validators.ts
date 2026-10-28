@@ -98,6 +98,7 @@ export const examCreateSchema = z.object({
   resultQueryOpenAt: z.string().nullable().optional(),
   resultQueryCloseAt: z.string().nullable().optional(),
   tabSwitchLimit: z.number().int().min(0).default(3),
+  forceSubmitOnTabSwitch: z.boolean().default(true),
   enableFaceAuth: z.boolean().default(false),
   theoryWeight: z
     .number()

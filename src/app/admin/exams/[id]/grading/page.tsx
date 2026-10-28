@@ -31,6 +31,13 @@ interface PendingAnswer {
   graderComment: string | null;
   isGraded: boolean;
   referenceAnswer?: string | null;
+  // AI 初評（PRD F3）：僅供參考，未經評卷人確認不計入成績
+  aiScore?: number | null;
+  aiReason?: string | null;
+  aiKeyPoints?: { point: string; hit: boolean }[] | null;
+  aiConfidence?: 'high' | 'medium' | 'low' | null;
+  aiModel?: string | null;
+  scoreSource?: string | null;
 }
 
 interface GradingData {
@@ -65,6 +72,7 @@ export default function ExamGradingPage() {
   const [gradeScore, setGradeScore] = useState('');
   const [gradeComment, setGradeComment] = useState('');
   const [saving, setSaving] = useState(false);
+  const [aiRunning, setAiRunning] = useState(false);
 
   const fetchGrading = useCallback(async () => {
     try {
@@ -120,6 +128,40 @@ export default function ExamGradingPage() {
     setGradingAnswer(null);
     setGradeScore('');
     setGradeComment('');
+  }
+
+  /** 觸發 AI 初評（PRD F3-2），僅產生建議分數，不寫入成績 */
+  async function handleAiSuggest(answerIds?: string[]) {
+    setAiRunning(true);
+    try {
+      const res = await fetch('/api/admin/grading/ai-suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(answerIds?.length ? { answerIds } : { examId }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        toast(json.error || 'AI 初评失败，请改用人工评分', 'error');
+        return;
+      }
+      const { suggested, skipped } = json.data;
+      toast(
+        skipped > 0
+          ? `AI 初评完成：${suggested} 题已产生建议，${skipped} 题无法判分（缺参考答案或服务异常）`
+          : `AI 初评完成：${suggested} 题已产生建议分数`,
+        suggested > 0 ? 'success' : 'warning'
+      );
+      await fetchGrading();
+      if (answerIds?.length === 1) {
+        // 單筆：重新帶出最新建議
+        const updated = json.data.results?.[0];
+        if (updated?.aiScore != null) setGradeScore(String(updated.aiScore));
+      }
+    } catch {
+      toast('AI 初评失败，请改用人工评分', 'error');
+    } finally {
+      setAiRunning(false);
+    }
   }
 
   async function handleSaveGrade() {
@@ -179,10 +221,20 @@ export default function ExamGradingPage() {
       <PageHeader
         title={data?.examTitle ? `阅卷 - ${data.examTitle}` : '阅卷'}
         actions={
-          <Button variant="outline" onClick={() => router.push('/admin/exams')}>
-            <ArrowLeft className="h-4 w-4" />
-            返回列表
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              loading={aiRunning}
+              disabled={pending === 0}
+              onClick={() => handleAiSuggest()}
+            >
+              AI 初评待评分题目
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/admin/exams')}>
+              <ArrowLeft className="h-4 w-4" />
+              返回列表
+            </Button>
+          </div>
         }
       />
 
@@ -430,6 +482,73 @@ export default function ExamGradingPage() {
                 {gradingAnswer.answerContent || '（未作答）'}
               </div>
             </div>
+
+            {/* AI 初评建议（PRD F3-3）：仅供参考，最终分数由评卷人确认 */}
+            {gradingAnswer.aiScore != null ? (
+              <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-violet-600">
+                    AI 初评建议（仅供参考）
+                  </p>
+                  <Badge variant={
+                    gradingAnswer.aiConfidence === 'high'
+                      ? 'success'
+                      : gradingAnswer.aiConfidence === 'low'
+                        ? 'warning'
+                        : 'info'
+                  }>
+                    信心度 {gradingAnswer.aiConfidence === 'high' ? '高' : gradingAnswer.aiConfidence === 'low' ? '低' : '中'}
+                  </Badge>
+                  {gradingAnswer.aiModel && (
+                    <span className="text-[11px] text-violet-400">{gradingAnswer.aiModel}</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-xl font-bold text-violet-800">
+                    {gradingAnswer.aiScore} / {gradingAnswer.maxPoints}
+                  </p>
+                  {!gradingAnswer.isGraded && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setGradeScore(String(gradingAnswer.aiScore))}
+                    >
+                      采用此分数
+                    </Button>
+                  )}
+                </div>
+                {gradingAnswer.aiReason && (
+                  <p className="mt-2 text-sm text-violet-800">{gradingAnswer.aiReason}</p>
+                )}
+                {gradingAnswer.aiKeyPoints && gradingAnswer.aiKeyPoints.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {gradingAnswer.aiKeyPoints.map((kp, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-violet-900">
+                        <span className={kp.hit ? 'text-green-600' : 'text-stone-400'}>
+                          {kp.hit ? '✓' : '✗'}
+                        </span>
+                        <span className={kp.hit ? '' : 'text-stone-500 line-through'}>{kp.point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="mt-2 text-[11px] text-violet-500">
+                  AI 建议不计入成绩，最终分数以评卷人送出者为准。
+                </p>
+              </div>
+            ) : !gradingAnswer.isGraded ? (
+              <div className="flex items-center justify-between rounded-lg border border-dashed border-stone-300 bg-stone-50 px-4 py-3">
+                <p className="text-sm text-stone-500">尚未产生 AI 初评建议</p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={aiRunning}
+                  onClick={() => handleAiSuggest([gradingAnswer.answerId])}
+                >
+                  {aiRunning ? '评分中…' : 'AI 初评本题'}
+                </Button>
+              </div>
+            ) : null}
 
             {/* Grading form or result */}
             {gradingAnswer.isGraded ? (

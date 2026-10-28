@@ -332,6 +332,9 @@ export async function POST(
           questions,
           answers: existingSession.answers,
           timeRemaining,
+          // 考試過程控制設定（PRD F4-2 / F4-3）
+          tabSwitchLimit: exam.tabSwitchLimit,
+          forceSubmitOnTabSwitch: exam.forceSubmitOnTabSwitch,
           resumed: true,
         },
       });
@@ -484,6 +487,9 @@ export async function POST(
         questions,
         answers: [],
         timeRemaining: exam.timeLimitMinutes * 60,
+        // 考試過程控制設定（PRD F4-2 / F4-3）
+        tabSwitchLimit: exam.tabSwitchLimit,
+        forceSubmitOnTabSwitch: exam.forceSubmitOnTabSwitch,
         resumed: false,
         warnings: warnings.length > 0 ? warnings : undefined,
       },

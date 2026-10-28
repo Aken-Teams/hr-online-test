@@ -133,6 +133,13 @@ export async function POST(
           gradedBy: null,
           gradedAt: null,
           graderComment: null,
+          aiScore: null,
+          aiReason: null,
+          aiKeyPoints: null,
+          aiConfidence: null,
+          aiModel: null,
+          aiGradedAt: null,
+          scoreSource: null,
         });
       }
     }

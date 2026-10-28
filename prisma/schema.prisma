@@ -119,6 +119,7 @@ model Exam {
   openAt                DateTime?          @map("open_at")
   closeAt               DateTime?          @map("close_at")
   tabSwitchLimit        Int                @default(3) @map("tab_switch_limit")
+  forceSubmitOnTabSwitch Boolean           @default(true) @map("force_submit_on_tab_switch")
   enableFaceAuth        Boolean            @default(false) @map("enable_face_auth")
   status                ExamStatus         @default(DRAFT)
   createdAt             DateTime           @default(now()) @map("created_at")
@@ -255,6 +256,13 @@ model Answer {
   gradedBy      String?     @map("graded_by")
   gradedAt      DateTime?   @map("graded_at")
   graderComment String?     @map("grader_comment") @db.Text
+  aiScore       Int?        @map("ai_score")
+  aiReason      String?     @map("ai_reason") @db.Text
+  aiKeyPoints   Json?       @map("ai_key_points")
+  aiConfidence  String?     @map("ai_confidence")
+  aiModel       String?     @map("ai_model")
+  aiGradedAt    DateTime?   @map("ai_graded_at")
+  scoreSource   String?     @map("score_source")
   grader        Admin?      @relation("GradedBy", fields: [gradedBy], references: [id])
   question      Question    @relation(fields: [questionId], references: [id])
   session       ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
