@@ -16,6 +16,8 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
+  /** 功能分群（分隔线依此分段） */
+  group: 'overview' | 'exam' | 'system';
   /** 可使用此功能的角色；未指定代表全部角色 */
   roles?: string[];
 }
@@ -26,36 +28,42 @@ const NAV_ITEMS: NavItem[] = [
     label: '仪表盘',
     href: '/admin',
     icon: <LayoutDashboard className="h-5 w-5" />,
+    group: 'overview',
   },
   {
     key: 'employees',
     label: '员工管理',
     href: '/admin/employees',
     icon: <Users className="h-5 w-5" />,
+    group: 'exam',
   },
   {
     key: 'exams',
     label: '考试管理',
     href: '/admin/exams',
     icon: <ClipboardList className="h-5 w-5" />,
+    group: 'exam',
   },
   {
     key: 'questions',
     label: '题库管理',
     href: '/admin/questions',
     icon: <Database className="h-5 w-5" />,
+    group: 'exam',
   },
   {
     key: 'reports',
     label: '数据报表',
     href: '/admin/reports',
     icon: <BarChart3 className="h-5 w-5" />,
+    group: 'exam',
   },
   {
     key: 'organization',
     label: '组织查询',
     href: '/admin/organization',
     icon: <Network className="h-5 w-5" />,
+    group: 'system',
     roles: ['SUPER_ADMIN', 'HR'],
   },
   {
@@ -63,12 +71,20 @@ const NAV_ITEMS: NavItem[] = [
     label: '账号管理',
     href: '/admin/accounts',
     icon: <ShieldCheck className="h-5 w-5" />,
+    group: 'system',
     roles: ['SUPER_ADMIN'],
   },
 ];
 
 /** 評卷人只開放閱卷相關入口（PRD F2-4） */
 const GRADER_NAV_KEYS = ['exams'];
+
+/** 分群標題（側邊欄分段用） */
+const GROUP_LABELS: Record<NavItem['group'], string> = {
+  overview: '',
+  exam: '考务管理',
+  system: '系统设置',
+};
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: '系统管理员',
@@ -176,10 +192,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Desktop sidebar navigation renderer
   const renderNavItems = () => (
     <ul className="space-y-1">
-      {visibleNavItems.map((item) => {
+      {visibleNavItems.map((item, idx) => {
         const active = getIsActive(item);
+        const prev = visibleNavItems[idx - 1];
+        const newGroup = !prev || prev.group !== item.group;
         return (
           <li key={item.key}>
+            {newGroup && idx > 0 && (
+              <div className="my-2 border-t border-stone-100" />
+            )}
+            {newGroup && GROUP_LABELS[item.group] && (
+              <p className="px-3 pb-1 pt-1 text-[11px] font-medium uppercase tracking-wider text-stone-400">
+                {GROUP_LABELS[item.group]}
+              </p>
+            )}
             <a
               href={item.href}
               onClick={(e) => {
@@ -263,10 +289,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <nav className="px-3 py-2">
               <ul className="space-y-0.5">
-                {visibleNavItems.map((item) => {
+                {visibleNavItems.map((item, idx) => {
                   const active = getIsActive(item);
+                  const prev = visibleNavItems[idx - 1];
+                  const newGroup = !prev || prev.group !== item.group;
                   return (
                     <li key={item.key}>
+                      {newGroup && idx > 0 && (
+                        <div className="my-1.5 border-t border-stone-100" />
+                      )}
                       <a
                         href={item.href}
                         onClick={(e) => {

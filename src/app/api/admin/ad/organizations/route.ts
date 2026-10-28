@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAdminFromCookie } from '@/lib/auth';
 import { canManageExamData } from '@/lib/admin-scope';
 import {
+  getOrgTree,
   listOrganizationUnits,
   isAdConfigured,
   AD_DOMAINS,
@@ -10,8 +11,8 @@ import {
 } from '@/lib/ldap';
 
 /**
- * GET /api/admin/ad/organizations — 組織架構樹（含各單位成員）
- * 資料量較大，由瀏覽器端自行快取；此處僅做權限控管與欄位整理。
+ * GET /api/admin/ad/organizations — 组织架构树（巢状）+ 攤平清單（供搜寻）
+ * 资料量较大，由浏览器端自行快取；此处仅做权限控管与栏位整理。
  */
 export async function GET(request: Request) {
   const admin = await getAdminFromCookie();
@@ -35,15 +36,19 @@ export async function GET(request: Request) {
   }
 
   try {
-    const units = await listOrganizationUnits(domain);
+    const [tree, units] = await Promise.all([
+      getOrgTree(domain),
+      listOrganizationUnits(domain),
+    ]);
     const withMembers = units.filter((u) => u.memberCount > 0);
     return NextResponse.json({
       success: true,
       data: {
         domain,
         domains: AD_DOMAINS,
-        totalUnits: units.length,
+        totalUnits: withMembers.length,
         totalMembers: withMembers.reduce((sum, u) => sum + u.memberCount, 0),
+        tree,
         units: withMembers,
       },
     });

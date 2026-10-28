@@ -282,6 +282,48 @@ export async function listOrganizationUnits(
   return out;
 }
 
+export interface AdOrgTreeNode {
+  name: string;
+  dn: string;
+  type: string;
+  /** 此單位的直屬成員（已排除電腦帳號） */
+  members: AdUser[];
+  children: AdOrgTreeNode[];
+  /** 直屬成員數 */
+  memberCount: number;
+  /** 含所有子孫的成員總數 */
+  totalCount: number;
+}
+
+/** 回傳清理後的巢狀組織樹（供樹狀 UI 遞迴渲染） */
+export async function getOrgTree(
+  domain: string = DEFAULT_AD_DOMAIN
+): Promise<AdOrgTreeNode | null> {
+  const raw = (await getOrganizationTree(domain)) as Record<string, unknown>;
+  const root = (raw?.tree ?? raw) as Record<string, unknown>;
+
+  const clean = (node: Record<string, unknown>): AdOrgTreeNode => {
+    const members = Array.isArray(node.members)
+      ? (node.members as Record<string, unknown>[])
+          .filter((m) => m.username && !String(m.username).endsWith('$'))
+          .map((m) => toAdUser(m, domain))
+      : [];
+    const children = ((node.children as Record<string, unknown>[]) ?? []).map(clean);
+    const totalCount = members.length + children.reduce((sum, c) => sum + c.totalCount, 0);
+    return {
+      name: String(node.name ?? ''),
+      dn: String(node.dn ?? ''),
+      type: String(node.type ?? 'ou'),
+      members,
+      children,
+      memberCount: members.length,
+      totalCount,
+    };
+  };
+
+  return root ? clean(root) : null;
+}
+
 /** 指定組織的層級結構與成員 */
 export async function getOrganizationStructure(
   name: string,

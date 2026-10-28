@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
+import { ChevronRight, Users } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,14 +19,21 @@ interface AdMember {
   displayName: string;
   department?: string | null;
   title?: string | null;
-  jobCategory?: string | null;
-  email?: string | null;
+}
+
+interface OrgTreeNode {
+  name: string;
+  dn: string;
+  type: string;
+  members: AdMember[];
+  children: OrgTreeNode[];
+  memberCount: number;
+  totalCount: number;
 }
 
 interface OrgUnit {
   name: string;
   dn: string;
-  type: string;
   path: string[];
   memberCount: number;
   members: AdMember[];
@@ -37,6 +44,7 @@ interface OrgData {
   domains: { code: string; label: string }[];
   totalUnits: number;
   totalMembers: number;
+  tree: OrgTreeNode | null;
   units: OrgUnit[];
 }
 
@@ -51,7 +59,8 @@ export default function OrganizationPage() {
   const [data, setData] = useState<OrgData | null>(null);
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
-  const [selected, setSelected] = useState<OrgUnit | null>(null);
+  const [selected, setSelected] = useState<OrgTreeNode | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [keyword, setKeyword] = useState('');
 
   const fetchOrg = useCallback(
@@ -66,7 +75,15 @@ export default function OrganizationPage() {
         const json = await res.json();
         if (!res.ok || !json.success) throw new Error(json.error ?? '加载失败');
         setData(json.data);
-        setSelected(json.data.units[0] ?? null);
+        // 预设展开根节点的第一层
+        const root: OrgTreeNode | null = json.data.tree;
+        const init = new Set<string>();
+        if (root) {
+          init.add(root.dn);
+          root.children.forEach((c) => init.add(c.dn));
+        }
+        setExpanded(init);
+        setSelected(root);
       } catch (err) {
         toast(err instanceof Error ? err.message : '加载组织信息失败', 'error');
       } finally {
@@ -80,21 +97,16 @@ export default function OrganizationPage() {
     fetchOrg(domain);
   }, [fetchOrg, domain]);
 
-  /** 关键字同时比对单位名称、姓名、工号 */
-  const filteredUnits = useMemo(() => {
-    if (!data) return [];
-    const q = keyword.trim().toLowerCase();
-    if (!q) return data.units;
-    return data.units.filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.members.some(
-          (m) =>
-            m.displayName.toLowerCase().includes(q) || m.username.toLowerCase().includes(q)
-        )
-    );
-  }, [data, keyword]);
+  const toggleExpand = (dn: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(dn)) next.delete(dn);
+      else next.add(dn);
+      return next;
+    });
+  };
 
+  /** 搜寻人员：跨单位扁平比对姓名／工号 */
   const matchedMembers = useMemo(() => {
     if (!data || !keyword.trim()) return [];
     const q = keyword.trim().toLowerCase();
@@ -103,7 +115,7 @@ export default function OrganizationPage() {
       .filter(
         (m) => m.displayName.toLowerCase().includes(q) || m.username.toLowerCase().includes(q)
       )
-      .slice(0, 50);
+      .slice(0, 100);
   }, [data, keyword]);
 
   if (forbidden) {
@@ -140,7 +152,7 @@ export default function OrganizationPage() {
 
       {loading ? (
         <LoadingSpinner />
-      ) : !data ? (
+      ) : !data || !data.tree ? (
         <EmptyState title="无资料" description="未取得组织信息" />
       ) : (
         <>
@@ -165,94 +177,172 @@ export default function OrganizationPage() {
           <input
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            placeholder="搜寻单位、姓名或工号"
+            placeholder="搜寻姓名或工号"
             className="block w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 sm:max-w-md"
           />
 
-          {/* 人员搜寻结果 */}
+          {/* 人员搜寻结果：固定高度，内建捲轴 */}
           {matchedMembers.length > 0 && (
             <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
               <h3 className="mb-2 text-sm font-semibold text-stone-700">
                 符合的人员（{matchedMembers.length}）
               </h3>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {matchedMembers.map((m) => (
-                  <div
-                    key={`${m.unit}-${m.username}`}
-                    className="rounded-lg border border-stone-100 bg-stone-50/60 px-3 py-2"
-                  >
-                    <p className="text-sm font-medium text-stone-800">{m.displayName}</p>
-                    <p className="text-xs text-stone-500">
-                      {m.username} · {m.unit}
-                      {m.title ? ` · ${m.title}` : ''}
-                    </p>
-                  </div>
-                ))}
+              <div className="max-h-72 overflow-y-auto pr-1">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {matchedMembers.map((m) => (
+                    <div
+                      key={`${m.unit}-${m.username}`}
+                      className="rounded-lg border border-stone-100 bg-stone-50/60 px-3 py-2"
+                    >
+                      <p className="text-sm font-medium text-stone-800">{m.displayName}</p>
+                      <p className="text-xs text-stone-500">
+                        {m.username} · {m.unit}
+                        {m.title ? ` · ${m.title}` : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* 组织树 + 成员 */}
-          <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-            <div className="max-h-[520px] overflow-y-auto rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
-              {filteredUnits.map((u) => (
-                <button
-                  key={u.dn || u.name}
-                  type="button"
-                  onClick={() => setSelected(u)}
-                  className={cn(
-                    'mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                    selected?.dn === u.dn ? 'bg-teal-50 text-teal-700' : 'hover:bg-stone-50'
-                  )}
-                  style={{ paddingLeft: `${12 + Math.max(0, u.path.length - 1) * 12}px` }}
-                >
-                  <span className="truncate">{u.name}</span>
-                  <Badge variant="default">{u.memberCount}</Badge>
-                </button>
-              ))}
-              {filteredUnits.length === 0 && (
-                <p className="px-3 py-4 text-sm text-stone-400">无符合的单位</p>
-              )}
+          {/* 组织树（可展开收合）+ 成员，两栏各自内建捲轴 */}
+          <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
+            <div className="h-[560px] overflow-y-auto rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
+              <TreeNode
+                node={data.tree}
+                depth={0}
+                expanded={expanded}
+                selectedDn={selected?.dn ?? null}
+                onToggle={toggleExpand}
+                onSelect={setSelected}
+              />
             </div>
 
-            <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+            <div className="flex h-[560px] flex-col rounded-2xl border border-stone-200 bg-white shadow-sm">
               {selected ? (
                 <>
-                  <div className="mb-3">
+                  <div className="shrink-0 border-b border-stone-100 p-4">
                     <h3 className="text-sm font-semibold text-stone-800">{selected.name}</h3>
-                    <p className="text-xs text-stone-400">
-                      {[...selected.path, selected.name].join(' / ')} · {selected.memberCount} 人
+                    <p className="mt-0.5 text-xs text-stone-400">
+                      直属 {selected.memberCount} 人 · 含下级共 {selected.totalCount} 人
                     </p>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="text-xs uppercase tracking-wider text-stone-500">
-                        <tr className="border-b border-stone-200">
-                          <th className="px-3 py-2">工号</th>
-                          <th className="px-3 py-2">姓名</th>
-                          <th className="px-3 py-2">职称</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100">
-                        {selected.members.map((m) => (
-                          <tr key={m.username}>
-                            <td className="px-3 py-2 font-mono text-xs text-stone-600">
-                              {m.username}
-                            </td>
-                            <td className="px-3 py-2 text-stone-800">{m.displayName}</td>
-                            <td className="px-3 py-2 text-stone-500">{m.title ?? '—'}</td>
+                  <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                    {selected.members.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-stone-400">
+                        此单位无直属人员，请展开下级单位
+                      </p>
+                    ) : (
+                      <table className="w-full text-left text-sm">
+                        <thead className="sticky top-0 bg-white text-xs uppercase tracking-wider text-stone-500">
+                          <tr className="border-b border-stone-200">
+                            <th className="px-3 py-2">工号</th>
+                            <th className="px-3 py-2">姓名</th>
+                            <th className="px-3 py-2">职称</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100">
+                          {selected.members.map((m) => (
+                            <tr key={m.username}>
+                              <td className="px-3 py-2 font-mono text-xs text-stone-600">
+                                {m.username}
+                              </td>
+                              <td className="px-3 py-2 text-stone-800">{m.displayName}</td>
+                              <td className="px-3 py-2 text-stone-500">{m.title ?? '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-stone-400">请从左侧选择单位</p>
+                <p className="p-4 text-sm text-stone-400">请从左侧选择单位</p>
               )}
             </div>
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 树状节点（递归）
+// ---------------------------------------------------------------------------
+
+function TreeNode({
+  node,
+  depth,
+  expanded,
+  selectedDn,
+  onToggle,
+  onSelect,
+}: {
+  node: OrgTreeNode;
+  depth: number;
+  expanded: Set<string>;
+  selectedDn: string | null;
+  onToggle: (dn: string) => void;
+  onSelect: (node: OrgTreeNode) => void;
+}) {
+  const hasChildren = node.children.length > 0;
+  const isOpen = expanded.has(node.dn);
+  const isSelected = selectedDn === node.dn;
+
+  return (
+    <div>
+      <div
+        className={cn(
+          'flex items-center gap-1 rounded-lg py-1.5 pr-2 text-sm transition-colors',
+          isSelected ? 'bg-teal-50 text-teal-700' : 'hover:bg-stone-50'
+        )}
+        style={{ paddingLeft: `${depth * 16 + 4}px` }}
+      >
+        {/* 展开/收合 icon */}
+        {hasChildren ? (
+          <button
+            type="button"
+            onClick={() => onToggle(node.dn)}
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-stone-400 hover:bg-stone-200 hover:text-stone-600"
+          >
+            <ChevronRight className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-90')} />
+          </button>
+        ) : (
+          <span className="h-5 w-5 shrink-0" />
+        )}
+
+        {/* 名称（点击选取） */}
+        <button
+          type="button"
+          onClick={() => onSelect(node)}
+          className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left"
+        >
+          <span className="truncate">{node.name}</span>
+          {node.memberCount > 0 && (
+            <span className="flex shrink-0 items-center gap-0.5 rounded bg-stone-100 px-1.5 py-0.5 text-xs text-stone-500">
+              <Users className="h-3 w-3" />
+              {node.memberCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {hasChildren && isOpen && (
+        <div>
+          {node.children.map((child) => (
+            <TreeNode
+              key={child.dn || child.name}
+              node={child}
+              depth={depth + 1}
+              expanded={expanded}
+              selectedDn={selectedDn}
+              onToggle={onToggle}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
