@@ -187,6 +187,16 @@ function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
   const isChoice = ['SINGLE_CHOICE', 'MULTI_CHOICE'].includes(q.questionType);
   const answered = q.yourAnswer != null && q.yourAnswer.trim() !== '';
 
+  // 依得分状态给卡片左侧色条，便于快速扫视（绿=满分 / 琥珀=部分·待评 / 红=0分）
+  const accent =
+    q.isCorrect == null
+      ? 'border-l-amber-300'
+      : q.maxPoints > 0 && q.earnedPoints >= q.maxPoints
+        ? 'border-l-green-400'
+        : q.earnedPoints > 0
+          ? 'border-l-amber-400'
+          : 'border-l-red-300';
+
   /** Format choice answer labels */
   function formatChoiceAnswer(val: string | null): string {
     if (!val || val.trim() === '') return '（未作答）';
@@ -194,7 +204,7 @@ function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
   }
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+    <div className={`rounded-xl border border-l-4 border-stone-200 bg-white shadow-sm overflow-hidden ${accent}`}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-stone-100 px-3 py-2 sm:px-5 sm:py-3">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
@@ -341,30 +351,66 @@ function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
         )}
 
         {/* Text answer (SHORT_ANSWER, FILL_BLANK, etc.) */}
-        {!isChoice && !isTrueFalse && (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-            <div>
-              <p className="mb-1 text-[11px] font-medium text-stone-500 sm:mb-1.5 sm:text-xs">你的作答</p>
-              <div className={`rounded-lg border px-3 py-2.5 text-[13px] whitespace-pre-wrap min-h-[50px] sm:px-4 sm:py-3 sm:text-sm sm:min-h-[60px] ${
-                !answered
-                  ? 'border-stone-200 bg-stone-50 text-stone-400'
-                  : q.isCorrect
-                    ? 'border-green-200 bg-green-50 text-green-800'
-                    : 'border-red-200 bg-red-50 text-red-700'
-              }`}>
-                {q.yourAnswer || '（未作答）'}
-              </div>
-            </div>
-            {q.correctAnswer && (
-              <div>
-                <p className="mb-1 text-[11px] font-medium text-stone-500 sm:mb-1.5 sm:text-xs">参考答案</p>
-                <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-[13px] text-green-800 whitespace-pre-wrap min-h-[50px] sm:px-4 sm:py-3 sm:text-sm sm:min-h-[60px]">
-                  {q.correctAnswer}
+        {!isChoice && !isTrueFalse && (() => {
+          // 依得分比例上色：满分=绿、部分=琥珀、0分=红、未作答=灰
+          const full = q.maxPoints > 0 && q.earnedPoints >= q.maxPoints;
+          const partial = q.earnedPoints > 0 && q.earnedPoints < q.maxPoints;
+          const yourBox = !answered
+            ? 'border-stone-200 bg-stone-50 text-stone-400'
+            : q.isCorrect == null
+              ? 'border-amber-200 bg-amber-50/70 text-amber-900'
+              : full
+                ? 'border-green-200 bg-green-50/70 text-green-900'
+                : partial
+                  ? 'border-amber-200 bg-amber-50/70 text-amber-900'
+                  : 'border-red-200 bg-red-50/70 text-red-800';
+          const yourDot = !answered
+            ? 'bg-stone-300'
+            : q.isCorrect == null
+              ? 'bg-amber-400'
+              : full
+                ? 'bg-green-500'
+                : partial
+                  ? 'bg-amber-400'
+                  : 'bg-red-400';
+          return (
+            <div className="space-y-2.5 sm:space-y-3">
+              <div className="grid grid-cols-1 items-stretch gap-2.5 sm:grid-cols-2 sm:gap-4">
+                {/* 你的作答 */}
+                <div className="flex flex-col">
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${yourDot}`} />
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500 sm:text-xs">你的作答</span>
+                  </div>
+                  <div className={`flex-1 rounded-lg border px-3.5 py-3 text-[13px] leading-relaxed whitespace-pre-wrap min-h-[48px] sm:text-sm ${yourBox}`}>
+                    {q.yourAnswer || '（未作答）'}
+                  </div>
                 </div>
+                {/* 参考答案 */}
+                {q.correctAnswer && (
+                  <div className="flex flex-col">
+                    <div className="mb-1.5 flex items-center gap-1.5">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-green-600 sm:text-xs">参考答案</span>
+                    </div>
+                    <div className="flex-1 rounded-lg border border-green-200 bg-green-50/70 px-3.5 py-3 text-[13px] leading-relaxed text-green-900 whitespace-pre-wrap min-h-[48px] sm:text-sm">
+                      {q.correctAnswer}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
+              {/* 评卷人评语 / 解析 */}
+              {q.graderComment && (
+                <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 sm:px-4 sm:py-3">
+                  <p className="mb-1 text-[11px] font-medium text-violet-600 sm:text-xs">
+                    评卷人评语 / 解析
+                  </p>
+                  <p className="text-[13px] text-violet-900 whitespace-pre-wrap sm:text-sm">{q.graderComment}</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

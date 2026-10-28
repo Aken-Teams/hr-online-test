@@ -708,7 +708,7 @@ export default function ExamGradingPage() {
           className="sm:max-w-2xl"
           footer={
             gradingAnswer.isGraded && !editingGraded ? (
-              <div className="flex gap-3">
+              <div className="flex w-full items-center justify-between">
                 <Button variant="ghost" onClick={closeGradingDialog}>
                   关闭
                 </Button>
@@ -724,7 +724,7 @@ export default function ExamGradingPage() {
                 </Button>
               </div>
             ) : editingGraded ? (
-              <div className="flex gap-3">
+              <div className="flex w-full items-center justify-between">
                 <Button variant="ghost" onClick={() => { setEditingGraded(false); setEditReason(''); }}>
                   取消修改
                 </Button>
@@ -733,7 +733,7 @@ export default function ExamGradingPage() {
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-3">
+              <div className="flex w-full items-center justify-between">
                 <Button variant="ghost" onClick={closeGradingDialog}>
                   取消
                 </Button>
