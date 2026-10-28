@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Tabs } from '@/components/ui/Tabs';
-import { ArrowLeft, AlertTriangle, Send } from 'lucide-react';
+import { AlertTriangle, Send } from 'lucide-react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Dialog } from '@/components/ui/Dialog';
 import { useToast } from '@/components/ui/Toast';
@@ -41,7 +41,6 @@ const TABS_FULL = [
 ];
 
 export default function EditExamPage() {
-  const router = useRouter();
   const params = useParams();
   const examId = params.id as string;
   const { toast } = useToast();

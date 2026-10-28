@@ -2,14 +2,13 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { ArrowLeft, Download, Upload, ChevronDown, FileText, Eye } from 'lucide-react';
+import { Download, Upload, ChevronDown, FileText, Eye } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -66,7 +65,7 @@ export default function ExamResultsPage() {
   const [results, setResults] = useState<ResultRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-  const [importing, setImporting] = useState(false);
+  const [, setImporting] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showPdfConfirm, setShowPdfConfirm] = useState(false);
