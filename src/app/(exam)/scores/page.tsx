@@ -159,6 +159,14 @@ export default function ScoresPage() {
                       <div className="text-center"><p className="text-[11px] text-stone-400">综合分</p><p className="mt-0.5 text-sm font-bold text-teal-700">{scoreCell(r, r.combinedScore)}</p></div>
                     </div>
                     {r.submittedAt && <p className="mt-2 text-[11px] text-stone-400">交卷：{new Date(r.submittedAt).toLocaleString('zh-CN')}</p>}
+                    {r.sessionId && !r.missed && (
+                      <button
+                        onClick={() => router.push(`/result?sessionId=${r.sessionId}`)}
+                        className="mt-3 w-full rounded-lg border border-teal-200 bg-teal-50 py-2 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-100"
+                      >
+                        查看详情
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -176,6 +184,7 @@ export default function ScoresPage() {
                         <th className="py-2 text-center font-medium">实操分</th>
                         <th className="py-2 text-center font-medium">综合分</th>
                         <th className="py-2 text-center font-medium">交卷时间</th>
+                        <th className="py-2 text-center font-medium">操作</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -193,6 +202,18 @@ export default function ScoresPage() {
                           <td className="py-2.5 text-center font-semibold text-teal-700">{scoreCell(r, r.combinedScore)}</td>
                           <td className="py-2.5 text-center text-xs text-stone-400 whitespace-nowrap">
                             {r.missed ? <span className="text-red-400">未参加</span> : r.submittedAt ? new Date(r.submittedAt).toLocaleString('zh-CN') : '-'}
+                          </td>
+                          <td className="py-2.5 text-center">
+                            {r.sessionId && !r.missed ? (
+                              <button
+                                onClick={() => router.push(`/result?sessionId=${r.sessionId}`)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-100"
+                              >
+                                查看详情
+                              </button>
+                            ) : (
+                              <span className="text-stone-300">—</span>
+                            )}
                           </td>
                         </tr>
                       ))}

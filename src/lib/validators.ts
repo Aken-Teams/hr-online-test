@@ -219,6 +219,8 @@ export const gradingSchema = z.object({
   answerId: z.string().min(1, 'answerId 不能为空'),
   earnedPoints: z.number().int().min(0, '得分不能为负数'),
   comment: z.string().max(2000, '评语不能超过2000个字符').optional(),
+  /** 修改已评分数时的原因（已评→重评时必填，由前端校验） */
+  reason: z.string().max(500, '修改原因不能超过500个字符').optional(),
 });
 
 export type GradingInput = z.infer<typeof gradingSchema>;

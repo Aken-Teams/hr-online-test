@@ -245,7 +245,7 @@ function buildSystemPrompt(maxPoints: number): string {
 1. 先把參考答案拆成數個「得分點」（通常 2~5 個）。
 2. 逐一判斷考生作答是否命中各得分點；意思正確即可命中，不要求用字相同，錯別字不扣分。
 2-1. 先確認考生是否在回答本題：若作答描述的是相反流程或不同情境（例如題目問關機順序卻回答開機順序），即使出現相同的關鍵字，所有得分點一律判為未命中。
-3. 總分 ${maxPoints} 分，依「命中得分點數 ÷ 總得分點數 × ${maxPoints}」計算，**向下取整到偶數**（例如 3 個得分點命中 2 個＝6 分，不是 8 分）。
+3. 總分 ${maxPoints} 分，依「命中得分點數 ÷ 總得分點數 × ${maxPoints}」計算，**四捨五入到整數，允許部分分數**（例如 2 個得分點命中 1 個、滿分 2 分＝1 分）。只要命中任一得分點，至少給 1 分。
 4. 參考答案若只有 1 個得分點，則答對給滿分、答錯給 0 分，不給中間分。
 5. 空白、與題目無關、或明顯胡謅者給 0 分。
 6. 僅依參考答案判斷，不要自行補充廠內未提及的知識；考生語氣不確定但內容正確者仍算命中。
@@ -253,7 +253,7 @@ function buildSystemPrompt(maxPoints: number): string {
 
 回傳 JSON：
 {
-  "score": 0 到 ${maxPoints} 的偶數,
+  "score": 0 到 ${maxPoints} 的整數,
   "keyPoints": [{"point": "得分點描述", "hit": true}],
   "reason": "一句話說明命中與未命中的內容（繁體中文，40 字內，不要提及分數）",
   "confidence": "high"
@@ -290,7 +290,7 @@ function parseJsonObject(text: string): Record<string, unknown> | null {
  * 分數由程式計算，評分尺度才會穩定且可解釋。
  *
  * - 單一得分點：全有全無（命中給滿分、未命中給 0）
- * - 多個得分點：命中比例 × 滿分，向下取整到偶數
+ * - 多個得分點：命中比例 × 滿分，四捨五入到整數（允許部分分，不再強制偶數）
  */
 export function computeScoreFromKeyPoints(
   keyPoints: AiKeyPoint[],
@@ -302,7 +302,8 @@ export function computeScoreFromKeyPoints(
   if (hits === keyPoints.length) return maxPoints;
   if (keyPoints.length === 1) return maxPoints;
   const raw = (hits / keyPoints.length) * maxPoints;
-  return Math.max(0, Math.min(maxPoints, Math.floor(raw / 2) * 2));
+  // 命中部分得分点就至少给 1 分，避免「命中一半却 0 分」的过严情形
+  return Math.max(1, Math.min(maxPoints, Math.round(raw)));
 }
 
 function normalizeSuggestion(
@@ -326,7 +327,7 @@ function normalizeSuggestion(
   const score =
     keyPoints.length > 0
       ? computeScoreFromKeyPoints(keyPoints, maxPoints)
-      : Math.min(maxPoints, Math.round(Math.max(0, Math.min(rawScore, maxPoints)) / 2) * 2);
+      : Math.min(maxPoints, Math.round(Math.max(0, Math.min(rawScore, maxPoints))));
 
   const confidenceRaw = String(raw.confidence ?? '').toLowerCase();
   const confidence: AiConfidence =

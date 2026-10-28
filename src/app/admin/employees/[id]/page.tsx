@@ -165,6 +165,33 @@ export default function EmployeeDetailPage() {
     fetchDetail();
   }, [fetchDetail]);
 
+  // 部门 / 岗位(工序) 下拉选项：取题库里出现过的部门与工序
+  const [metaOptions, setMetaOptions] = useState<{ departments: string[]; processes: string[] }>({ departments: [], processes: [] });
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/questions/filter-options');
+        const json = await res.json();
+        if (json.success) {
+          setMetaOptions({
+            departments: json.data.departments ?? [],
+            processes: json.data.processes ?? [],
+          });
+        }
+      } catch { /* 下拉选项载入失败不影响其他功能 */ }
+    })();
+  }, []);
+
+  // 把当前值并入选项（避免既有值不在清单里时显示空白）
+  const deptSelectOptions = useMemo(() => {
+    const vals = [...new Set([...metaOptions.departments, editForm.department].filter(Boolean))];
+    return vals.map((v) => ({ value: v, label: v }));
+  }, [metaOptions.departments, editForm.department]);
+  const roleSelectOptions = useMemo(() => {
+    const vals = [...new Set([...metaOptions.processes, editForm.role].filter(Boolean))];
+    return vals.map((v) => ({ value: v, label: v }));
+  }, [metaOptions.processes, editForm.role]);
+
   function openEdit() {
     if (!employee) return;
     setEditForm({
@@ -493,16 +520,19 @@ export default function EmployeeDetailPage() {
             onChange={(e) => setEditForm((f) => ({ ...f, employeeNo: e.target.value }))}
             placeholder="留空保持自动生成"
           />
-          <Input
+          <CustomSelect
             label="部门"
             value={editForm.department}
-            onChange={(e) => setEditForm((f) => ({ ...f, department: e.target.value }))}
+            onChange={(v) => setEditForm((f) => ({ ...f, department: v }))}
+            options={deptSelectOptions}
+            placeholder="请选择部门"
           />
-          <Input
-            label="岗位"
+          <CustomSelect
+            label="岗位 / 工序"
             value={editForm.role}
-            onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
-            placeholder="如 SAW&DB&WB&QCgate"
+            onChange={(v) => setEditForm((f) => ({ ...f, role: v }))}
+            options={roleSelectOptions}
+            placeholder="请选择岗位 / 工序"
           />
         </div>
       </Dialog>

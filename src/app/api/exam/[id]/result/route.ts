@@ -161,6 +161,8 @@ export async function GET(
         earnedPoints: a.earnedPoints ?? 0,
         maxPoints: a.question.points,
         isCorrect: a.isCorrect,
+        // 评卷人评语/原因（简答题解析用），报告开放时才会随 allQuestions 一起回传
+        graderComment: a.graderComment ?? null,
         // Always include options so the student can see what they chose
         options: a.question.options.map((o) => ({
           label: o.label,
@@ -180,6 +182,7 @@ export async function GET(
         earnedPoints: 0,
         maxPoints: eq.points,
         isCorrect: false as boolean | null,
+        graderComment: null as string | null,
         options: eq.question.options.map((o) => ({
           label: o.label,
           content: o.content,

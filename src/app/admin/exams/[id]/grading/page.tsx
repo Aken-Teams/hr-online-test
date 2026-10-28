@@ -91,6 +91,8 @@ export default function ExamGradingPage() {
   const [gradingAnswer, setGradingAnswer] = useState<PendingAnswer | null>(null);
   const [gradeScore, setGradeScore] = useState('');
   const [gradeComment, setGradeComment] = useState('');
+  const [editingGraded, setEditingGraded] = useState(false); // 已评分→修改模式
+  const [editReason, setEditReason] = useState('');           // 修改原因（必填）
   const [saving, setSaving] = useState(false);
   const [aiRunning, setAiRunning] = useState(false);
   const [adoptingAll, setAdoptingAll] = useState(false);
@@ -182,12 +184,16 @@ export default function ExamGradingPage() {
     setGradingAnswer(answer);
     setGradeScore(answer.isGraded ? String(answer.earnedPoints ?? '') : '');
     setGradeComment(answer.graderComment ?? '');
+    setEditingGraded(false);
+    setEditReason('');
   }
 
   function closeGradingDialog() {
     setGradingAnswer(null);
     setGradeScore('');
     setGradeComment('');
+    setEditingGraded(false);
+    setEditReason('');
   }
 
   /** 觸發 AI 初評（PRD F3-2），僅產生建議分數，不寫入成績 */
@@ -233,6 +239,13 @@ export default function ExamGradingPage() {
       return;
     }
 
+    // 修改已评分数时，必须填写原因
+    const isRegrade = gradingAnswer.isGraded && editingGraded;
+    if (isRegrade && !editReason.trim()) {
+      toast('修改已评分数必须填写原因', 'warning');
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch('/api/admin/grading', {
@@ -243,11 +256,12 @@ export default function ExamGradingPage() {
           earnedPoints: score,
           // 省略空评语（schema 不接受 null）
           comment: gradeComment.trim() || undefined,
+          reason: isRegrade ? editReason.trim() : undefined,
         }),
       });
 
       if (!res.ok) throw new Error('保存失败');
-      toast('评分已保存', 'success');
+      toast(isRegrade ? '已修改评分' : '评分已保存', 'success');
       closeGradingDialog();
       fetchGrading();
     } catch {
@@ -690,13 +704,34 @@ export default function ExamGradingPage() {
         <Dialog
           open={!!gradingAnswer}
           onClose={closeGradingDialog}
-          title={gradingAnswer.isGraded ? '评分详情' : '评分'}
+          title={editingGraded ? '修改评分' : gradingAnswer.isGraded ? '评分详情' : '评分'}
           className="sm:max-w-2xl"
           footer={
-            gradingAnswer.isGraded ? (
-              <Button variant="ghost" onClick={closeGradingDialog}>
-                关闭
-              </Button>
+            gradingAnswer.isGraded && !editingGraded ? (
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={closeGradingDialog}>
+                  关闭
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingGraded(true);
+                    setGradeScore(String(gradingAnswer.earnedPoints ?? ''));
+                    setEditReason('');
+                  }}
+                >
+                  修改评分
+                </Button>
+              </div>
+            ) : editingGraded ? (
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => { setEditingGraded(false); setEditReason(''); }}>
+                  取消修改
+                </Button>
+                <Button onClick={handleSaveGrade} loading={saving}>
+                  保存修改
+                </Button>
+              </div>
             ) : (
               <div className="flex gap-3">
                 <Button variant="ghost" onClick={closeGradingDialog}>
@@ -836,7 +871,7 @@ export default function ExamGradingPage() {
             ) : null}
 
             {/* Grading form or result */}
-            {gradingAnswer.isGraded ? (
+            {gradingAnswer.isGraded && !editingGraded ? (
               <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-3 sm:px-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
                   <div>
@@ -847,7 +882,7 @@ export default function ExamGradingPage() {
                   </div>
                   {gradingAnswer.graderComment && (
                     <div className="flex-1 border-t border-green-200 pt-2 sm:border-t-0 sm:pt-0 sm:border-l sm:pl-4">
-                      <p className="text-xs font-medium text-green-600">评语</p>
+                      <p className="text-xs font-medium text-green-600">评语 / 原因</p>
                       <p className="text-sm text-green-800">{gradingAnswer.graderComment}</p>
                     </div>
                   )}
@@ -855,6 +890,11 @@ export default function ExamGradingPage() {
               </div>
             ) : (
               <div className="rounded-lg border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
+                {editingGraded && (
+                  <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    注意：您正在修改已评分数（原 {gradingAnswer.earnedPoints} 分），请填写修改原因。
+                  </p>
+                )}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
                   <div className="w-full sm:w-40">
                     <Input
@@ -882,18 +922,33 @@ export default function ExamGradingPage() {
                     )}
                   </div>
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-stone-700">
-                    评语（可选）
-                  </label>
-                  <textarea
-                    className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
-                    rows={3}
-                    value={gradeComment}
-                    onChange={(e) => setGradeComment(e.target.value)}
-                    placeholder="输入评语..."
-                  />
-                </div>
+                {editingGraded ? (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-stone-700">
+                      修改原因 <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
+                      rows={3}
+                      value={editReason}
+                      onChange={(e) => setEditReason(e.target.value)}
+                      placeholder="请说明为什么修改此题分数（必填，将记录审计）..."
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-stone-700">
+                      评语（可选）
+                    </label>
+                    <textarea
+                      className="block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0"
+                      rows={3}
+                      value={gradeComment}
+                      onChange={(e) => setGradeComment(e.target.value)}
+                      placeholder="输入评语..."
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

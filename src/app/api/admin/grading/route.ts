@@ -197,7 +197,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     // Support both single grade and batch format
-    let grades: { answerId: string; earnedPoints: number; comment?: string }[];
+    let grades: { answerId: string; earnedPoints: number; comment?: string; reason?: string }[];
 
     const batchParsed = batchGradingSchema.safeParse(body);
     if (batchParsed.success) {
@@ -218,6 +218,8 @@ export async function POST(request: Request) {
     const scope = await getAdminScope(admin);
     const now = new Date();
     const gradedIds: string[] = [];
+    // 改分明细（已评→重评）：记录旧分、新分、原因，写入审计日志
+    const regrades: { answerId: string; from: number | null; to: number; reason: string | null }[] = [];
 
     await prisma.$transaction(async (tx) => {
       for (const grade of grades) {
@@ -253,6 +255,10 @@ export async function POST(request: Request) {
         const maxPoints = examQuestion?.points ?? answer.question.points;
         const earnedPoints = Math.max(0, Math.min(grade.earnedPoints, maxPoints));
 
+        // 已评→重评：记录旧分，供审计与原因追踪
+        const wasGraded = answer.earnedPoints != null;
+        const oldPoints = answer.earnedPoints;
+
         // 分數來源標示（PRD F3-4）：與 AI 建議相同視為採用，其餘視為人工修改
         const scoreSource =
           answer.aiScore == null
@@ -268,10 +274,20 @@ export async function POST(request: Request) {
             isCorrect: earnedPoints > 0,
             gradedBy: admin.adminId,
             gradedAt: now,
-            graderComment: grade.comment ?? null,
+            // 原因/评语：优先新评语，其次修改原因，否则保留原评语
+            graderComment: grade.comment ?? grade.reason ?? answer.graderComment ?? null,
             scoreSource,
           },
         });
+
+        if (wasGraded && oldPoints !== earnedPoints) {
+          regrades.push({
+            answerId: grade.answerId,
+            from: oldPoints,
+            to: earnedPoints,
+            reason: grade.reason ?? grade.comment ?? null,
+          });
+        }
 
         gradedIds.push(grade.answerId);
       }
@@ -298,6 +314,7 @@ export async function POST(request: Request) {
           // All answers graded - recalculate result
           const allAnswers = await tx.answer.findMany({
             where: { sessionId },
+            include: { question: { select: { type: true, points: true } } },
           });
 
           const autoScore = allAnswers
@@ -316,6 +333,29 @@ export async function POST(request: Request) {
             include: { exam: { select: { passScore: true, totalScore: true } } },
           });
 
+          // 重算分类得分（categoryScores）—— 此前评卷后未更新，导致简答题
+          // 一直显示 0 分 / 0 对。满分以本场配分(examQuestion.points)为准。
+          const examQuestions = session
+            ? await tx.examQuestion.findMany({
+                where: { examId: session.examId, questionId: { in: allAnswers.map((a) => a.questionId) } },
+                select: { questionId: true, points: true },
+              })
+            : [];
+          const pointsMap = new Map(examQuestions.map((eq) => [eq.questionId, eq.points]));
+          const categoryScores: Record<string, { type: string; earnedPoints: number; maxPoints: number; correctCount: number; totalCount: number }> = {};
+          for (const a of allAnswers) {
+            const type = a.question.type;
+            const max = pointsMap.get(a.questionId) ?? a.question.points;
+            if (!categoryScores[type]) {
+              categoryScores[type] = { type, earnedPoints: 0, maxPoints: 0, correctCount: 0, totalCount: 0 };
+            }
+            const c = categoryScores[type];
+            c.earnedPoints += a.earnedPoints ?? 0;
+            c.maxPoints += max;
+            c.totalCount += 1;
+            if (a.isCorrect === true) c.correctCount += 1;
+          }
+
           if (session) {
             const isPassed = totalScore >= session.exam.passScore;
 
@@ -329,6 +369,7 @@ export async function POST(request: Request) {
                 isPassed,
                 isFullyGraded: true,
                 finalizedAt: now,
+                categoryScores,
               },
             });
 
@@ -348,6 +389,8 @@ export async function POST(request: Request) {
           details: {
             gradedCount: gradedIds.length,
             answerIds: gradedIds,
+            // 改分明细（含原因），供事后追溯「为什么改分」
+            regrades,
           },
         },
       });

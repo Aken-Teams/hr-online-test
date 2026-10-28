@@ -22,6 +22,7 @@ interface QuestionFromAPI {
   earnedPoints: number;
   maxPoints: number;
   isCorrect: boolean | null;
+  graderComment?: string | null;
   options?: { label: string; content: string; imageUrl?: string | null }[];
 }
 
@@ -199,9 +200,15 @@ function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
           <span className="text-[13px] font-medium text-stone-800 sm:text-sm">第 {index} 题</span>
           <Badge variant="default">{QUESTION_TYPE_LABELS[q.questionType] ?? q.questionType}</Badge>
-          {q.isCorrect === true && <Badge variant="success">正确</Badge>}
-          {q.isCorrect === false && <Badge variant="danger">{answered ? '错误' : '未作答'}</Badge>}
-          {q.isCorrect == null && <Badge variant="warning">待评分</Badge>}
+          {q.isCorrect == null ? (
+            <Badge variant="warning">待评分</Badge>
+          ) : q.earnedPoints >= q.maxPoints && q.maxPoints > 0 ? (
+            <Badge variant="success">正确</Badge>
+          ) : q.earnedPoints > 0 ? (
+            <Badge variant="warning">部分得分</Badge>
+          ) : (
+            <Badge variant="danger">{answered ? '错误' : '未作答'}</Badge>
+          )}
         </div>
         <span className="text-[13px] font-semibold text-stone-600 shrink-0 ml-2 sm:text-sm">
           {q.earnedPoints}/{q.maxPoints} 分

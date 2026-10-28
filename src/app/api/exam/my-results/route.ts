@@ -58,6 +58,7 @@ export async function GET() {
             result: {
               select: {
                 autoScore: true,
+                totalScore: true,
                 maxPossibleScore: true,
                 practicalScore: true,
                 combinedScore: true,
@@ -86,6 +87,7 @@ export async function GET() {
             result: {
               select: {
                 autoScore: true,
+                totalScore: true,
                 maxPossibleScore: true,
                 practicalScore: true,
                 combinedScore: true,
@@ -129,7 +131,9 @@ export async function GET() {
           process: a.process,
           level: a.level,
           sessionId: session.id,
-          autoScore: result.autoScore,
+          // 线上分 = 线上理论总分（客观题 autoScore + 简答题 manualScore），
+          // 全简答题考试 autoScore=0，须用 totalScore 才不会显示成 0 分
+          autoScore: result.totalScore ?? result.autoScore,
           maxPossibleScore: result.maxPossibleScore,
           practicalScore: result.practicalScore ?? null,
           combinedScore: result.combinedScore ?? null,
