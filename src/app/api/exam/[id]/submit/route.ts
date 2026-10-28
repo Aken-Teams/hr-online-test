@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getEmployeeFromCookie } from '@/lib/auth';
 import { autoGradeAnswer, calculateExamResult } from '@/lib/scoring';
 import { AUTO_GRADABLE_TYPES } from '@/lib/constants';
+import { generateAiSuggestionsForSession } from '@/lib/ai-grade-session';
 import { Prisma } from '@prisma/client';
 
 export async function POST(
@@ -269,6 +270,14 @@ export async function POST(
     const result = await prisma.examResult.findUnique({
       where: { sessionId: session.id },
     });
+
+    // 交卷后自动触发 AI 初评（仅当有待评分简答题）：fire-and-forget，不阻塞考生交卷。
+    // 本地优先、云端后备由 provider chain 处理；评卷人进来即可看到建议分数。
+    if (hasPendingGrading) {
+      void generateAiSuggestionsForSession(session.id).catch((e) =>
+        console.error('[submit] AI 初评失败（不影响交卷）:', e)
+      );
+    }
 
     return NextResponse.json({
       success: true,

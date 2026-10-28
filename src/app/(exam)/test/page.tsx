@@ -907,31 +907,18 @@ export default function TestPage() {
       {/* ================================================================== */}
       <footer className="sticky bottom-0 z-30 border-t border-stone-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-3 py-2 sm:px-4 sm:py-3">
-          {/* Left: prev/next */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={prevQuestion}
-              disabled={currentIndex === 0}
-            >
-              <svg className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-              </svg>
-              <span className="hidden sm:inline">上一题</span>
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={nextQuestion}
-              disabled={currentIndex === totalQuestions - 1}
-            >
-              <span className="hidden sm:inline">下一题</span>
-              <svg className="h-4 w-4 sm:ml-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </Button>
-          </div>
+          {/* Left: prev */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={prevQuestion}
+            disabled={currentIndex === 0}
+          >
+            <svg className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+            <span className="hidden sm:inline">上一题</span>
+          </Button>
 
           {/* Center: answer card toggle */}
           <button
@@ -950,13 +937,29 @@ export default function TestPage() {
             <span>答题卡</span>
           </button>
 
-          {/* Right: submit */}
-          <Button
-            size="sm"
-            onClick={() => setShowSubmitDialog(true)}
-          >
-            交卷
-          </Button>
+          {/* Right: next + submit */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {currentIndex < totalQuestions - 1 ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={nextQuestion}
+              >
+                <span className="hidden sm:inline">下一题</span>
+                <svg className="h-4 w-4 sm:ml-1" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
+              </Button>
+            ) : (
+              <span className="hidden text-xs text-stone-400 sm:inline">最后一题</span>
+            )}
+            <Button
+              size="sm"
+              onClick={() => setShowSubmitDialog(true)}
+            >
+              交卷
+            </Button>
+          </div>
         </div>
       </footer>
 

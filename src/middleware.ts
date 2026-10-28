@@ -23,9 +23,6 @@ const GRADER_API_RULES: { prefix: string; methods: string[] }[] = [
   { prefix: '/api/admin/results', methods: ['GET'] },
 ];
 
-/** 評卷人可開啟的後台頁面 */
-const GRADER_PAGE_PREFIXES = ['/admin/login', '/admin/exams'];
-
 function isGraderApiAllowed(pathname: string, method: string): boolean {
   return GRADER_API_RULES.some(
     (rule) => pathname.startsWith(rule.prefix) && rule.methods.includes(method)
@@ -33,11 +30,12 @@ function isGraderApiAllowed(pathname: string, method: string): boolean {
 }
 
 function isGraderPageAllowed(pathname: string): boolean {
-  if (pathname === '/admin/exams') return true;
-  // 考試詳情頁僅開放閱卷子頁
+  if (pathname === '/admin/login') return true;
+  // 评卷人门户
+  if (pathname === '/admin/grading' || pathname.startsWith('/admin/grading/')) return true;
+  // 考試詳情頁僅開放閱卷子頁（不開放列表 /admin/exams 與编辑页）
   if (/^\/admin\/exams\/[^/]+\/grading/.test(pathname)) return true;
-  if (/^\/admin\/exams\/[^/]+/.test(pathname)) return false;
-  return GRADER_PAGE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  return false;
 }
 
 export async function middleware(request: NextRequest) {
@@ -66,7 +64,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith('/admin')) {
     if (isGraderPageAllowed(pathname)) return NextResponse.next();
-    return NextResponse.redirect(new URL('/admin/exams', request.url));
+    return NextResponse.redirect(new URL('/admin/grading', request.url));
   }
 
   return NextResponse.next();

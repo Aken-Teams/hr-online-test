@@ -34,7 +34,7 @@ interface MyExam {
 }
 
 function getExamCategory(exam: MyExam): 'active' | 'completed' | 'missed' {
-  const completed = ['COMPLETED', 'SUBMITTED', 'AUTO_SUBMITTED'].includes(exam.sessionStatus);
+  const completed = ['COMPLETED', 'SUBMITTED', 'AUTO_SUBMITTED', 'GRADING'].includes(exam.sessionStatus);
   if (completed) return 'completed';
 
   const isPastClose = exam.closeAt ? new Date(exam.closeAt) < new Date() : false;
@@ -165,6 +165,7 @@ export default function MyExamsPage() {
   const pagedExams = filteredExams.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function getStatusBadge(exam: MyExam) {
+    if (exam.sessionStatus === 'GRADING') return <Badge variant="warning">评分中</Badge>;
     const cat = getExamCategory(exam);
     if (cat === 'missed') return <Badge variant="danger">未参加</Badge>;
     if (cat === 'completed') return <Badge variant="success">已完成</Badge>;
@@ -180,7 +181,7 @@ export default function MyExamsPage() {
   }
 
   function handleGoExam(exam: MyExam) {
-    const completed = ['COMPLETED', 'SUBMITTED', 'AUTO_SUBMITTED'].includes(exam.sessionStatus);
+    const completed = ['COMPLETED', 'SUBMITTED', 'AUTO_SUBMITTED', 'GRADING'].includes(exam.sessionStatus);
     if (completed && exam.sessionId) {
       router.push(`/result?sessionId=${exam.sessionId}`);
     } else {

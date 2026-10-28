@@ -286,6 +286,8 @@ export interface MyResultItem {
   isResultQueryOpen: boolean;
   /** Whether the total score is visible (立即出分 开启，或报告已开放) */
   scoreVisible: boolean;
+  /** 简答题评分中（尚未完全评分），总分未定 */
+  isPendingGrading?: boolean;
   resultQueryOpenAt: string | null;
   resultQueryCloseAt: string | null;
   /** True if the employee was assigned but never took the exam */

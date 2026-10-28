@@ -634,6 +634,15 @@ function ResultPage() {
                   线上 {displayScore} × 40% + 实操 {result.practicalScore ?? '--'} × 60% = {result.combinedScore} 分
                 </p>
               </>
+            ) : (pendingGradingCount > 0 && ((result.totalQuestions ?? 0) - pendingGradingCount) <= 0) ? (
+              /* 全简答题 + 待评分 → 不显示 0，直接显示评分中 */
+              <div className="py-6 text-center sm:py-8">
+                <svg className="mx-auto h-11 w-11 text-amber-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="mt-3 text-lg font-bold text-amber-700">简答题评分中</p>
+                <p className="mt-1 text-sm text-stone-500">本场为简答题，评卷人完成评分后将公布成绩。</p>
+              </div>
             ) : (
               <>
                 <ScoreRing

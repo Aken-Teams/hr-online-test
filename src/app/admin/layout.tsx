@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/shared/Logo';
 import { Button } from '@/components/ui/Button';
 import { ToastProvider } from '@/components/ui/Toast';
-import { LogOut, CircleUserRound, LayoutDashboard, Users, ClipboardList, Database, BarChart3, ShieldCheck, Network, Menu, X } from 'lucide-react';
+import { LogOut, CircleUserRound, LayoutDashboard, Users, ClipboardList, ClipboardCheck, Database, BarChart3, ShieldCheck, Network, Menu, X } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Sidebar navigation items
@@ -45,6 +45,13 @@ const NAV_ITEMS: NavItem[] = [
     group: 'exam',
   },
   {
+    key: 'grading',
+    label: '简答题评卷',
+    href: '/admin/grading',
+    icon: <ClipboardCheck className="h-5 w-5" />,
+    group: 'exam',
+  },
+  {
     key: 'questions',
     label: '题库管理',
     href: '/admin/questions',
@@ -76,8 +83,8 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-/** 評卷人只開放閱卷相關入口（PRD F2-4） */
-const GRADER_NAV_KEYS = ['exams'];
+/** 評卷人只開放閱卷相關入口（PRD F2-4）：僅「简答题评卷」门户 */
+const GRADER_NAV_KEYS = ['grading'];
 
 /** 分群標題（側邊欄分段用） */
 const GROUP_LABELS: Record<NavItem['group'], string> = {
