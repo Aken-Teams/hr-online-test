@@ -77,6 +77,24 @@ export async function GET(request: Request) {
       examTitle = exam?.title ?? '';
     }
 
+    // Per-exam point overrides: the exam's question rule decides the points for
+    // this paper (e.g. a 10-point essay drawn from a 2-point question bank).
+    const examQuestionPairs = allManualAnswers.map((a) => ({
+      examId: a.session.examId,
+      questionId: a.questionId,
+    }));
+    const examQuestions = examQuestionPairs.length
+      ? await prisma.examQuestion.findMany({
+          where: { OR: examQuestionPairs },
+          select: { examId: true, questionId: true, points: true },
+        })
+      : [];
+    const pointsMap = new Map(
+      examQuestions.map((eq) => [`${eq.examId}:${eq.questionId}`, eq.points])
+    );
+    const maxPointsOf = (a: typeof allManualAnswers[number]) =>
+      pointsMap.get(`${a.session.examId}:${a.questionId}`) ?? a.question.points;
+
     // Split into pending and graded
     const pendingAnswers = allManualAnswers.filter((a) => a.earnedPoints === null);
     const gradedAnswers = allManualAnswers.filter((a) => a.earnedPoints !== null);
@@ -89,7 +107,7 @@ export async function GET(request: Request) {
       department: a.session.user.department ?? '',
       questionContent: a.question.content,
       questionType: a.question.type,
-      maxPoints: a.question.points,
+      maxPoints: maxPointsOf(a),
       answerContent: a.answerContent,
       earnedPoints: a.earnedPoints,
       graderComment: a.graderComment,
@@ -163,14 +181,27 @@ export async function POST(request: Request) {
           where: { id: grade.answerId },
           include: {
             question: { select: { points: true } },
+            session: { select: { examId: true } },
           },
         });
 
         if (!answer) continue;
 
-        // Validate earned points does not exceed max
-        const maxPoints = answer.question.points;
-        const earnedPoints = Math.min(grade.earnedPoints, maxPoints);
+        // The exam's own配分 wins over the question bank default, so a 10-point
+        // essay drawn from a 2-point bank question can be graded up to 10.
+        const examQuestion = await tx.examQuestion.findUnique({
+          where: {
+            examId_questionId: {
+              examId: answer.session.examId,
+              questionId: answer.questionId,
+            },
+          },
+          select: { points: true },
+        });
+
+        // Validate earned points stays within 0..max
+        const maxPoints = examQuestion?.points ?? answer.question.points;
+        const earnedPoints = Math.max(0, Math.min(grade.earnedPoints, maxPoints));
 
         await tx.answer.update({
           where: { id: grade.answerId },

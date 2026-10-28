@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import type { QuestionType } from '@prisma/client';
+import { MANUAL_GRADE_TYPES } from '@/lib/constants';
 import type {
   QuestionImportRow,
   ResultExportRow,
@@ -329,7 +330,13 @@ export function parseQuestionExcel(
 
       // Determine correct answer
       let correctAnswer: string | undefined;
-      if (questionType === 'TRUE_FALSE') {
+      let referenceAnswer: string | undefined = row.referenceAnswer || undefined;
+      if (MANUAL_GRADE_TYPES.includes(questionType)) {
+        // 简答/案例/实操题: the answer column may be headed 正确答案 instead of
+        // 参考答案. Treat it as the reference answer so graders (and the AI
+        // assistant) can see it — correctAnswer is only used for auto-grading.
+        referenceAnswer = referenceAnswer || row.correctAnswer || undefined;
+      } else if (questionType === 'TRUE_FALSE') {
         // 判断题: "正确(是/否)" column -> "是" = "TRUE", "否" = "FALSE"
         const tfValue = row.correctTF || row.correctAnswer || '';
         if (/^(是|对|正确|√|true|TRUE)$/.test(tfValue)) {
@@ -369,7 +376,7 @@ export function parseQuestionExcel(
         role: role || '全员',
         correctAnswer,
         isMultiSelect: isMulti,
-        referenceAnswer: row.referenceAnswer || undefined,
+        referenceAnswer,
         sourceFile: undefined, // Set by caller
         category: rowCategory,
         process: row._process || undefined,

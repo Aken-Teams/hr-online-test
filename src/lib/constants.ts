@@ -144,13 +144,15 @@ export const AUTO_GRADABLE_TYPES: QuestionType[] = [
 
 /**
  * Question types available when creating/editing an exam.
- * Manual-grade types (SHORT_ANSWER, FILL_BLANK, etc.) are hidden from the UI
- * but kept in the codebase in case the client needs them later.
+ * SHORT_ANSWER is graded manually (optionally assisted by AI) — see PRD F1/F3.
+ * The remaining manual types (FILL_BLANK, CASE_ANALYSIS, PRACTICAL) stay hidden
+ * from the UI but are kept in the codebase in case the client needs them later.
  */
 export const EXAM_QUESTION_TYPES: QuestionType[] = [
   'SINGLE_CHOICE',
   'MULTI_CHOICE',
   'TRUE_FALSE',
+  'SHORT_ANSWER',
 ];
 
 /** Question types that need manual grading */
