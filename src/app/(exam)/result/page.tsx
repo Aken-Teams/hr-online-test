@@ -41,6 +41,7 @@ interface ResultAPIResponse {
   isPending: boolean;
   isPendingGrading?: boolean;
   isResultQueryOpen?: boolean;
+  scoreVisible?: boolean;
   resultQueryOpenAt?: string | null;
   resultQueryCloseAt?: string | null;
   message?: string;
@@ -392,6 +393,7 @@ function ResultPage() {
   const [isPending, setIsPending] = useState(false);
   const [pendingMessage, setPendingMessage] = useState('');
   const [isResultQueryOpen, setIsResultQueryOpen] = useState(true);
+  const [scoreVisible, setScoreVisible] = useState(true);
   const [resultQueryOpenAt, setResultQueryOpenAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -425,6 +427,7 @@ function ResultPage() {
       setPendingGradingCount(resp.pendingGradingCount ?? 0);
       setAllQuestions(resp.allQuestions || resp.wrongAnswers || []);
       setIsResultQueryOpen(resp.isResultQueryOpen ?? true);
+      setScoreVisible(resp.scoreVisible ?? true);
       setResultQueryOpenAt(resp.resultQueryOpenAt ?? null);
     }
 
@@ -587,8 +590,21 @@ function ResultPage() {
         {/* ===== Section 1: Score Overview ===== */}
         <div className="mb-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:mb-4 sm:p-6">
           <div className="flex flex-col items-center">
-            {/* Score ring — show combined score when available, otherwise online score */}
-            {isResultQueryOpen && result.combinedScore != null ? (
+            {/* 立即出分关闭且报告未开放 → 不显示分数，仅感谢作答 */}
+            {!scoreVisible ? (
+              <div className="py-6 text-center sm:py-8">
+                <svg className="mx-auto h-10 w-10 text-stone-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <p className="mt-3 text-base font-semibold text-stone-700">已完成作答，感谢参与</p>
+                <p className="mt-1 text-sm text-stone-500">
+                  {resultQueryOpenAt
+                    ? `成绩将于 ${new Date(resultQueryOpenAt).toLocaleString('zh-CN')} 公布`
+                    : '成绩将由管理员统一公布，届时可在此查看'}
+                </p>
+              </div>
+            ) : /* Score ring — show combined score when available, otherwise online score */
+            result.combinedScore != null ? (
               <>
                 <ScoreRing
                   score={result.combinedScore}
@@ -627,20 +643,16 @@ function ResultPage() {
                 />
                 <p className="mt-2 text-[13px] text-stone-500 sm:mt-3 sm:text-sm">线上理论得分</p>
 
-                {/* Pending combined score */}
-                {!isResultQueryOpen && (
-                  <div className="mt-2 w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 sm:mt-3 sm:px-4 sm:py-3">
+                {/* 简答题评分中：总分待更新 */}
+                {pendingGradingCount > 0 && (
+                  <div className="mt-2 w-full rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2.5 sm:mt-3 sm:px-4 sm:py-3">
                     <div className="flex items-start gap-2.5">
-                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-stone-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div>
-                        <p className="text-sm font-medium text-stone-700">综合得分请等待成绩公布</p>
-                        <p className="mt-0.5 text-xs text-stone-500">
-                          {resultQueryOpenAt
-                            ? `成绩将于 ${new Date(resultQueryOpenAt).toLocaleString('zh-CN')} 公布`
-                            : '综合成绩由管理员统一公布，届时可查看详细成绩与错题解析'}
-                        </p>
+                        <p className="text-sm font-medium text-amber-700">简答题评分中</p>
+                        <p className="mt-0.5 text-xs text-amber-600">当前为客观题得分，简答题评分完成后总分将自动更新。</p>
                       </div>
                     </div>
                   </div>
@@ -650,8 +662,8 @@ function ResultPage() {
           </div>
         </div>
 
-        {/* ===== Below sections only visible when result query is open ===== */}
-        {isResultQueryOpen && (
+        {/* ===== 得分/正确率/用时/分类得分跟随「立即出分」；答题明细(错题解析)由后端按报告开放时间清空 ===== */}
+        {scoreVisible && (
           <>
             {/* ===== Section 2: Stats Grid ===== */}
             <div className="mb-3 grid grid-cols-4 gap-2 sm:mb-4 sm:gap-3">

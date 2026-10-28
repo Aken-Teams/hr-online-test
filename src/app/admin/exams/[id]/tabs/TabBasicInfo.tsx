@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { useToast } from '@/components/ui/Toast';
 import { useState, useRef } from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { QUESTION_TYPE_LABELS, EXAM_QUESTION_TYPES } from '@/lib/constants';
@@ -54,6 +55,8 @@ interface Props {
   setShuffleOptions: (v: boolean) => void;
   showCorrectAnswers: boolean;
   setShowCorrectAnswers: (v: boolean) => void;
+  showResultImmediately: boolean;
+  setShowResultImmediately: (v: boolean) => void;
   isPracticeMode: boolean;
   setIsPracticeMode: (v: boolean) => void;
   tabSwitchLimit: number;
@@ -87,12 +90,44 @@ export default function TabBasicInfo(props: Props) {
     resultQueryOpenAt, setResultQueryOpenAt, resultQueryCloseAt, setResultQueryCloseAt,
     shuffleQuestions, setShuffleQuestions, shuffleOptions, setShuffleOptions,
     showCorrectAnswers, setShowCorrectAnswers,
+    showResultImmediately, setShowResultImmediately,
     isPracticeMode, setIsPracticeMode, tabSwitchLimit, setTabSwitchLimit,
     forceSubmitOnTabSwitch, setForceSubmitOnTabSwitch,
     enableFaceAuth, setEnableFaceAuth,
     rules, setRules, batches, setBatches, existingBatchCount, totalScore, isFullyEditable, isArchived, saving, onSave,
     section = 'basic',
   } = props;
+
+  const { toast } = useToast();
+
+  /**
+   * 時間順序卡控（含時分）：開放 ≤ 截止 ≤ 解析開放 ≤ 解析截止。
+   * 選到比下限早的時間會自動吸附到下限。編輯已開放的考試可能有過去的開放時間，
+   * 故此處不做「不能早於現在」的卡控（僅建立考試時卡控）。
+   */
+  function setTimeField(key: 'openAt' | 'closeAt' | 'resultQueryOpenAt' | 'resultQueryCloseAt', value: string) {
+    const v = { openAt, closeAt, resultQueryOpenAt, resultQueryCloseAt, [key]: value };
+    if (v.openAt && v.closeAt && v.closeAt < v.openAt) v.closeAt = v.openAt;
+    const examEnd = v.closeAt || v.openAt;
+    if (examEnd && v.resultQueryOpenAt && v.resultQueryOpenAt < examEnd) v.resultQueryOpenAt = examEnd;
+    const resultStart = v.resultQueryOpenAt || examEnd;
+    if (resultStart && v.resultQueryCloseAt && v.resultQueryCloseAt < resultStart) v.resultQueryCloseAt = resultStart;
+
+    if (v.openAt !== openAt) setOpenAt(v.openAt);
+    if (v.closeAt !== closeAt) setCloseAt(v.closeAt);
+    if (v.resultQueryOpenAt !== resultQueryOpenAt) setResultQueryOpenAt(v.resultQueryOpenAt);
+    if (v.resultQueryCloseAt !== resultQueryCloseAt) setResultQueryCloseAt(v.resultQueryCloseAt);
+
+    if (value && v[key] !== value) {
+      const hint = {
+        openAt: '考试开放时间',
+        closeAt: '考试截止时间不能早于开放时间',
+        resultQueryOpenAt: '解析开放时间不能早于考试截止时间',
+        resultQueryCloseAt: '解析截止时间不能早于解析开放时间',
+      }[key];
+      toast(`${hint}，已自动调整`, 'warning');
+    }
+  }
 
   function addRule() {
     setRules([...rules, { questionType: 'SINGLE_CHOICE', count: 10, pointsPerQuestion: 2, commonRatio: 0 }]);

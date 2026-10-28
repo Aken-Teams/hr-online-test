@@ -43,6 +43,7 @@ export async function GET() {
             closeAt: true,
             resultQueryOpenAt: true,
             resultQueryCloseAt: true,
+            showResultImmediately: true,
           },
         },
         // LEFT JOIN: sessions linked to this specific assignment
@@ -111,9 +112,12 @@ export async function GET() {
       const isPastClose = exam.closeAt ? exam.closeAt < now : false;
       const examEnded = isClosed || isPastClose;
 
-      const isAfterOpen = exam.resultQueryOpenAt ? exam.resultQueryOpenAt <= now : true;
+      // 报告（错题解析/正确答案/个人报告）开放：未设开放时间 = 默认不开放
+      const isAfterOpen = exam.resultQueryOpenAt ? exam.resultQueryOpenAt <= now : false;
       const isBeforeClose = exam.resultQueryCloseAt ? exam.resultQueryCloseAt >= now : true;
       const isResultQueryOpen = isAfterOpen && isBeforeClose;
+      // 总分可见：立即出分开启，或报告已开放（关闭立即出分时统一公布）
+      const scoreVisible = exam.showResultImmediately || isResultQueryOpen;
 
       if (session && result) {
         // Has completed session with result → show score
@@ -130,6 +134,7 @@ export async function GET() {
           isPassed: result.isPassed ?? null,
           submittedAt: session.submittedAt?.toISOString() ?? null,
           isResultQueryOpen,
+          scoreVisible,
           resultQueryOpenAt: exam.resultQueryOpenAt?.toISOString() ?? null,
           resultQueryCloseAt: exam.resultQueryCloseAt?.toISOString() ?? null,
           missed: false,
@@ -149,6 +154,7 @@ export async function GET() {
           isPassed: null,
           submittedAt: null,
           isResultQueryOpen: true,
+          scoreVisible: true,
           resultQueryOpenAt: exam.resultQueryOpenAt?.toISOString() ?? null,
           resultQueryCloseAt: exam.resultQueryCloseAt?.toISOString() ?? null,
           missed: true,

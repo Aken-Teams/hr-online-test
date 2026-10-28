@@ -96,6 +96,9 @@ export async function GET(
     // Show correct answers whenever the result query window is open
     const effectiveShowCorrectAnswers = isResultQueryOpen;
 
+    // 总分（得分/正确率/用时/综合分）可见：立即出分开启，或报告已开放（统一公布）
+    const scoreVisible = session.exam.showResultImmediately || isResultQueryOpen;
+
     // Load answers with question details for wrong answer analysis
     const answers = await prisma.answer.findMany({
       where: { sessionId: session.id },
@@ -237,6 +240,7 @@ export async function GET(
         isPending: false,
         isPendingGrading,
         isResultQueryOpen,
+        scoreVisible,
         resultQueryOpenAt: resultQueryOpenAt?.toISOString() ?? null,
         resultQueryCloseAt: resultQueryCloseAt?.toISOString() ?? null,
         result: session.result
@@ -253,10 +257,10 @@ export async function GET(
               gradeLabel: session.result.gradeLabel,
               categoryScores: session.result.categoryScores,
               isFullyGraded: session.result.isFullyGraded,
-              // Offline scores (only visible when result query is open)
-              essayScore: isResultQueryOpen ? session.result.essayScore : null,
-              practicalScore: isResultQueryOpen ? session.result.practicalScore : null,
-              combinedScore: isResultQueryOpen ? session.result.combinedScore : null,
+              // 总分相关分数跟随「立即出分」；错题解析仍由报告开放时间管控
+              essayScore: scoreVisible ? session.result.essayScore : null,
+              practicalScore: scoreVisible ? session.result.practicalScore : null,
+              combinedScore: scoreVisible ? session.result.combinedScore : null,
             }
           : null,
         ranking: {

@@ -282,8 +282,10 @@ export interface MyResultItem {
   combinedScore: number | null;
   isPassed: boolean | null;
   submittedAt: string | null;
-  /** Whether the result query window is currently open */
+  /** Whether the report (错题解析/正确答案/个人报告) window is currently open */
   isResultQueryOpen: boolean;
+  /** Whether the total score is visible (立即出分 开启，或报告已开放) */
+  scoreVisible: boolean;
   resultQueryOpenAt: string | null;
   resultQueryCloseAt: string | null;
   /** True if the employee was assigned but never took the exam */

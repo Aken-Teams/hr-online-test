@@ -17,6 +17,7 @@ interface MyResult {
   practicalScore: number | null;
   combinedScore: number | null;
   isResultQueryOpen: boolean;
+  scoreVisible: boolean;
   resultQueryOpenAt: string | null;
   submittedAt: string | null;
   missed?: boolean;
@@ -80,7 +81,7 @@ export default function ScoresPage() {
                     <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">
                       未参加
                     </span>
-                  ) : !r.isResultQueryOpen ? (
+                  ) : !r.scoreVisible ? (
                     <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-600">
                       {r.resultQueryOpenAt
                         ? `${new Date(r.resultQueryOpenAt).toLocaleDateString('zh-CN')} 公布`
@@ -110,19 +111,19 @@ export default function ScoresPage() {
                     <div className="text-center">
                       <p className="text-[11px] text-stone-400">线上分</p>
                       <p className="mt-0.5 text-sm font-semibold text-stone-800">
-                        {r.isResultQueryOpen ? r.autoScore : '—'}
+                        {r.scoreVisible ? r.autoScore : '—'}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-[11px] text-stone-400">实操分</p>
                       <p className="mt-0.5 text-sm font-semibold text-stone-800">
-                        {r.isResultQueryOpen ? (r.practicalScore ?? '—') : '—'}
+                        {r.scoreVisible ? (r.practicalScore ?? '—') : '—'}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-[11px] text-stone-400">综合分</p>
                       <p className="mt-0.5 text-sm font-bold text-teal-700">
-                        {r.isResultQueryOpen ? (r.combinedScore ?? '—') : '—'}
+                        {r.scoreVisible ? (r.combinedScore ?? '—') : '—'}
                       </p>
                     </div>
                   </div>
@@ -175,7 +176,7 @@ export default function ScoresPage() {
                       <td className="py-2.5 text-center">
                         {r.missed
                           ? <span className="text-red-400">0</span>
-                          : r.isResultQueryOpen
+                          : r.scoreVisible
                             ? r.autoScore
                             : <span className="text-stone-300">—</span>
                         }
@@ -183,7 +184,7 @@ export default function ScoresPage() {
                       <td className="py-2.5 text-center">
                         {r.missed
                           ? <span className="text-red-400">0</span>
-                          : r.isResultQueryOpen
+                          : r.scoreVisible
                             ? (r.practicalScore ?? <span className="text-stone-300">—</span>)
                             : <span className="text-stone-300">—</span>
                         }
@@ -191,7 +192,7 @@ export default function ScoresPage() {
                       <td className="py-2.5 text-center font-semibold">
                         {r.missed ? (
                           <span className="text-red-500">0</span>
-                        ) : r.isResultQueryOpen ? (
+                        ) : r.scoreVisible ? (
                           r.combinedScore != null ? (
                             r.combinedScore
                           ) : (

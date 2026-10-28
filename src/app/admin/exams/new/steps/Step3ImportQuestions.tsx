@@ -106,8 +106,16 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
 
   return (
     <div className="space-y-6">
-      <Card title="导入题库">
+      <Card title="导入题库（可选）">
         <div className="space-y-4">
+          {/* 重点说明：本步骤可跳过，系统会用现有题库自动抽题 */}
+          <div className="rounded-lg border border-teal-200 bg-teal-50/60 px-4 py-3">
+            <p className="text-sm leading-relaxed text-teal-800">
+              本步骤可选：<strong>不上传</strong>则由系统从现有题库按考生「工序 + 级别」自动抽题，直接「下一步」即可；
+              仅在需要<strong>专属题目</strong>时才上传 Excel（会覆盖同范围旧题）。
+            </p>
+          </div>
+
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm text-stone-600">

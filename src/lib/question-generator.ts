@@ -120,16 +120,37 @@ async function pickQuestionsForRule(
   // Only exclude questions already selected within THIS user's set
   const excludeArray = [...alreadySelected];
 
-  // Fetch BASIC pool (not filtered by process/level, only by exam source)
-  const basicPool = await fetchPool({
+  const result: string[] = [];
+  const usedIds = new Set<string>();
+  let basicFilled = 0;
+  let profFilled = 0;
+
+  // Take up to `n` ids from a pool, tracking whether they fill basic or
+  // professional slots. Skips ids already used.
+  const take = (pool: string[], n: number, asBasic: boolean) => {
+    for (const id of shuffle(pool)) {
+      if (n <= 0) break;
+      if (usedIds.has(id)) continue;
+      result.push(id);
+      usedIds.add(id);
+      if (asBasic) basicFilled++;
+      else profFilled++;
+      n--;
+    }
+  };
+
+  // ---- Primary: this exam's own imported questions (examSourceId) ----
+  // BASIC is company-wide (not filtered by process/level); PROFESSIONAL is
+  // filtered by department + process + level.
+  const basicSrc = await fetchPool({
     type: questionType,
     category: 'BASIC',
     examSourceId: examId,
     excludeIds: excludeArray,
   });
+  take(basicSrc, basicCount, true);
 
-  // Fetch PROFESSIONAL pool (filtered by department + process + level)
-  const professionalPool = await fetchPool({
+  const profSrc = await fetchPool({
     type: questionType,
     category: 'PROFESSIONAL',
     department: employeeDept,
@@ -138,41 +159,56 @@ async function pickQuestionsForRule(
     examSourceId: examId,
     excludeIds: excludeArray,
   });
+  take(profSrc, professionalCount, false);
 
-  const shuffledBasic = shuffle(basicPool);
-  const shuffledProfessional = shuffle(professionalPool);
-
-  const pickedBasic = shuffledBasic.slice(0, basicCount);
-  const pickedProfessional = shuffledProfessional.slice(0, professionalCount);
-
-  const result = [...pickedBasic, ...pickedProfessional];
-  const usedIds = new Set(result);
-
-  // Backfill basic shortfall from professional pool
-  const basicShortfall = basicCount - pickedBasic.length;
-  if (basicShortfall > 0) {
-    const remaining = shuffledProfessional.filter((id) => !usedIds.has(id));
-    const backfill = remaining.slice(0, basicShortfall);
-    for (const id of backfill) {
-      result.push(id);
-      usedIds.add(id);
-    }
+  // ---- Fallback: draw from the whole bank (ignore examSourceId) ----
+  // This is what makes "skip upload → use existing bank" work. BASIC questions
+  // are company-wide (process is null), so they must be fetched WITHOUT the
+  // process/level filter, otherwise they would never be drawn.
+  if (basicFilled < basicCount) {
+    const globalBasic = await fetchPool({
+      type: questionType,
+      category: 'BASIC',
+      excludeIds: [...excludeArray, ...result],
+    });
+    take(globalBasic, basicCount - basicFilled, true);
   }
 
-  // Backfill professional shortfall from basic pool
-  const professionalShortfall = professionalCount - pickedProfessional.length;
-  if (professionalShortfall > 0) {
-    const remaining = shuffledBasic.filter((id) => !usedIds.has(id));
-    const backfill = remaining.slice(0, professionalShortfall);
-    for (const id of backfill) {
-      result.push(id);
-      usedIds.add(id);
-    }
+  if (profFilled < professionalCount) {
+    const globalProf = await fetchPool({
+      type: questionType,
+      category: 'PROFESSIONAL',
+      department: employeeDept,
+      process: process || undefined,
+      level: level || undefined,
+      excludeIds: [...excludeArray, ...result],
+    });
+    take(globalProf, professionalCount - profFilled, false);
   }
 
-  // Fallback: broader search without examSourceId constraint
+  // ---- Last resort: fill any remaining shortfall cross-category ----
+  // Prefer professional (process+level), then company-wide basic, then a broad
+  // process-only search, so the paper still reaches `count` where possible.
   if (result.length < count) {
-    const stillNeeded = count - result.length;
+    const extraProf = await fetchPool({
+      type: questionType,
+      category: 'PROFESSIONAL',
+      department: employeeDept,
+      process: process || undefined,
+      level: level || undefined,
+      excludeIds: [...excludeArray, ...result],
+    });
+    take(extraProf, count - result.length, false);
+  }
+  if (result.length < count) {
+    const extraBasic = await fetchPool({
+      type: questionType,
+      category: 'BASIC',
+      excludeIds: [...excludeArray, ...result],
+    });
+    take(extraBasic, count - result.length, true);
+  }
+  if (result.length < count) {
     const broadPool = await fetchPool({
       type: questionType,
       department: employeeDept,
@@ -180,12 +216,7 @@ async function pickQuestionsForRule(
       level: level || undefined,
       excludeIds: [...excludeArray, ...result],
     });
-    const unique = shuffle(broadPool).filter((id) => !usedIds.has(id));
-    const fallback = unique.slice(0, stillNeeded);
-    for (const id of fallback) {
-      result.push(id);
-      usedIds.add(id);
-    }
+    take(broadPool, count - result.length, false);
   }
 
   if (result.length < count) {

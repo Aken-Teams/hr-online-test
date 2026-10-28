@@ -2,6 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { useToast } from '@/components/ui/Toast';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,6 +28,7 @@ export interface Step1Data {
   shuffleQuestions: boolean;
   shuffleOptions: boolean;
   showCorrectAnswers: boolean;
+  showResultImmediately: boolean;
   isPracticeMode: boolean;
   tabSwitchLimit: number;
   forceSubmitOnTabSwitch: boolean;
@@ -50,6 +52,7 @@ export const DEFAULT_STEP1: Step1Data = {
   shuffleQuestions: true,
   shuffleOptions: true,
   showCorrectAnswers: false,
+  showResultImmediately: true,
   isPracticeMode: false,
   tabSwitchLimit: 3,
   forceSubmitOnTabSwitch: true,
@@ -62,11 +65,58 @@ interface Props {
   onChange: (data: Step1Data) => void;
 }
 
+/** 當前本地時間，格式 "YYYY-MM-DDTHH:mm"，供 datetime-local 的 min 與卡控使用 */
+function nowLocalString(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function Step1BasicInfo({ data, onChange }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { toast } = useToast();
 
   function set<K extends keyof Step1Data>(key: K, value: Step1Data[K]) {
     onChange({ ...data, [key]: value });
+  }
+
+  /**
+   * 時間卡控（含時分）：設定時間欄位後，依序強制
+   *   考試開放 ≤ 考試截止 ≤ 成績開放 ≤ 成績截止
+   * datetime-local 值格式 "YYYY-MM-DDTHH:mm" 可直接字串比較。
+   * 選到比下限早的時間會自動吸附到下限，改前面的時間也會連動往後推。
+   */
+  function setTime(key: 'openAt' | 'closeAt' | 'resultQueryOpenAt' | 'resultQueryCloseAt', value: string) {
+    const floor = nowLocalString();
+    const m = { ...data, [key]: value };
+
+    // 1) 不允許過去時間：任一時間早於當前時間都吸附到「現在」
+    (['openAt', 'closeAt', 'resultQueryOpenAt', 'resultQueryCloseAt'] as const).forEach((k) => {
+      if (m[k] && m[k] < floor) m[k] = floor;
+    });
+
+    // 2) 順序卡控：開放 ≤ 截止 ≤ 成績開放 ≤ 成績截止
+    if (m.openAt && m.closeAt && m.closeAt < m.openAt) m.closeAt = m.openAt;
+    const examEnd = m.closeAt || m.openAt;
+    if (examEnd && m.resultQueryOpenAt && m.resultQueryOpenAt < examEnd) m.resultQueryOpenAt = examEnd;
+    const resultStart = m.resultQueryOpenAt || examEnd;
+    if (resultStart && m.resultQueryCloseAt && m.resultQueryCloseAt < resultStart) m.resultQueryCloseAt = resultStart;
+
+    // 若使用者選到的時間被吸附修正，跳提示說明原因
+    if (value && m[key] !== value) {
+      if (value < floor) {
+        toast('不能设定过去的时间，已调整为当前时间', 'warning');
+      } else {
+        const hint: Record<typeof key, string> = {
+          openAt: '考试开放时间',
+          closeAt: '考试截止时间不能早于开放时间',
+          resultQueryOpenAt: '成绩开放时间不能早于考试截止时间',
+          resultQueryCloseAt: '成绩截止时间不能早于成绩开放时间',
+        };
+        toast(`${hint[key]}，已自动调整`, 'warning');
+      }
+    }
+    onChange(m);
   }
 
   return (
@@ -123,7 +173,8 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
             required
             type="datetime-local"
             value={data.openAt}
-            onChange={(e) => set('openAt', e.target.value)}
+            min={nowLocalString()}
+            onChange={(e) => setTime('openAt', e.target.value)}
           />
           <Input
             label="考试截止时间"
@@ -131,22 +182,28 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
             type="datetime-local"
             value={data.closeAt}
             min={data.openAt || undefined}
-            onChange={(e) => set('closeAt', e.target.value)}
+            onChange={(e) => setTime('closeAt', e.target.value)}
           />
           <Input
-            label="成绩开放时间"
+            label="解析开放时间"
             type="datetime-local"
             value={data.resultQueryOpenAt}
             min={data.closeAt || data.openAt || undefined}
-            onChange={(e) => set('resultQueryOpenAt', e.target.value)}
+            onChange={(e) => setTime('resultQueryOpenAt', e.target.value)}
           />
           <Input
-            label="成绩截止时间"
+            label="解析截止时间"
             type="datetime-local"
             value={data.resultQueryCloseAt}
-            onChange={(e) => set('resultQueryCloseAt', e.target.value)}
+            min={data.resultQueryOpenAt || data.closeAt || data.openAt || undefined}
+            onChange={(e) => setTime('resultQueryCloseAt', e.target.value)}
           />
         </div>
+        <p className="mt-3 text-xs leading-relaxed text-stone-500">
+          <strong>总分</strong>由「高级设置 → 立即出分」控制，与下方时间无关。此处「解析开放时间」为选填，
+          <strong>只管控</strong>错题解析、正确答案与个人报告（用时、正确率）：<strong>不设</strong>则默认不开放（考生只看得到总分）；
+          <strong>设定后</strong>解析与报告仅在此时间窗口内开放查看。
+        </p>
       </Card>
 
       <Card title="梯次设置（可选）">
@@ -230,6 +287,7 @@ export default function Step1BasicInfo({ data, onChange }: Props) {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <ToggleRow label="随机出题" description="题目顺序随机打乱" checked={data.shuffleQuestions} onChange={(v) => set('shuffleQuestions', v)} />
               <ToggleRow label="随机选项" description="选项 A/B/C/D 顺序随机" checked={data.shuffleOptions} onChange={(v) => set('shuffleOptions', v)} />
+              <ToggleRow label="立即出分" description="交卷后立即公布总分（客观题即时、简答题评分后更新）；关闭则总分等解析开放时才一并公布" checked={data.showResultImmediately} onChange={(v) => set('showResultImmediately', v)} />
               <ToggleRow label="显示正确答案" description="提交后展示正确答案" checked={data.showCorrectAnswers} onChange={(v) => set('showCorrectAnswers', v)} />
               <ToggleRow label="练习模式" description="不限作答次数" checked={data.isPracticeMode} onChange={(v) => set('isPracticeMode', v)} />
               {/* 人脸验证功能已隐藏 */}
