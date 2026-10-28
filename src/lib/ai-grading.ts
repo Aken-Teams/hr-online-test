@@ -6,10 +6,12 @@
  *
  * 供應商採 OpenAI 相容的 /chat/completions 介面，因此雲端（DeepSeek）與
  * 地端模型（vLLM / Ollama / LM Studio 等）可透過環境變數切換，無需改程式：
- *   AI_GRADING_BASE_URL  預設 https://api.deepseek.com/v1
- *   AI_GRADING_MODEL     預設 deepseek-chat
- *   AI_GRADING_API_KEY   預設沿用 deepseek_api_key（地端可填任意值）
- *   AI_GRADING_ENABLED   設為 "false" 可整體停用 AI 初評
+ *   AI_GRADING_BASE_URL   預設 https://api.deepseek.com/v1
+ *   AI_GRADING_MODEL      預設 deepseek-chat
+ *   AI_GRADING_API_KEY    預設沿用 deepseek_api_key（地端可填任意值）
+ *   AI_GRADING_ENABLED    設為 "false" 可整體停用 AI 初評
+ *   AI_GRADING_MAX_TOKENS 預設 800；thinking 模型（如 gemma4）需 >= 1500
+ *   AI_GRADING_JSON_MODE  預設 auto；設 "false" 可停用 response_format
  */
 
 // ============================================================
@@ -20,7 +22,11 @@ const BASE_URL = (process.env.AI_GRADING_BASE_URL || 'https://api.deepseek.com/v
 const MODEL = process.env.AI_GRADING_MODEL || 'deepseek-chat';
 const API_KEY = process.env.AI_GRADING_API_KEY || process.env.deepseek_api_key || '';
 const ENABLED = process.env.AI_GRADING_ENABLED !== 'false';
-const TIMEOUT_MS = Number(process.env.AI_GRADING_TIMEOUT_MS || 60_000);
+const TIMEOUT_MS = Number(process.env.AI_GRADING_TIMEOUT_MS || 120_000);
+const MAX_TOKENS = Number(process.env.AI_GRADING_MAX_TOKENS || 800);
+/** 部分地端閘道不支援 response_format，首次 400 後自動停用並重試 */
+let jsonModeSupported = process.env.AI_GRADING_JSON_MODE !== 'false';
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 
 /** AI 初評是否可用（未設定金鑰或已停用時為 false，閱卷改走全人工） */
 export function isAiGradingEnabled(): boolean {
@@ -82,7 +88,7 @@ function buildSystemPrompt(maxPoints: number): string {
 {
   "score": 0 到 ${maxPoints} 的偶數,
   "keyPoints": [{"point": "得分點描述", "hit": true}],
-  "reason": "一句話說明評分依據（繁體中文，40 字內）",
+  "reason": "一句話說明命中與未命中的內容（繁體中文，40 字內，不要提及分數）",
   "confidence": "high"
 }
 只回 JSON，不要其他文字。`;
@@ -180,53 +186,85 @@ export async function suggestShortAnswerGrade(
   if (!input.referenceAnswer || input.referenceAnswer.trim() === '') return null;
   if (!input.content || input.maxPoints <= 0) return null;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const messages = [
+    { role: 'system', content: buildSystemPrompt(input.maxPoints) },
+    { role: 'user', content: buildUserPrompt(input) },
+  ];
 
-  try {
-    const res = await fetch(`${BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: 'system', content: buildSystemPrompt(input.maxPoints) },
-          { role: 'user', content: buildUserPrompt(input) },
-        ],
-        temperature: 0,
-        max_tokens: 800,
-        response_format: { type: 'json_object' },
-      }),
-      signal: controller.signal,
-    });
+  // 模型閒置時首次呼叫需載入，可能回 503 —— 以指數退避重試
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-    if (!res.ok) {
-      console.error('AI grading error:', res.status, await res.text().catch(() => ''));
+    try {
+      const res = await fetch(`${BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages,
+          temperature: 0,
+          max_tokens: MAX_TOKENS,
+          stream: false, // thinking 模型的 stream 模式會夾帶原始 harmony tokens
+          ...(jsonModeSupported ? { response_format: { type: 'json_object' } } : {}),
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+
+        // 閘道不支援 response_format → 關閉後立即重試
+        if (res.status === 400 && jsonModeSupported && /response_format/i.test(body)) {
+          console.warn('AI grading: 端點不支援 response_format，改以純文字模式重試');
+          jsonModeSupported = false;
+          continue;
+        }
+
+        if (RETRYABLE_STATUS.has(res.status) && attempt < maxAttempts) {
+          const waitMs = 2000 * attempt;
+          console.warn(`AI grading: ${res.status}，${waitMs}ms 後重試（${attempt}/${maxAttempts}）`);
+          await new Promise((r) => setTimeout(r, waitMs));
+          continue;
+        }
+
+        console.error('AI grading error:', res.status, body.slice(0, 300));
+        return null;
+      }
+
+      const json = await res.json();
+      const message = json?.choices?.[0]?.message ?? {};
+      // thinking 模型的 content 可能為空字串，答案落在 gateway 額外回傳的 reasoning
+      const content: string = message.content || message.reasoning || '';
+      const parsed = parseJsonObject(content);
+      if (!parsed) {
+        console.error('AI grading: response was not JSON:', content.slice(0, 200));
+        return null;
+      }
+
+      return normalizeSuggestion(parsed, input.maxPoints);
+    } catch (err) {
+      const timedOut = err instanceof Error && err.name === 'AbortError';
+      if (attempt < maxAttempts) {
+        const waitMs = 2000 * attempt;
+        console.warn(
+          `AI grading ${timedOut ? 'timeout' : 'failed'}，${waitMs}ms 後重試（${attempt}/${maxAttempts}）`
+        );
+        await new Promise((r) => setTimeout(r, waitMs));
+        continue;
+      }
+      console.error(timedOut ? 'AI grading timeout' : 'AI grading failed:', timedOut ? '' : err);
       return null;
+    } finally {
+      clearTimeout(timer);
     }
-
-    const json = await res.json();
-    const content: string = json?.choices?.[0]?.message?.content ?? '';
-    const parsed = parseJsonObject(content);
-    if (!parsed) {
-      console.error('AI grading: response was not JSON:', content.slice(0, 200));
-      return null;
-    }
-
-    return normalizeSuggestion(parsed, input.maxPoints);
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      console.error('AI grading timeout');
-    } else {
-      console.error('AI grading failed:', err);
-    }
-    return null;
-  } finally {
-    clearTimeout(timer);
   }
+
+  return null;
 }
 
 /** 批次產生建議分數，限制併發數避免拖垮服務 */

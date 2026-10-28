@@ -1,0 +1,72 @@
+[
+  {
+    "id": "cmova2pmd0ly94bhlfossjb5b",
+    "examId": "cmov9z0410eto4bhlpnhq59nu",
+    "name": "第1梯次",
+    "openAt": "2026-05-08T00:10:00.000Z",
+    "closeAt": "2026-05-08T01:10:00.000Z"
+  },
+  {
+    "id": "cmova2pmd0lya4bhlhnaan46c",
+    "examId": "cmov9z0410eto4bhlpnhq59nu",
+    "name": "第2梯次",
+    "openAt": "2026-05-08T01:05:00.000Z",
+    "closeAt": "2026-05-08T02:30:00.000Z"
+  },
+  {
+    "id": "cmoxomgxf073cbscgidef7u3y",
+    "examId": "cmowpjk671alo125elnw31otc",
+    "name": "第1梯次",
+    "openAt": "2026-05-09T01:37:00.000Z",
+    "closeAt": "2026-05-09T03:40:00.000Z"
+  },
+  {
+    "id": "cmoxwsa9l07mcbscg062e01w0",
+    "examId": "cmowpjk671alo125elnw31otc",
+    "name": "第2梯次",
+    "openAt": "2026-05-09T05:33:00.000Z",
+    "closeAt": "2026-05-09T12:33:00.000Z"
+  },
+  {
+    "id": "cmozfkpn90f16bscgnt7beswx",
+    "examId": "cmowpjk671alo125elnw31otc",
+    "name": "第3梯次",
+    "openAt": "2026-05-10T07:05:00.000Z",
+    "closeAt": "2026-05-10T07:20:00.000Z"
+  },
+  {
+    "id": "cmozfkpp30f18bscgdr3bjqn7",
+    "examId": "cmowpjk671alo125elnw31otc",
+    "name": "第4梯次",
+    "openAt": "2026-05-10T07:20:00.000Z",
+    "closeAt": "2026-05-10T07:45:00.000Z"
+  },
+  {
+    "id": "cmozu5n7q10snbscgk0k6lw00",
+    "examId": "cmozsjrl00tq4bscg0ntehr4y",
+    "name": "第1梯次",
+    "openAt": "2026-05-11T00:10:00.000Z",
+    "closeAt": "2026-05-11T00:30:00.000Z"
+  },
+  {
+    "id": "cmozueifo17v6bscgtp9zko5m",
+    "examId": "cmozucb0v10t2bscg3wodlcw3",
+    "name": "第1梯次",
+    "openAt": "2026-05-11T00:50:00.000Z",
+    "closeAt": "2026-05-11T01:10:00.000Z"
+  },
+  {
+    "id": "cmp0ix5k722lfbscgoon0bkw6",
+    "examId": "cmp0iwaus1vk5bscgwmhtn136",
+    "name": "第1梯次",
+    "openAt": "2026-05-11T01:28:00.000Z",
+    "closeAt": "2026-05-11T01:49:00.000Z"
+  },
+  {
+    "id": "cmp1w32wp2a1obscgrgpfxneq",
+    "examId": "cmp1w0xus230gbscgfywh40lw",
+    "name": "第1梯次",
+    "openAt": "2026-05-12T00:30:00.000Z",
+    "closeAt": "2026-05-12T00:50:00.000Z"
+  }
+]

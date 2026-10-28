@@ -143,9 +143,13 @@ function sample(list, n) {
 // DeepSeek
 // ---------------------------------------------------------------------------
 
-async function callDeepSeek(messages, { temperature = 0.2, maxTokens = 900 } = {}) {
+// 地端 thinking 模型（如 gemma4）需較大的 max_tokens，且可能不支援 response_format
+let jsonModeSupported = process.env.AI_GRADING_JSON_MODE !== 'false';
+const DEFAULT_MAX_TOKENS = Number(process.env.AI_GRADING_MAX_TOKENS || 900);
+
+async function callModel(messages, { temperature = 0.2, maxTokens = DEFAULT_MAX_TOKENS } = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 90_000);
+  const timer = setTimeout(() => controller.abort(), Number(process.env.AI_GRADING_TIMEOUT_MS || 180_000));
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
@@ -158,16 +162,26 @@ async function callDeepSeek(messages, { temperature = 0.2, maxTokens = 900 } = {
         messages,
         temperature,
         max_tokens: maxTokens,
-        response_format: { type: 'json_object' },
+        stream: false,
+        ...(jsonModeSupported ? { response_format: { type: 'json_object' } } : {}),
       }),
       signal: controller.signal,
     });
     if (!res.ok) {
-      throw new Error(`DeepSeek ${res.status} ${res.statusText}: ${await res.text()}`);
+      const body = await res.text();
+      if (res.status === 400 && jsonModeSupported && /response_format/i.test(body)) {
+        jsonModeSupported = false;
+        console.warn('  (端點不支援 response_format，改以純文字模式)');
+        clearTimeout(timer);
+        return callModel(messages, { temperature, maxTokens });
+      }
+      throw new Error(`${res.status} ${res.statusText}: ${body.slice(0, 200)}`);
     }
     const json = await res.json();
+    const message = json.choices?.[0]?.message ?? {};
     return {
-      content: json.choices?.[0]?.message?.content ?? '',
+      // thinking 模型 content 可能為空，答案落在 reasoning
+      content: message.content || message.reasoning || '',
       usage: json.usage ?? null,
     };
   } finally {
@@ -240,7 +254,7 @@ const GRADING_SYSTEM = `你是半導體封裝廠技能考核的簡答題閱卷�
 {
   "score": 0到{MAX_POINTS}的偶數,
   "keyPoints": [{"point": "得分點描述", "hit": true/false}],
-  "reason": "一句話說明評分依據（繁體中文，40字內）",
+  "reason": "一句話說明命中與未命中的內容（繁體中文，40字內，不要提及分數）",
   "confidence": "high|medium|low"
 }
 只回 JSON，不要其他文字。`;
@@ -315,7 +329,7 @@ async function main() {
   const withAnswers = await mapLimit(questions, CONCURRENCY, async (q, i) => {
     const res = await withRetry(
       () =>
-        callDeepSeek([
+        callModel([
           { role: 'system', content: ANSWER_GEN_SYSTEM },
           { role: 'user', content: `【題目】${q.content}\n【參考答案】${q.reference}` },
         ], { temperature: 0.8 }),
@@ -338,7 +352,7 @@ async function main() {
 
   const graded = await mapLimit(tasks, CONCURRENCY, async (t) => {
     const res = await withRetry(
-      () => callDeepSeek(buildGradingMessages(t.q, t.answer), { temperature: 0 }),
+      () => callModel(buildGradingMessages(t.q, t.answer), { temperature: 0 }),
       `評分 Q${t.qi + 1}/${t.level}`
     );
     addUsage(res.usage);
