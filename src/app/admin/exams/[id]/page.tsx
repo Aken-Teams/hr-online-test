@@ -28,15 +28,15 @@ interface QuestionRule {
 const TABS_DRAFT = [
   { key: 'basic', label: '基本信息' },
   { key: 'rules', label: '考试规则' },
-  { key: 'questions', label: '题库管理' },
   { key: 'participants', label: '应考人员' },
+  { key: 'questions', label: '题库管理' },
 ];
 
 const TABS_FULL = [
   { key: 'basic', label: '基本信息' },
   { key: 'rules', label: '考试规则' },
-  { key: 'questions', label: '题库管理' },
   { key: 'participants', label: '应考人员' },
+  { key: 'questions', label: '题库管理' },
   { key: 'scores', label: '成绩管理' },
 ];
 

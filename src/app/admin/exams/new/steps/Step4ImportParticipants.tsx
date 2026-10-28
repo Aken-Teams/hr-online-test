@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Upload, Users, UserPlus, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
@@ -52,6 +53,7 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
   const [empSearching, setEmpSearching] = useState(false);
   const [selectedEmps, setSelectedEmps] = useState<Record<string, EmpItem>>({});
   const [batchLevel, setBatchLevel] = useState('');
+  const [levelOptions, setLevelOptions] = useState<string[]>([]);
   const [adding, setAdding] = useState(false);
   const selectedList = Object.values(selectedEmps);
 
@@ -72,6 +74,13 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
   function openPicker() {
     setPickerOpen(true);
     searchEmployees('');
+    // 载入系统现有等级供下拉选择
+    if (levelOptions.length === 0) {
+      fetch('/api/admin/questions/filter-options')
+        .then((r) => r.json())
+        .then((j) => { if (j.success && Array.isArray(j.data?.levels)) setLevelOptions(j.data.levels.filter(Boolean)); })
+        .catch(() => {});
+    }
   }
 
   // 全选/取消全选当前列表（跳过无岗位的）
@@ -187,10 +196,9 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
     <div className="space-y-6">
       <Card title="导入应考人员">
         <div className="space-y-4">
-          {/* 说明：两种带入方式 */}
+          {/* 说明：两种带入方式（二择一） */}
           <div className="rounded-lg border border-teal-200 bg-teal-50/50 px-4 py-3 text-sm leading-relaxed text-stone-700">
-            应考人员需<strong>明确指定「谁考这场」</strong>（系统不会自动带入全部员工）。两种方式：
-            <strong>「从员工选择」</strong>直接勾选系统员工管理里的人（工序取自其岗位）；或<strong>「上传名单」</strong>用 Excel 批量导入。
+            指定「谁考这场」（不会自动带全部员工）。<strong>「从员工选择」或「上传名单」二择一</strong>（<span className="text-amber-600">上传会覆盖已选</span>）。
           </div>
 
           <div className="flex items-start justify-between gap-4">
@@ -337,12 +345,14 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
       >
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input
+            <CustomSelect
               label="报考等级（套用到所选全部）"
-              required
+              options={[
+                { value: '', label: '请选择等级' },
+                ...levelOptions.map((lv) => ({ value: lv, label: lv })),
+              ]}
               value={batchLevel}
-              onChange={(e) => setBatchLevel(e.target.value)}
-              placeholder="如：Ⅰ级"
+              onChange={setBatchLevel}
             />
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">搜索员工</label>
@@ -354,11 +364,13 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
               />
             </div>
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-stone-500">工序取自员工的「岗位」；等级统一用上方填写值。岗位为空的员工无法加入。</p>
+          <p className="text-xs leading-relaxed text-stone-500">工序取自员工的「岗位」；等级统一用上方选择值；岗位为空的员工无法加入。</p>
+
+          <div className="flex items-center justify-between border-b border-stone-100 pb-1.5">
+            <span className="text-xs text-stone-400">共 {empResults.length} 人</span>
             {empResults.length > 0 && (
               <button type="button" onClick={toggleSelectAllShown} className="shrink-0 text-xs font-medium text-teal-600 hover:text-teal-700">
-                全选/取消本页
+                全选 / 取消本页
               </button>
             )}
           </div>
@@ -374,16 +386,17 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
               empResults.map((emp) => {
                 const checked = !!selectedEmps[emp.id];
                 return (
-                  <label key={emp.id} className="flex cursor-pointer items-center gap-3 border-b border-stone-50 px-3 py-2 last:border-0 hover:bg-stone-50">
+                  <label key={emp.id} className="flex cursor-pointer items-center gap-2.5 border-b border-stone-50 px-3 py-2 last:border-0 hover:bg-stone-50">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-stone-300 text-teal-600 accent-teal-600"
+                      className="h-4 w-4 shrink-0 rounded border-stone-300 text-teal-600 accent-teal-600"
                       checked={checked}
                       onChange={() => toggleEmp(emp)}
                     />
-                    <span className="flex-1 text-sm font-medium text-stone-800">{emp.name}</span>
-                    <span className="text-xs text-stone-500">
-                      {emp.department || '—'} · {emp.role || <span className="text-amber-600">无岗位</span>} · {emp.employeeNo}
+                    <span className="w-20 shrink-0 truncate text-sm font-medium text-stone-800">{emp.name}</span>
+                    <span className="min-w-0 flex-1 truncate text-right text-xs text-stone-500">
+                      {emp.department || '—'} · {emp.role || <span className="text-amber-600">无岗位</span>}
+                      <span className="text-stone-300"> · {emp.employeeNo}</span>
                     </span>
                   </label>
                 );

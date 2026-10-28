@@ -245,6 +245,11 @@ function BatchSelector({
     );
   }
 
+  // 本场未设梯次 → 灰色占位，不显示可选下拉
+  if (batches.length === 0) {
+    return <span className="text-xs text-stone-300" title="本场未设置梯次">—</span>;
+  }
+
   return (
     <div className="flex items-center gap-1.5">
       {saving ? (
@@ -665,11 +670,11 @@ export default function TabParticipants({ examId, readOnly = false }: Props) {
                         <button
                           key={emp.id}
                           type="button"
-                          onClick={() => { setSelectedEmp(emp); setEmpSearch(''); setEmpResults([]); setAddForm((f) => ({ ...f, department: emp.department || '' })); }}
-                          className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-stone-50"
+                          onClick={() => { setSelectedEmp(emp); setEmpSearch(''); setEmpResults([]); setAddForm((f) => ({ ...f, department: emp.department || '', process: emp.role || f.process })); }}
+                          className="flex w-full items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-stone-50"
                         >
-                          <span className="font-medium text-stone-800">{emp.name}</span>
-                          <span className="text-stone-500">{emp.department} · {emp.employeeNo}</span>
+                          <span className="shrink-0 font-medium text-stone-800">{emp.name}</span>
+                          <span className="min-w-0 truncate text-right text-stone-500">{emp.department} · {emp.role || '无岗位'} · {emp.employeeNo}</span>
                         </button>
                       ))
                     )}
@@ -868,7 +873,12 @@ export default function TabParticipants({ examId, readOnly = false }: Props) {
             )}
 
             {participants.length === 0 ? (
-              <p className="text-sm text-stone-400 text-center py-8">尚未导入应考人员</p>
+              <div className="py-8 text-center">
+                <p className="text-sm text-stone-400">尚未指派应考人员</p>
+                <p className="mt-1 text-xs text-stone-400">
+                  「指派人员」勾选系统员工 · 或「导入名单」上传 Excel（<span className="text-amber-600">二择一，上传会覆盖已指派</span>）
+                </p>
+              </div>
             ) : (
               <>
                 {(searchQuery || hasActiveFilters) && (

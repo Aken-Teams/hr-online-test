@@ -3,9 +3,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2, Trash2, Search, Download } from 'lucide-react';
+import { CustomSelect } from '@/components/ui/CustomSelect';
+import { Upload, FileSpreadsheet, CheckCircle, XCircle, Loader2, Trash2, Search, Download, Eye } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { FileClassificationDialog } from '@/components/shared/FileClassificationDialog';
+import { PoolQuestionsDialog } from '@/components/shared/PoolQuestionsDialog';
 import { partitionFilesByClassification } from '@/lib/excel-client';
 import { QUESTION_TYPE_LABELS, QUESTION_CATEGORY_LABELS } from '@/lib/constants';
 
@@ -59,6 +61,11 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
   const [poolHasParticipants, setPoolHasParticipants] = useState(true);
   const [poolHasUpload, setPoolHasUpload] = useState(false);
   const [loadingPool, setLoadingPool] = useState(false);
+  const [viewPool, setViewPool] = useState<{ process: string | null; level: string | null; type: string } | null>(null);
+  // 预览筛选：工序 / 级别 / 题型
+  const [fProcess, setFProcess] = useState('');
+  const [fLevel, setFLevel] = useState('');
+  const [fType, setFType] = useState('');
 
   async function loadPoolPreview() {
     setLoadingPool(true);
@@ -318,64 +325,136 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
         </Card>
       )}
 
-      {/* Question summary + file list */}
-      <Card title="抽题池预览">
-        <div className="space-y-3">
-          <p className="text-sm leading-relaxed text-stone-600">
-            按<strong>每位考生的工序 + 级别</strong>预览「需要 vs 可用」题数，确认够抽再开考。
-            {poolCombos != null && (
-              poolHasUpload
-                ? <span className="ml-1 text-teal-700">（本场已上传题库，抽题来源 = 本场独有题 + 关联的中央题）</span>
-                : <span className="ml-1 text-teal-700">（本场未上传，抽题来源 = 中央题库）</span>
+      {/* 题库管理：预览 + 导入 并排工具列 */}
+      <Card
+        title="题库管理"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {!hasResults && (
+              <Button variant="secondary" size="sm" onClick={loadPoolPreview} loading={loadingPool}>
+                <Eye className="h-3.5 w-3.5" />
+                {poolCombos ? '重新预览' : '预览抽题池'}
+              </Button>
             )}
-          </p>
-          <Button variant="secondary" size="sm" onClick={loadPoolPreview} loading={loadingPool}>
-            {poolCombos ? '重新预览' : '预览抽题池'}
-          </Button>
+            {totalCount > 0 && !hasResults && (
+              <Button variant="outline" size="sm" onClick={handleDeleteAll}>
+                <Trash2 className="h-3.5 w-3.5" />
+                清空
+              </Button>
+            )}
+            {totalCount > 0 && (
+              <Button variant="outline" size="sm" onClick={handleExportQuestions}>
+                <Download className="h-3.5 w-3.5" />
+                导出
+              </Button>
+            )}
+            {!hasResults && (
+              <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
+                <Upload className="h-3.5 w-3.5" />
+                导入文件
+              </Button>
+            )}
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          {hasResults ? (
+            <p className="text-sm text-stone-500">题库已锁定（考试已有记录），仅供查看。</p>
+          ) : (
+            <p className="text-sm text-stone-600">
+              <strong>不上传</strong> → 中央题库自动抽题；<strong>上传</strong> → 本场专属（不重复）。预览按工序/级别，<strong>点行可查看实际题目</strong>。
+              {poolCombos != null && (
+                poolHasUpload
+                  ? <span className="ml-1 text-teal-700">（来源 = 本场独有 + 关联中央）</span>
+                  : <span className="ml-1 text-teal-700">（来源 = 中央题库）</span>
+              )}
+            </p>
+          )}
 
-          {poolCombos && !poolHasParticipants && (
+          {!hasResults && poolCombos && !poolHasParticipants && (
             <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">
               尚未指派应考人员，无法预览。请先到「应考人员」添加考生（抽题依考生的工序/级别）。
             </p>
           )}
 
-          {poolCombos && poolHasParticipants && poolCombos.map((combo, ci) => (
-            <div key={ci} className="rounded-lg border border-stone-200 overflow-hidden">
-              <div className="bg-stone-50 px-3 py-2 text-sm font-medium text-stone-700">
-                工序 {combo.process || '—'} · 级别 {combo.level || '—'}
+          {!hasResults && poolCombos && poolHasParticipants && (() => {
+            const rows = poolCombos.flatMap((c) => c.rules.map((r) => ({ process: c.process, level: c.level, ...r })));
+            const procOpts = [...new Set(rows.map((r) => r.process).filter(Boolean))] as string[];
+            const lvlOpts = [...new Set(rows.map((r) => r.level).filter(Boolean))] as string[];
+            const typeOpts = [...new Set(rows.map((r) => r.type))] as string[];
+            const filtered = rows.filter((r) =>
+              (!fProcess || r.process === fProcess) &&
+              (!fLevel || r.level === fLevel) &&
+              (!fType || r.type === fType)
+            );
+            return (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2 sm:max-w-2xl">
+                  <CustomSelect label="工序" options={[{ value: '', label: '全部工序' }, ...procOpts.map((p) => ({ value: p, label: p }))]} value={fProcess} onChange={setFProcess} />
+                  <CustomSelect label="级别" options={[{ value: '', label: '全部级别' }, ...lvlOpts.map((l) => ({ value: l, label: l }))]} value={fLevel} onChange={setFLevel} />
+                  <CustomSelect label="题型" options={[{ value: '', label: '全部题型' }, ...typeOpts.map((t) => ({ value: t, label: QUESTION_TYPE_LABELS[t as keyof typeof QUESTION_TYPE_LABELS] || t }))]} value={fType} onChange={setFType} />
+                </div>
+                <div className="overflow-x-auto rounded-lg border border-stone-200">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-stone-100 bg-stone-50 text-xs text-stone-500">
+                        <th className="py-2 px-3 text-left font-medium">工序</th>
+                        <th className="py-2 px-3 text-left font-medium">级别</th>
+                        <th className="py-2 px-3 text-left font-medium">题型</th>
+                        <th className="py-2 px-3 text-right font-medium">需要</th>
+                        <th className="py-2 px-3 text-right font-medium">专业可用</th>
+                        <th className="py-2 px-3 text-right font-medium">基本可用</th>
+                        <th className="py-2 px-3 text-center font-medium">状态</th>
+                        <th className="py-2 px-3 text-right font-medium"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.length === 0 ? (
+                        <tr><td colSpan={8} className="py-6 text-center text-sm text-stone-400">无符合条件的记录</td></tr>
+                      ) : filtered.map((r, i) => (
+                        <tr
+                          key={i}
+                          onClick={() => setViewPool({ process: r.process, level: r.level, type: r.type })}
+                          className="group cursor-pointer border-b border-stone-50 last:border-0 hover:bg-teal-50/40"
+                        >
+                          <td className="py-1.5 px-3">{r.process || '—'}</td>
+                          <td className="py-1.5 px-3">{r.level || '—'}</td>
+                          <td className="py-1.5 px-3">{QUESTION_TYPE_LABELS[r.type as keyof typeof QUESTION_TYPE_LABELS] || r.type}</td>
+                          <td className="py-1.5 px-3 text-right">{r.needed}</td>
+                          <td className="py-1.5 px-3 text-right">{r.profAvail}</td>
+                          <td className="py-1.5 px-3 text-right">{r.basicAvail}</td>
+                          <td className="py-1.5 px-3 text-center">
+                            {r.sufficient
+                              ? <span className="inline-flex rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">充足</span>
+                              : <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">不足</span>}
+                          </td>
+                          <td className="py-1.5 px-3 text-right">
+                            <span className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2 py-0.5 text-xs font-medium text-stone-500 whitespace-nowrap group-hover:border-teal-300 group-hover:text-teal-700">
+                              <Eye className="h-3 w-3" /> 查看
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-stone-100 text-xs text-stone-500">
-                    <th className="py-1.5 px-3 text-left font-medium">题型</th>
-                    <th className="py-1.5 px-3 text-right font-medium">需要</th>
-                    <th className="py-1.5 px-3 text-right font-medium">专业题可用</th>
-                    <th className="py-1.5 px-3 text-right font-medium">基本题可用</th>
-                    <th className="py-1.5 px-3 text-center font-medium">状态</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {combo.rules.map((r, ri) => (
-                    <tr key={ri} className="border-b border-stone-50 last:border-0">
-                      <td className="py-1.5 px-3">{QUESTION_TYPE_LABELS[r.type as keyof typeof QUESTION_TYPE_LABELS] || r.type}</td>
-                      <td className="py-1.5 px-3 text-right">{r.needed}</td>
-                      <td className="py-1.5 px-3 text-right">{r.profAvail}</td>
-                      <td className="py-1.5 px-3 text-right">{r.basicAvail}</td>
-                      <td className="py-1.5 px-3 text-center">
-                        {r.sufficient
-                          ? <span className="inline-flex rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">充足</span>
-                          : <span className="inline-flex rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">不足（可用 {r.available} &lt; 需要 {r.needed}）</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
+            );
+          })()}
         </div>
       </Card>
 
-      <Card title="题库概况">
+      <PoolQuestionsDialog
+        examId={examId}
+        open={viewPool !== null}
+        onClose={() => setViewPool(null)}
+        process={viewPool?.process ?? null}
+        level={viewPool?.level ?? null}
+        type={viewPool?.type ?? null}
+      />
+
+      {totalCount > 0 && (
+      <Card title="本场专属题库">
         {loadingFiles ? (
           <div className="flex items-center gap-2 text-sm text-stone-500">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -383,37 +462,8 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Total stats */}
-            <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold text-stone-800">
-                {totalCount}
-                <span className="ml-1 text-sm font-normal text-stone-500">题</span>
-              </p>
-              <div className="flex items-center gap-2">
-                {totalCount > 0 && !hasResults && (
-                  <Button variant="outline" size="sm" onClick={handleDeleteAll}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                    清空题库
-                  </Button>
-                )}
-                {totalCount > 0 && (
-                  <Button variant="outline" size="sm" onClick={handleExportQuestions}>
-                    <Download className="h-3.5 w-3.5" />
-                    导出题库
-                  </Button>
-                )}
-                {!hasResults && (
-                  <Button
-                    size="sm"
-                    onClick={() => fileRef.current?.click()}
-                    loading={uploading}
-                  >
-                    <Upload className="h-3.5 w-3.5" />
-                    导入文件
-                  </Button>
-                )}
-              </div>
-            </div>
+            {/* 操作按钮已移到上方「题库管理」工具列 */}
+            <p className="text-sm text-stone-700">本场独有 <strong className="text-stone-900">{totalCount}</strong> 题</p>
             {totalCount > 0 && (
               <div className="flex flex-wrap gap-3">
                 {Object.entries(totalByType).map(([type, count]) => (
@@ -574,12 +624,10 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
               </p>
             )}
 
-            {importedFiles.length === 0 && totalCount === 0 && (
-              <p className="text-sm text-stone-400">尚未导入任何题目</p>
-            )}
           </div>
         )}
       </Card>
+      )}
 
       {/* Classification dialog */}
       <FileClassificationDialog
