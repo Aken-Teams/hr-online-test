@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
 import { batchGradingSchema, gradingSchema } from '@/lib/validators';
 import { MANUAL_GRADE_TYPES } from '@/lib/constants';
+import { getAdminScope, buildSessionScopeFilter, canAccessSession } from '@/lib/admin-scope';
 
 export async function GET(request: Request) {
   try {
@@ -17,8 +18,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const examId = searchParams.get('examId');
 
+    // 工序權限隔離（PRD F2-3）：評卷人僅能看到所負責工序考生的試卷
+    const scope = await getAdminScope(admin);
+    const scopeFilter = buildSessionScopeFilter(scope);
+
     const sessionWhere: Record<string, unknown> = {
       status: { in: ['SUBMITTED', 'GRADING', 'AUTO_SUBMITTED', 'COMPLETED'] },
+      ...scopeFilter,
     };
     if (examId) {
       sessionWhere.examId = examId;
@@ -47,12 +53,14 @@ export async function GET(request: Request) {
           select: {
             id: true,
             examId: true,
+            assignment: { select: { process: true, level: true } },
             user: {
               select: {
                 id: true,
                 name: true,
                 employeeNo: true,
                 department: true,
+                role: true,
               },
             },
             exam: {
@@ -105,6 +113,8 @@ export async function GET(request: Request) {
       sessionId: a.sessionId,
       employeeName: a.session.user.name,
       department: a.session.user.department ?? '',
+      process: a.session.assignment?.process ?? a.session.user.role ?? '',
+      level: a.session.assignment?.level ?? '',
       questionContent: a.question.content,
       questionType: a.question.type,
       maxPoints: maxPointsOf(a),
@@ -136,6 +146,9 @@ export async function GET(request: Request) {
         totalPending: pendingAnswers.length,
         gradedCount: gradedAnswers.length,
         answers,
+        // 評卷人僅見所負責工序；null 代表不受限（系統管理員／人資）
+        scopedProcesses: scope.processes,
+        role: admin.role,
       },
     });
   } catch (error) {
@@ -178,6 +191,7 @@ export async function POST(request: Request) {
       }
     }
 
+    const scope = await getAdminScope(admin);
     const now = new Date();
     const gradedIds: string[] = [];
 
@@ -193,6 +207,11 @@ export async function POST(request: Request) {
         });
 
         if (!answer) continue;
+
+        // 工序權限隔離：越權評分直接略過（PRD F2-3）
+        if (!(await canAccessSession(scope, answer.sessionId))) {
+          continue;
+        }
 
         // The exam's own配分 wins over the question bank default, so a 10-point
         // essay drawn from a 2-point bank question can be graded up to 10.

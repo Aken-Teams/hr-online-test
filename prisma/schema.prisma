@@ -30,18 +30,40 @@ model User {
 }
 
 model Admin {
-  id            String     @id @default(cuid())
-  username      String     @unique
-  passwordHash  String     @map("password_hash")
-  displayName   String     @map("display_name")
-  role          AdminRole  @default(HR)
-  isActive      Boolean    @default(true) @map("is_active")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
-  gradedAnswers Answer[]   @relation("GradedBy")
-  auditLogs     AuditLog[] @relation("AdminActor")
+  id              String       @id @default(cuid())
+  username        String       @unique
+  passwordHash    String       @map("password_hash")
+  displayName     String       @map("display_name")
+  role            AdminRole    @default(HR)
+  isActive        Boolean      @default(true) @map("is_active")
+  /// 共用帳號（以工序為單位共用帳密）：稽核僅能追溯至工序，無法追溯至個人
+  isShared        Boolean      @default(false) @map("is_shared")
+  /// 帳號來源：LOCAL = 系統自建，AD = 網域帳號
+  authSource      String       @default("LOCAL") @map("auth_source")
+  /// 首次登入是否強制修改密碼
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  lastLoginAt     DateTime?    @map("last_login_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  gradedAnswers   Answer[]     @relation("GradedBy")
+  auditLogs       AuditLog[]   @relation("AdminActor")
+  processScopes   AdminScope[]
 
   @@map("admins")
+}
+
+/// 評卷人可批改的工序範圍（一個帳號可負責多個工序，一個工序可有多位評卷人）
+model AdminScope {
+  id         String   @id @default(cuid())
+  adminId    String   @map("admin_id")
+  process    String
+  department String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  admin      Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@unique([adminId, process])
+  @@index([process])
+  @@map("admin_scopes")
 }
 
 model Question {
@@ -352,6 +374,11 @@ enum SessionStatus {
 }
 
 enum AuditAction {
+  ADMIN_CREATED
+  ADMIN_UPDATED
+  ADMIN_DEACTIVATED
+  ADMIN_PASSWORD_RESET
+  ADMIN_SCOPE_CHANGED
   SESSION_START
   SESSION_SUBMIT
   SESSION_AUTO_SUBMIT

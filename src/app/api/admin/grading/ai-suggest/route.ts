@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { getAdminFromCookie } from '@/lib/auth';
 import { MANUAL_GRADE_TYPES } from '@/lib/constants';
 import { isAiGradingEnabled, suggestShortAnswerGrades } from '@/lib/ai-grading';
+import { getAdminScope, buildSessionScopeFilter } from '@/lib/admin-scope';
 
 /**
  * POST /api/admin/grading/ai-suggest  (PRD F3-2)
@@ -38,14 +39,19 @@ export async function POST(request: Request) {
 
     const limit = Math.min(Math.max(body.limit ?? 50, 1), 200);
 
+    // 工序權限隔離（PRD F2-3）：評卷人只能對自己工序的試卷產生 AI 建議
+    const scope = await getAdminScope(admin);
+    const scopeFilter = buildSessionScopeFilter(scope);
+
     const answers = await prisma.answer.findMany({
       where: {
         ...(body.answerIds?.length
-          ? { id: { in: body.answerIds } }
+          ? { id: { in: body.answerIds }, session: scopeFilter }
           : {
               session: {
                 ...(body.examId ? { examId: body.examId } : {}),
                 status: { in: ['SUBMITTED', 'GRADING', 'AUTO_SUBMITTED'] },
+                ...scopeFilter,
               },
               earnedPoints: null,
               ...(body.force ? {} : { aiScore: null }),

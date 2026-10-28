@@ -314,8 +314,32 @@ async function main() {
   const all = loadShortAnswerQuestions();
   console.log(`  含參考答案之簡答題：${all.length} 題`);
 
-  const questions = sample(all, n);
-  console.log(`  本次抽樣：${questions.length} 題\n`);
+  // --answers <report.json>：沿用先前產生的考生作答，只重跑評分（換模型比較用）
+  const reuseFile = arg('answers', null);
+  let questions = [];
+  let reused = null;
+  if (reuseFile) {
+    const prev = JSON.parse(fs.readFileSync(path.resolve(ROOT, reuseFile), 'utf8'));
+    const byQ = new Map();
+    for (const d of prev.details) {
+      if (!byQ.has(d.questionIndex)) {
+        byQ.set(d.questionIndex, {
+          department: d.department,
+          process: d.process,
+          level: d.level,
+          content: d.content,
+          reference: d.reference,
+          generated: {},
+        });
+      }
+      byQ.get(d.questionIndex).generated[d.answerLevel] = d.studentAnswer;
+    }
+    reused = [...byQ.values()];
+    console.log('  沿用既有作答：' + reused.length + ' 題（來源 ' + reuseFile + '）');
+  } else {
+    questions = sample(all, n);
+    console.log('  本次抽樣：' + questions.length + ' 題');
+  }
 
   const usage = { prompt: 0, completion: 0 };
   const addUsage = (u) => {
@@ -324,9 +348,14 @@ async function main() {
     usage.completion += u.completion_tokens ?? 0;
   };
 
-  // 1) 生成模擬考生作答
+  // 1) 生成模擬考生作答（沿用模式則跳過）
+  let withAnswers;
+  if (reused) {
+    withAnswers = reused;
+    console.log('步驟 1／2：沿用既有作答，跳過生成');
+  } else {
   console.log('步驟 1／2：生成模擬考生作答…');
-  const withAnswers = await mapLimit(questions, CONCURRENCY, async (q, i) => {
+  withAnswers = await mapLimit(questions, CONCURRENCY, async (q, i) => {
     const res = await withRetry(
       () =>
         callModel([
@@ -340,6 +369,7 @@ async function main() {
     console.log(`  ✓ [${i + 1}/${questions.length}] ${q.process} ${q.level} — ${q.content.slice(0, 28)}…`);
     return { ...q, generated: gen };
   });
+  }
 
   // 2) 逐一評分
   console.log('\n步驟 2／2：AI 評分…');
@@ -411,7 +441,7 @@ async function main() {
   }, {});
 
   console.log('\n──────── 實測結果 ────────');
-  console.log(`樣本：${questions.length} 題 × 4 種作答品質 = ${total} 筆`);
+  console.log(`樣本：${withAnswers.length} 題 × 4 種作答品質 = ${total} 筆`);
   console.log(`落在預期分數區間：${hit}/${total}（${((hit / total) * 100).toFixed(0)}%）`);
   console.log(`偏離預期區間 ≤2 分：${within2}/${total}（${((within2 / total) * 100).toFixed(0)}%）`);
   console.log(`平均偏離分數（MAE）：${mae.toFixed(2)} 分`);
@@ -429,8 +459,10 @@ async function main() {
 
   const report = {
     model: MODEL,
+    baseUrl: BASE_URL,
+    reusedAnswersFrom: reuseFile ?? null,
     generatedAt: new Date().toISOString(),
-    sampleSize: questions.length,
+    sampleSize: withAnswers.length,
     gradedCount: total,
     inBandRate: Number(((hit / total) * 100).toFixed(1)),
     within2Rate: Number(((within2 / total) * 100).toFixed(1)),

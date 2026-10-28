@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Logo } from '@/components/shared/Logo';
 import { Button } from '@/components/ui/Button';
 import { ToastProvider } from '@/components/ui/Toast';
-import { LogOut, CircleUserRound, LayoutDashboard, Users, ClipboardList, Database, BarChart3, Menu, X } from 'lucide-react';
+import { LogOut, CircleUserRound, LayoutDashboard, Users, ClipboardList, Database, BarChart3, ShieldCheck, Menu, X } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Sidebar navigation items
@@ -16,6 +16,8 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
+  /** 可使用此功能的角色；未指定代表全部角色 */
+  roles?: string[];
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -49,7 +51,40 @@ const NAV_ITEMS: NavItem[] = [
     href: '/admin/reports',
     icon: <BarChart3 className="h-5 w-5" />,
   },
+  {
+    key: 'accounts',
+    label: '账号管理',
+    href: '/admin/accounts',
+    icon: <ShieldCheck className="h-5 w-5" />,
+    roles: ['SUPER_ADMIN'],
+  },
 ];
+
+/** 評卷人只開放閱卷相關入口（PRD F2-4） */
+const GRADER_NAV_KEYS = ['exams'];
+
+const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: '系统管理员',
+  HR: '人资',
+  GRADER: '评卷人',
+};
+
+/** 由 JWT payload 取出角色（僅用於決定選單顯示，實際權限由後端把關） */
+function readRoleFromToken(token: string): string | null {
+  try {
+    const payload = JSON.parse(
+      decodeURIComponent(
+        atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      )
+    );
+    return typeof payload.role === 'string' ? payload.role : null;
+  } catch {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Helper: read cookie
@@ -74,6 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
 
   const isLoginPage = pathname === '/admin/login';
 
@@ -87,6 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!token) {
       router.replace('/admin/login');
     } else {
+      setRole(readRoleFromToken(token));
       setReady(true);
     }
   }, [router, isLoginPage]);
@@ -100,6 +137,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     deleteCookie('admin_token');
     router.replace('/admin/login');
   }, [router]);
+
+  // 依角色過濾選單（後端另有 middleware 把關，前端僅負責不顯示）
+  const visibleNavItems = NAV_ITEMS.filter((item) => {
+    if (item.roles && (!role || !item.roles.includes(role))) return false;
+    if (role === 'GRADER') return GRADER_NAV_KEYS.includes(item.key);
+    return true;
+  });
 
   // Determine which nav item is active
   const getIsActive = (item: NavItem) => {
@@ -125,7 +169,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Desktop sidebar navigation renderer
   const renderNavItems = () => (
     <ul className="space-y-1">
-      {NAV_ITEMS.map((item) => {
+      {visibleNavItems.map((item) => {
         const active = getIsActive(item);
         return (
           <li key={item.key}>
@@ -186,7 +230,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-2 md:gap-4">
               <div className="hidden items-center gap-2 sm:flex">
                 <CircleUserRound className="h-7 w-7 text-stone-400" />
-                <span className="text-sm font-medium text-stone-600">管理员</span>
+                <span className="text-sm font-medium text-stone-600">{role ? ROLE_LABELS[role] ?? '管理员' : '管理员'}</span>
               </div>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
@@ -212,7 +256,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <nav className="px-3 py-2">
               <ul className="space-y-0.5">
-                {NAV_ITEMS.map((item) => {
+                {visibleNavItems.map((item) => {
                   const active = getIsActive(item);
                   return (
                     <li key={item.key}>
