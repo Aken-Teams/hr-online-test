@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/components/ui/Toast';
@@ -120,17 +121,16 @@ export default function OrganizationPage() {
         title="组织查询"
         actions={
           <div className="flex gap-2">
-            <select
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-            >
-              {(data?.domains ?? [{ code: 'PJXZ', label: '强茂徐州' }]).map((d) => (
-                <option key={d.code} value={d.code}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
+            <div className="w-40">
+              <CustomSelect
+                options={(data?.domains ?? [{ code: 'PJXZ', label: '强茂徐州' }]).map((d) => ({
+                  value: d.code,
+                  label: d.label,
+                }))}
+                value={domain}
+                onChange={setDomain}
+              />
+            </div>
             <Button variant="outline" onClick={() => fetchOrg(domain)}>
               重新整理
             </Button>

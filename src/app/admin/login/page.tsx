@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { ShieldCheck } from 'lucide-react';
 
 const FEATURES = [
@@ -39,14 +40,19 @@ const FEATURES = [
 
 /** AD 可用网域；预设徐州厂（本案考场） */
 const AD_DOMAINS = [
-  { code: 'PJXZ', label: '强茂徐州' },
-  { code: 'PANJIT', label: 'PANJIT（台湾）' },
-  { code: 'PYNMAX', label: '环茂' },
-  { code: 'WXPJ', label: '无锡强茂' },
-  { code: 'PJWS', label: '强茂深圳' },
-  { code: 'GDPJ', label: '苏州群鑫' },
-  { code: 'PJSD', label: '山东强茂' },
+  { code: 'PJXZ', label: '强茂徐州', hint: '本厂' },
+  { code: 'PANJIT', label: 'PANJIT 台湾', hint: '' },
+  { code: 'PYNMAX', label: '环茂', hint: '' },
+  { code: 'WXPJ', label: '无锡强茂', hint: '' },
+  { code: 'PJWS', label: '强茂深圳', hint: '' },
+  { code: 'GDPJ', label: '苏州群鑫', hint: '' },
+  { code: 'PJSD', label: '山东强茂', hint: '' },
 ];
+
+const DOMAIN_OPTIONS = AD_DOMAINS.map((d) => ({
+  value: d.code,
+  label: d.hint ? `${d.label}（${d.hint}）` : d.label,
+}));
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -179,21 +185,13 @@ export default function AdminLoginPage() {
             <div className="px-6 py-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 {mode === 'ad' && (
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-stone-700">组织</label>
-                    <select
-                      value={domain}
-                      onChange={(e) => setDomain(e.target.value)}
-                      disabled={loading}
-                      className="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      {AD_DOMAINS.map((d) => (
-                        <option key={d.code} value={d.code}>
-                          {d.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <CustomSelect
+                    label="组织"
+                    options={DOMAIN_OPTIONS}
+                    value={domain}
+                    onChange={setDomain}
+                    disabled={loading}
+                  />
                 )}
 
                 <Input

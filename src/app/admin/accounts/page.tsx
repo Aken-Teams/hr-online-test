@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Dialog } from '@/components/ui/Dialog';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useToast } from '@/components/ui/Toast';
@@ -456,17 +457,13 @@ export default function AdminAccountsPage() {
             {form.authSource === 'AD' ? (
               <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/60 p-3">
                 <div className="flex gap-2">
-                  <select
-                    value={form.adDomain}
-                    onChange={(e) => setForm({ ...form, adDomain: e.target.value })}
-                    className="w-36 rounded-lg border border-stone-300 bg-white px-2 py-2 text-sm"
-                  >
-                    {adConfig.domains.map((d) => (
-                      <option key={d.code} value={d.code}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="w-40 shrink-0">
+                    <CustomSelect
+                      options={adConfig.domains.map((d) => ({ value: d.code, label: d.label }))}
+                      value={form.adDomain}
+                      onChange={(v) => setForm({ ...form, adDomain: v })}
+                    />
+                  </div>
                   <input
                     value={adQuery}
                     onChange={(e) => setAdQuery(e.target.value)}
