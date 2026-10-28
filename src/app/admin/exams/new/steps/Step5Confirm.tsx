@@ -59,8 +59,8 @@ export default function Step5Confirm({ step1, rules, questionResults, participan
   const warnings: string[] = [];
   if (!step1.title.trim()) warnings.push('考试标题未填写');
   if (rules.length === 0) warnings.push('未设置题目规则');
-  if (questionImportCount === 0) warnings.push('尚未导入任何题目');
-  if (participants.length === 0) warnings.push('尚未导入应考人员');
+  // 题库上传为选填：不上传则用中央题库自动抽题，不算警告
+  if (participants.length === 0) warnings.push('尚未指派应考人员');
   if (!step1.openAt) warnings.push('未设置考试开放时间');
   if (!step1.closeAt) warnings.push('未设置考试截止时间');
 
@@ -102,12 +102,16 @@ export default function Step5Confirm({ step1, rules, questionResults, participan
           <div>
             <p className="text-xs text-stone-500 mb-1.5">权重配比</p>
             <div className="flex h-7 rounded-lg overflow-hidden text-xs font-medium">
-              <div className="flex items-center justify-center bg-teal-100 text-teal-700" style={{ width: `${step1.theoryWeight}%` }}>
-                理论 {step1.theoryWeight}%
-              </div>
-              <div className="flex items-center justify-center bg-amber-100 text-amber-700" style={{ width: `${step1.practicalWeight}%` }}>
-                实操 {step1.practicalWeight}%
-              </div>
+              {step1.theoryWeight > 0 && (
+                <div className="flex items-center justify-center bg-teal-100 text-teal-700" style={{ width: `${step1.theoryWeight}%` }}>
+                  理论 {step1.theoryWeight}%
+                </div>
+              )}
+              {step1.practicalWeight > 0 && (
+                <div className="flex items-center justify-center bg-amber-100 text-amber-700" style={{ width: `${step1.practicalWeight}%` }}>
+                  实操 {step1.practicalWeight}%
+                </div>
+              )}
             </div>
           </div>
 
@@ -148,7 +152,7 @@ export default function Step5Confirm({ step1, rules, questionResults, participan
           <div className="flex flex-wrap gap-2">
             <Tag label="随机出题" active={step1.shuffleQuestions} />
             <Tag label="随机选项" active={step1.shuffleOptions} />
-            <Tag label="显示正确答案" active={step1.showCorrectAnswers} />
+            <Tag label="立即出分" active={step1.showResultImmediately} />
             <Tag label="练习模式" active={step1.isPracticeMode} />
             {step1.tabSwitchLimit > 0 && (
               <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600">
@@ -175,7 +179,7 @@ export default function Step5Confirm({ step1, rules, questionResults, participan
       </Card>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Card title={`题库 — ${questionImportCount} 题已导入`}>
+        <Card title={questionImportCount > 0 ? `题库 — 本场独有 ${questionImportCount} 题` : '题库 — 使用中央题库'}>
           {Object.keys(questionByType).length > 0 ? (
             <div className="space-y-2">
               {Object.entries(questionByType).map(([type, count]) => (
@@ -186,7 +190,7 @@ export default function Step5Confirm({ step1, rules, questionResults, participan
               ))}
             </div>
           ) : (
-            <p className="text-sm text-stone-400">尚未导入题目</p>
+            <p className="text-sm text-stone-500">本场未上传专属题库，<span className="text-teal-700">从中央题库按工序/级别自动抽题</span>。</p>
           )}
         </Card>
 

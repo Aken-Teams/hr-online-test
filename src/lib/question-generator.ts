@@ -189,7 +189,6 @@ async function pickQuestionsForRule(
     const profSrc = await fetchPool({
       type: questionType,
       category: 'PROFESSIONAL',
-      department: employeeDept,
       process: process || undefined,
       level: level || undefined,
       excludeIds: excludeArray,
@@ -201,7 +200,6 @@ async function pickQuestionsForRule(
       const more = await fetchPool({
         type: questionType,
         category: 'PROFESSIONAL',
-        department: employeeDept,
         process: process || undefined,
         level: level || undefined,
         excludeIds: [...excludeArray, ...result],
@@ -220,7 +218,6 @@ async function pickQuestionsForRule(
     if (result.length < count) {
       const broadPool = await fetchPool({
         type: questionType,
-        department: employeeDept,
         process: process || undefined,
         level: level || undefined,
         excludeIds: [...excludeArray, ...result],

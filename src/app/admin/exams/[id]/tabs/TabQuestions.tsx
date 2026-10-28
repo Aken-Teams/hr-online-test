@@ -37,9 +37,10 @@ interface UploadStatus {
 interface Props {
   examId: string;
   hasResults?: boolean;
+  isArchived?: boolean;
 }
 
-export default function TabQuestions({ examId, hasResults = false }: Props) {
+export default function TabQuestions({ examId, hasResults = false, isArchived = false }: Props) {
   const { toast } = useToast();
   const [importedFiles, setImportedFiles] = useState<ImportedFile[]>([]);
   const [uploadStatuses, setUploadStatuses] = useState<Map<string, UploadStatus>>(new Map());
@@ -89,6 +90,12 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
   useEffect(() => {
     fetchImportedFiles();
   }, [examId]);
+
+  // 归档考试：自动载入抽题范围（只读，无需点按钮）
+  useEffect(() => {
+    if (isArchived && examId) loadPoolPreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isArchived, examId]);
 
   async function fetchImportedFiles() {
     try {
@@ -330,7 +337,7 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
         title="题库管理"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {!hasResults && (
+            {!isArchived && (
               <Button variant="secondary" size="sm" onClick={loadPoolPreview} loading={loadingPool}>
                 <Eye className="h-3.5 w-3.5" />
                 {poolCombos ? '重新预览' : '预览抽题池'}
@@ -358,26 +365,27 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
         }
       >
         <div className="space-y-3">
-          {hasResults ? (
-            <p className="text-sm text-stone-500">题库已锁定（考试已有记录），仅供查看。</p>
-          ) : (
-            <p className="text-sm text-stone-600">
-              <strong>不上传</strong> → 中央题库自动抽题；<strong>上传</strong> → 本场专属（不重复）。预览按工序/级别，<strong>点行可查看实际题目</strong>。
-              {poolCombos != null && (
-                poolHasUpload
-                  ? <span className="ml-1 text-teal-700">（来源 = 本场独有 + 关联中央）</span>
-                  : <span className="ml-1 text-teal-700">（来源 = 中央题库）</span>
-              )}
-            </p>
-          )}
+          <p className="text-sm text-stone-600">
+            {isArchived
+              ? <>考试已归档，以下为本场按工序/级别的抽题范围（仅供查看）。</>
+              : hasResults
+                ? <>题目规则已锁定，题库不可修改；下方可预览本场抽题来源。</>
+                : <><strong>不上传</strong> → 中央题库自动抽题；<strong>上传</strong> → 本场专属（不重复）。</>}
+            <strong> 点行可查看实际题目</strong>。
+            {poolCombos != null && (
+              poolHasUpload
+                ? <span className="ml-1 text-teal-700">（来源 = 本场独有 + 关联中央）</span>
+                : <span className="ml-1 text-teal-700">（来源 = 中央题库）</span>
+            )}
+          </p>
 
-          {!hasResults && poolCombos && !poolHasParticipants && (
+          {poolCombos && !poolHasParticipants && (
             <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">
               尚未指派应考人员，无法预览。请先到「应考人员」添加考生（抽题依考生的工序/级别）。
             </p>
           )}
 
-          {!hasResults && poolCombos && poolHasParticipants && (() => {
+          {poolCombos && poolHasParticipants && (() => {
             const rows = poolCombos.flatMap((c) => c.rules.map((r) => ({ process: c.process, level: c.level, ...r })));
             const procOpts = [...new Set(rows.map((r) => r.process).filter(Boolean))] as string[];
             const lvlOpts = [...new Set(rows.map((r) => r.level).filter(Boolean))] as string[];

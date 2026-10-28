@@ -63,8 +63,6 @@ export default function CreateExamPage() {
    * Returns the exam ID.
    */
   async function saveAsDraft(): Promise<string | null> {
-    if (examId) return examId; // Already created
-
     if (!step1.title.trim()) {
       toast('请输入考试标题', 'warning');
       return null;
@@ -106,13 +104,27 @@ export default function CreateExamPage() {
         batches: step1.batches
           .filter((b) => b.name && b.openAt && b.closeAt)
           .map((b) => ({ name: b.name, openAt: b.openAt, closeAt: b.closeAt })),
-        status: 'DRAFT',
       };
+
+      // 草稿已存在 → 更新（把最新规则/设置存回，让后续预览读到新值）；否则 → 创建
+      if (examId) {
+        const res = await fetch(`/api/admin/exams/${examId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || '保存失败');
+        }
+        toast('草稿已更新', 'success');
+        return examId;
+      }
 
       const res = await fetch('/api/admin/exams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, status: 'DRAFT' }),
       });
 
       if (!res.ok) {

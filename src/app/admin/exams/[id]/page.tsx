@@ -394,7 +394,7 @@ export default function EditExamPage() {
         />
       )}
 
-      {activeTab === 'questions' && <TabQuestions examId={examId} hasResults={sessionCount > 0} />}
+      {activeTab === 'questions' && <TabQuestions examId={examId} hasResults={sessionCount > 0} isArchived={isArchived} />}
       {activeTab === 'participants' && <TabParticipants examId={examId} readOnly={isArchived} />}
       {activeTab === 'scores' && <TabScores examId={examId} readOnly={isArchived} />}
 
