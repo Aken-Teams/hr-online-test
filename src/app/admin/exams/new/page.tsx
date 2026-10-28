@@ -16,8 +16,8 @@ import Step5Confirm from './steps/Step5Confirm';
 const STEPS: StepDef[] = [
   { key: 'basic', label: '基本信息' },
   { key: 'rules', label: '考试规则' },
+  { key: 'participants', label: '指派人员' },
   { key: 'questions', label: '导入题库' },
-  { key: 'participants', label: '导入人员' },
   { key: 'confirm', label: '确认创建' },
 ];
 
@@ -42,6 +42,7 @@ export default function CreateExamPage() {
     parsed: { department: string; process: string; level: string } | null;
     rows: number;
     created: number;
+    existed?: number;
     replaced: number;
     byType?: Record<string, number>;
     error?: string;
@@ -265,10 +266,10 @@ export default function CreateExamPage() {
       {currentStep === 0 && <Step1BasicInfo data={step1} onChange={setStep1} />}
       {currentStep === 1 && <Step2QuestionRules rules={rules} onChange={setRules} shuffleQuestions={step1.shuffleQuestions} basicData={step1} onBasicChange={setStep1} />}
       {currentStep === 2 && (
-        <Step3ImportQuestions examId={examId} results={questionResults} onResults={setQuestionResults} />
+        <Step4ImportParticipants examId={examId} participants={participants} onParticipantsChange={setParticipants} />
       )}
       {currentStep === 3 && (
-        <Step4ImportParticipants examId={examId} participants={participants} onParticipantsChange={setParticipants} />
+        <Step3ImportQuestions examId={examId} results={questionResults} onResults={setQuestionResults} />
       )}
       {currentStep === 4 && (
         <Step5Confirm

@@ -53,6 +53,15 @@ export async function generateQuestionSet(
 
   const basicRatio = exam.basicQuestionRatio; // default 0.1
 
+  // 判断本场是否为「上传型考试」：有本场独有题（examSourceId=examId）或关联的中央题。
+  // 上传型 → 只从「本场独有 + 关联中央」抽；非上传型 → 从整个中央题库按工序+级别抽。
+  const [exclusiveCount, links] = await Promise.all([
+    prisma.question.count({ where: { examSourceId: examId } }),
+    prisma.examSourceQuestion.findMany({ where: { examId }, select: { questionId: true } }),
+  ]);
+  const linkedCentralIds = links.map((l) => l.questionId);
+  const hasUpload = exclusiveCount > 0 || linkedCentralIds.length > 0;
+
   // NOTE: We do NOT exclude questions already in exam_questions table.
   // That table is shared across all users, so excluding them would cause
   // later users to run out of questions. The createMany+skipDuplicates
@@ -72,7 +81,9 @@ export async function generateQuestionSet(
       level,
       basicRatio,
       selectedIds,
-      warnings
+      warnings,
+      hasUpload,
+      linkedCentralIds
     );
 
     for (const qId of picked) {
@@ -109,7 +120,9 @@ async function pickQuestionsForRule(
   level: string | null | undefined,
   basicRatio: number,
   alreadySelected: Set<string>,
-  warnings: string[]
+  warnings: string[],
+  hasUpload: boolean,
+  linkedCentralIds: string[]
 ): Promise<string[]> {
   const { questionType, count } = rule;
 
@@ -139,84 +152,81 @@ async function pickQuestionsForRule(
     }
   };
 
-  // ---- Primary: this exam's own imported questions (examSourceId) ----
-  // BASIC is company-wide (not filtered by process/level); PROFESSIONAL is
-  // filtered by department + process + level.
-  const basicSrc = await fetchPool({
-    type: questionType,
-    category: 'BASIC',
-    examSourceId: examId,
-    excludeIds: excludeArray,
-  });
-  take(basicSrc, basicCount, true);
-
-  const profSrc = await fetchPool({
-    type: questionType,
-    category: 'PROFESSIONAL',
-    department: employeeDept,
-    process: process || undefined,
-    level: level || undefined,
-    examSourceId: examId,
-    excludeIds: excludeArray,
-  });
-  take(profSrc, professionalCount, false);
-
-  // ---- Fallback: draw from the whole bank (ignore examSourceId) ----
-  // This is what makes "skip upload → use existing bank" work. BASIC questions
-  // are company-wide (process is null), so they must be fetched WITHOUT the
-  // process/level filter, otherwise they would never be drawn.
-  if (basicFilled < basicCount) {
-    const globalBasic = await fetchPool({
+  if (hasUpload) {
+    // ── 上传型考试：只用「本场独有题 + 关联的中央题」，不向整个中央外溢 ──
+    const restrict = { examId, linkedIds: linkedCentralIds };
+    // BASIC 全公司共用（不卡工序/级别）；PROFESSIONAL 卡工序+级别。
+    const basicPool = await fetchPool({
       type: questionType,
       category: 'BASIC',
-      excludeIds: [...excludeArray, ...result],
+      restrict,
+      excludeIds: excludeArray,
     });
-    take(globalBasic, basicCount - basicFilled, true);
-  }
+    take(basicPool, basicCount, true);
 
-  if (profFilled < professionalCount) {
-    const globalProf = await fetchPool({
+    const profPool = await fetchPool({
+      type: questionType,
+      category: 'PROFESSIONAL',
+      process: process || undefined,
+      level: level || undefined,
+      restrict,
+      excludeIds: excludeArray,
+    });
+    take(profPool, professionalCount, false);
+
+    // 本场内 基本<->专业 互相补足（仍限本场的池，不撈其他中央）
+    if (basicFilled < basicCount) take(profPool, basicCount - basicFilled, true);
+    if (profFilled < professionalCount) take(basicPool, professionalCount - profFilled, false);
+  } else {
+    // ── 非上传型考试：从整个中央题库按工序+级别抽 ──
+    const basicSrc = await fetchPool({
+      type: questionType,
+      category: 'BASIC',
+      excludeIds: excludeArray,
+    });
+    take(basicSrc, basicCount, true);
+
+    const profSrc = await fetchPool({
       type: questionType,
       category: 'PROFESSIONAL',
       department: employeeDept,
       process: process || undefined,
       level: level || undefined,
-      excludeIds: [...excludeArray, ...result],
+      excludeIds: excludeArray,
     });
-    take(globalProf, professionalCount - profFilled, false);
-  }
+    take(profSrc, professionalCount, false);
 
-  // ---- Last resort: fill any remaining shortfall cross-category ----
-  // Prefer professional (process+level), then company-wide basic, then a broad
-  // process-only search, so the paper still reaches `count` where possible.
-  if (result.length < count) {
-    const extraProf = await fetchPool({
-      type: questionType,
-      category: 'PROFESSIONAL',
-      department: employeeDept,
-      process: process || undefined,
-      level: level || undefined,
-      excludeIds: [...excludeArray, ...result],
-    });
-    take(extraProf, count - result.length, false);
-  }
-  if (result.length < count) {
-    const extraBasic = await fetchPool({
-      type: questionType,
-      category: 'BASIC',
-      excludeIds: [...excludeArray, ...result],
-    });
-    take(extraBasic, count - result.length, true);
-  }
-  if (result.length < count) {
-    const broadPool = await fetchPool({
-      type: questionType,
-      department: employeeDept,
-      process: process || undefined,
-      level: level || undefined,
-      excludeIds: [...excludeArray, ...result],
-    });
-    take(broadPool, count - result.length, false);
+    // 跨类别补足
+    if (basicFilled < basicCount) {
+      const more = await fetchPool({
+        type: questionType,
+        category: 'PROFESSIONAL',
+        department: employeeDept,
+        process: process || undefined,
+        level: level || undefined,
+        excludeIds: [...excludeArray, ...result],
+      });
+      take(more, basicCount - basicFilled, true);
+    }
+    if (profFilled < professionalCount) {
+      const moreBasic = await fetchPool({
+        type: questionType,
+        category: 'BASIC',
+        excludeIds: [...excludeArray, ...result],
+      });
+      take(moreBasic, professionalCount - profFilled, false);
+    }
+    // 最后保底：按工序放宽到不分类别
+    if (result.length < count) {
+      const broadPool = await fetchPool({
+        type: questionType,
+        department: employeeDept,
+        process: process || undefined,
+        level: level || undefined,
+        excludeIds: [...excludeArray, ...result],
+      });
+      take(broadPool, count - result.length, false);
+    }
   }
 
   if (result.length < count) {
@@ -235,6 +245,8 @@ interface FetchPoolParams {
   process?: string;
   level?: string;
   examSourceId?: string;
+  /** 上传型考试：限定在「本场独有题(examSourceId) + 关联的中央题(linkedIds)」内 */
+  restrict?: { examId: string; linkedIds: string[] };
   excludeIds: string[];
 }
 
@@ -263,7 +275,12 @@ async function fetchPool(params: FetchPoolParams): Promise<string[]> {
     where.level = params.level;
   }
 
-  if (params.examSourceId) {
+  if (params.restrict) {
+    const { examId, linkedIds } = params.restrict;
+    where.OR = linkedIds.length > 0
+      ? [{ examSourceId: examId }, { id: { in: linkedIds } }]
+      : [{ examSourceId: examId }];
+  } else if (params.examSourceId) {
     where.examSourceId = params.examSourceId;
   }
 

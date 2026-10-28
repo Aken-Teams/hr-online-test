@@ -17,8 +17,12 @@ export async function GET(request: Request) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = { isActive: true };
-    if (examId) {
+    if (examId === 'all') {
+      // 导出全部（含考试副本）
+    } else if (examId) {
       where.examSourceId = examId;
+    } else {
+      where.examSourceId = null; // 默认只导出中央题库，不含各考试专属副本
     }
 
     const questions = await prisma.question.findMany({

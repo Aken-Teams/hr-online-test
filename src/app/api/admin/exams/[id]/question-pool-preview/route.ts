@@ -48,13 +48,25 @@ export async function GET(
 
     const basicRatio = exam.basicQuestionRatio ?? 0.1;
 
+    // 上传型考试：从「本场独有 + 关联中央」抽；非上传型：从中央题库抽。
+    const [exclusiveCount, links] = await Promise.all([
+      prisma.question.count({ where: { examSourceId: examId } }),
+      prisma.examSourceQuestion.findMany({ where: { examId }, select: { questionId: true } }),
+    ]);
+    const linkedCentralIds = links.map((l) => l.questionId);
+    const hasUpload = exclusiveCount > 0 || linkedCentralIds.length > 0;
+    // 来源过滤：上传型限定本场集合；非上传型只看中央（examSourceId=null）
+    const sourceWhere: Record<string, unknown> = hasUpload
+      ? { OR: linkedCentralIds.length > 0 ? [{ examSourceId: examId }, { id: { in: linkedCentralIds } }] : [{ examSourceId: examId }] }
+      : { examSourceId: null };
+
     // 每个 (type) 的基本题池大小（全公司共用，与工序无关）可缓存
     const basicAvailCache = new Map<string, number>();
     async function basicAvail(type: QuestionType): Promise<number> {
       const key = String(type);
       if (basicAvailCache.has(key)) return basicAvailCache.get(key)!;
       const n = await prisma.question.count({
-        where: { isActive: true, type, category: 'BASIC' },
+        where: { isActive: true, type, category: 'BASIC', ...sourceWhere },
       });
       basicAvailCache.set(key, n);
       return n;
@@ -76,6 +88,7 @@ export async function GET(
             category: 'PROFESSIONAL',
             process: combo.process || undefined,
             level: combo.level || undefined,
+            ...sourceWhere,
           },
         });
         const bAvail = await basicAvail(type);
@@ -99,6 +112,7 @@ export async function GET(
       success: true,
       data: {
         hasParticipants: combos.length > 0,
+        hasUpload,
         basicRatioPercent: Math.round(basicRatio * 100),
         combos: result,
       },

@@ -204,8 +204,8 @@ export default function TabBasicInfo(props: Props) {
             />
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Input label="时长(分钟)" type="number" value={timeLimitMinutes} onChange={(e) => setTimeLimitMinutes(Number(e.target.value))} min={1} />
-            <Input label="线上理论及格分" type="number" value={passScore} onChange={(e) => setPassScore(Number(e.target.value))} min={0} />
+            <Input label="时长(分钟)" required type="number" value={timeLimitMinutes} onChange={(e) => setTimeLimitMinutes(Number(e.target.value))} min={1} />
+            <Input label="线上理论及格分" required type="number" value={passScore} onChange={(e) => setPassScore(Number(e.target.value))} min={0} />
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1.5">总分</label>
               <div className="flex h-[38px] items-center rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm font-semibold">{totalScore}</div>

@@ -65,7 +65,7 @@ export default function QuestionListPage() {
   const [loading, setLoading] = useState(true);
 
   // Exam list for filter
-  const [examOptions, setExamOptions] = useState<{ value: string; label: string }[]>([{ value: '', label: '全部考试' }]);
+  const [examOptions, setExamOptions] = useState<{ value: string; label: string }[]>([{ value: '', label: '中央题库' }]);
 
   // Filters
   const [typeFilter, setTypeFilter] = useState('');
@@ -105,7 +105,11 @@ export default function QuestionListPage() {
             value: e.id,
             label: e.title,
           }));
-          setExamOptions([{ value: '', label: '全部考试' }, ...opts]);
+          setExamOptions([
+            { value: '', label: '中央题库' },
+            { value: 'all', label: '全部（含考试副本）' },
+            ...opts,
+          ]);
         }
       } catch { /* ignore */ }
     }
@@ -269,7 +273,7 @@ export default function QuestionListPage() {
       <Card className="overflow-visible">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
           <CustomSelect
-            label="关联考试"
+            label="题库来源"
             options={examOptions}
             value={examFilter}
             onChange={(val) => {
@@ -571,8 +575,9 @@ export default function QuestionListPage() {
         open={exportOpen}
         onClose={() => setExportOpen(false)}
         title="导出题库"
-        description="选择要导出的考试题库，将生成 Excel 文件下载。"
+        description="默认导出中央题库；也可选择某场考试导出其专属题目。"
         allowAll
+        allLabel="中央题库"
         onExport={async (examId) => {
           const url = examId ? `/api/admin/questions/export?examId=${examId}` : '/api/admin/questions/export';
           const res = await fetch(url);

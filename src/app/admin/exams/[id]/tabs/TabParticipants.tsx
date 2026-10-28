@@ -619,12 +619,12 @@ export default function TabParticipants({ examId, readOnly = false }: Props) {
       <Dialog
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="新增应考人员"
+        title="指派应考人员"
         contentClassName="overflow-y-visible"
         footer={
           <>
             <Button variant="outline" size="sm" onClick={() => setShowAddModal(false)}>取消</Button>
-            <Button size="sm" onClick={handleAddSingle} loading={adding}>确认新增</Button>
+            <Button size="sm" onClick={handleAddSingle} loading={adding}>确认指派</Button>
           </>
         }
       >
@@ -842,7 +842,7 @@ export default function TabParticipants({ examId, readOnly = false }: Props) {
                     <>
                       <Button variant="outline" size="sm" onClick={openAddModal}>
                         <UserPlus className="h-3.5 w-3.5" />
-                        新增人员
+                        指派人员
                       </Button>
                       <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
                         <Upload className="h-3.5 w-3.5" />
@@ -858,7 +858,7 @@ export default function TabParticipants({ examId, readOnly = false }: Props) {
               <div className="flex items-center gap-2 justify-end">
                 <Button variant="outline" size="sm" onClick={openAddModal}>
                   <UserPlus className="h-3.5 w-3.5" />
-                  新增人员
+                  指派人员
                 </Button>
                 <Button size="sm" onClick={() => fileRef.current?.click()} loading={uploading}>
                   <Upload className="h-3.5 w-3.5" />

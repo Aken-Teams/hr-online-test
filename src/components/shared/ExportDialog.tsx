@@ -15,8 +15,10 @@ interface ExportDialogProps {
   onClose: () => void;
   title: string;
   description?: string;
-  /** If true, show "全部考试" option */
+  /** If true, show the "all / default-source" option */
   allowAll?: boolean;
+  /** Label for the allowAll option (default "全部考试") */
+  allLabel?: string;
   onExport: (examId: string | null) => Promise<void>;
 }
 
@@ -26,6 +28,7 @@ export function ExportDialog({
   title,
   description,
   allowAll = false,
+  allLabel = '全部考试',
   onExport,
 }: ExportDialogProps) {
   const [exams, setExams] = useState<ExamOption[]>([]);
@@ -99,7 +102,7 @@ export function ExportDialog({
             value={selectedExamId}
             onChange={(v) => setSelectedExamId(v)}
             options={[
-              ...(allowAll ? [{ value: '', label: '全部考试' }] : []),
+              ...(allowAll ? [{ value: '', label: allLabel }] : []),
               ...exams.map((e) => ({ value: e.id, label: e.title })),
             ]}
           />

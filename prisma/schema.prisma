@@ -94,6 +94,7 @@ model Question {
   process         String?
   answers         Answer[]
   examQuestions   ExamQuestion[]
+  examSourceLinks ExamSourceQuestion[]
   options         QuestionOption[]
   tags            QuestionTag[]
   examSource      Exam?            @relation("ImportedQuestions", fields: [examSourceId], references: [id])
@@ -163,6 +164,7 @@ model Exam {
   examQuestions         ExamQuestion[]
   sessions              ExamSession[]
   importedQuestions     Question[]         @relation("ImportedQuestions")
+  sourceQuestions       ExamSourceQuestion[]
 
   @@index([status, openAt, closeAt])
   @@map("exams")
@@ -211,6 +213,21 @@ model ExamQuestion {
   @@index([examId, sortOrder])
   @@index([questionId], map: "exam_questions_question_id_fkey")
   @@map("exam_questions")
+}
+
+/// 这场考试「选用」的中央题库题目（上传时比对到已存在的中央题 → 只记关联、不复制）。
+/// 配合 Question.examSourceId（该场独有新题）组成一场上传考试的完整抽题池。
+model ExamSourceQuestion {
+  id         String   @id @default(cuid())
+  examId     String   @map("exam_id")
+  questionId String   @map("question_id")
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, questionId])
+  @@index([examId])
+  @@index([questionId])
+  @@map("exam_source_questions")
 }
 
 model ExamAssignment {

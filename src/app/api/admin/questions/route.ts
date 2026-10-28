@@ -48,8 +48,12 @@ export async function GET(request: Request) {
     if (search) {
       where.content = { contains: search };
     }
-    if (examSourceId) {
+    if (examSourceId === 'all') {
+      // 显示全部（含各考试专属副本）
+    } else if (examSourceId) {
       where.examSourceId = examSourceId;
+    } else {
+      where.examSourceId = null; // 默认只显示中央题库，不含各考试的专属副本
     }
     if (process) {
       where.process = process;

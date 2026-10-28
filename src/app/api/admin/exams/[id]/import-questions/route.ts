@@ -9,12 +9,15 @@ import type { QuestionImportRow } from '@/types/exam';
 
 /**
  * POST /api/admin/exams/[id]/import-questions
- * Import question bank files bound to a specific exam.
+ * Import question bank files during exam creation/editing.
  *
- * Full-replace behavior: ALL existing questions for this exam are deleted
- * first, then the new questions from all uploaded files are created.
- * This ensures the DB always matches the uploaded file contents with no
- * duplicates, regardless of filenames.
+ * Hybrid model (no duplication): for each uploaded question —
+ *   · already in central bank (same type+level+content) → ExamSourceQuestion
+ *     link only (reuse, no copy); counted as `existed`.
+ *   · genuinely new → created as EXAM-EXCLUSIVE (examSourceId=examId); `created`.
+ * An uploaded exam's pool = its exclusive questions + its linked central
+ * questions (see question-generator). Exams without any upload draw from the
+ * whole central bank by process+level.
  */
 export async function POST(
   request: Request,
@@ -63,12 +66,14 @@ export async function POST(
       totalFiles: files.length,
       totalRows: 0,
       created: 0,
+      existed: 0,
       replaced: 0,
       fileResults: [] as Array<{
         filename: string;
         parsed: ReturnType<typeof parseQuestionFilename>;
         rows: number;
         created: number;
+        existed: number;
         replaced: number;
         byType?: Record<string, number>;
         error?: string;
@@ -93,6 +98,7 @@ export async function POST(
           parsed: null,
           rows: 0,
           created: 0,
+          existed: 0,
           replaced: 0,
           error: '文件大小超过10MB',
         });
@@ -134,6 +140,7 @@ export async function POST(
           parsed,
           rows: 0,
           created: 0,
+          existed: 0,
           replaced: 0,
           error: '未解析到有效题目',
         });
@@ -161,96 +168,113 @@ export async function POST(
       parsedFiles.push({ file, parsed, uniqueRows, byType, fileCategory, hasPerRowCategory });
     }
 
-    // ── Phase 2: Single transaction — delete all then create all ──
+    // ── Phase 2: 混合模型 —— 已在中央的「关联复用」，新题建为「本场独有」──
+    // 逐题比对中央题库（type+level+content）：
+    //   · 已在中央 → 只写 ExamSourceQuestion 关联（不复制），existed++
+    //   · 新题     → 建为本场独有（examSourceId=examId），created++
+    // 上传的考试 = 本场独有题 + 关联的中央题，组成其专属抽题池（见 question-generator）。
     if (parsedFiles.length > 0) {
-      // Count existing questions before delete (for replaced count)
-      const existingIds = (
-        await prisma.question.findMany({
-          where: { examSourceId: examId },
-          select: { id: true },
-        })
-      ).map((q) => q.id);
+      const fpOf = (type: string, level: string | null, content: string) =>
+        `${type}||${(level || '').trim()}||${content.trim()}`;
 
-      // Safety check: block import if there are answer records referencing these questions
-      if (existingIds.length > 0) {
-        const answerCount = await prisma.answer.count({
-          where: { questionId: { in: existingIds } },
-        });
-        if (answerCount > 0) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `该考试已有 ${answerCount} 条答题记录，重新导入会删除所有答题数据。如需重新导入，请先在「成绩管理」中清除答题记录。`,
-            },
-            { status: 409 }
-          );
-        }
-      }
+      const importTypes = [...new Set(parsedFiles.flatMap((pf) => pf.uniqueRows.map((r) => r.type)))];
+      // 中央题库指纹 → id（用于关联）
+      const centralExisting = await prisma.question.findMany({
+        where: { examSourceId: null, type: { in: importTypes } },
+        select: { id: true, type: true, level: true, content: true },
+      });
+      const centralByFp = new Map(centralExisting.map((q) => [fpOf(q.type, q.level, q.content), q.id]));
+      // 本场已有的独有题指纹（避免重复导入时重建）
+      const ownExisting = await prisma.question.findMany({
+        where: { examSourceId: examId, type: { in: importTypes } },
+        select: { type: true, level: true, content: true },
+      });
+      const ownFp = new Set(ownExisting.map((q) => fpOf(q.type, q.level, q.content)));
+      // 本场已关联的中央 id（避免重复关联）
+      const alreadyLinked = new Set(
+        (await prisma.examSourceQuestion.findMany({ where: { examId }, select: { questionId: true } }))
+          .map((l) => l.questionId)
+      );
+      const batchFp = new Set<string>(); // 本次导入内（跨文件）去重
 
       await prisma.$transaction(
         async (tx) => {
-          // Delete ALL existing questions for this exam
-          if (existingIds.length > 0) {
-            await tx.examQuestion.deleteMany({ where: { questionId: { in: existingIds } } });
-            await tx.questionOption.deleteMany({ where: { questionId: { in: existingIds } } });
-            await tx.questionTag.deleteMany({ where: { questionId: { in: existingIds } } });
-            await tx.question.deleteMany({ where: { id: { in: existingIds } } });
+          const linkRows: { examId: string; questionId: string }[] = [];
+          for (const pf of parsedFiles) {
+            const toCreate: { row: QuestionImportRow; cat: string; level: string }[] = [];
+            let linked = 0;
+            for (const row of pf.uniqueRows) {
+              const cat = (pf.hasPerRowCategory && row.category) ? row.category : pf.fileCategory;
+              const level = cat === 'BASIC' ? '' : (pf.parsed?.level || row.level || '');
+              const fp = fpOf(row.type, level, row.content);
+              if (batchFp.has(fp) || ownFp.has(fp)) continue; // 本次/本场已有
+              batchFp.add(fp);
+              const centralId = centralByFp.get(fp);
+              if (centralId) {
+                // 已在中央 → 关联复用（不复制）
+                if (!alreadyLinked.has(centralId)) {
+                  linkRows.push({ examId, questionId: centralId });
+                  alreadyLinked.add(centralId);
+                  linked++;
+                }
+              } else {
+                toCreate.push({ row, cat, level }); // 新题 → 本场独有
+              }
+            }
+
+            const newQuestions = toCreate.map(({ row, cat, level }) => ({
+              id: randomUUID(),
+              type: row.type,
+              content: row.content,
+              level,
+              department: pf.parsed?.department || row.department,
+              role: row.role,
+              correctAnswer: row.correctAnswer ?? null,
+              isMultiSelect: row.isMultiSelect ?? false,
+              referenceAnswer: row.referenceAnswer ?? null,
+              sourceFile: pf.file.name,
+              process: row.process || pf.parsed?.process || null,
+              category: cat,
+              examSourceId: examId, // ← 本场独有（不进中央、不共享）
+            }));
+
+            if (newQuestions.length > 0) {
+              await tx.question.createMany({ data: newQuestions });
+              const allOptions = newQuestions.flatMap((q, qi) =>
+                (toCreate[qi].row.options || []).map((opt, idx) => ({
+                  questionId: q.id,
+                  label: opt.label,
+                  content: opt.content,
+                  imageUrl: opt.imageUrl ?? null,
+                  sortOrder: idx,
+                }))
+              );
+              if (allOptions.length > 0) {
+                await tx.questionOption.createMany({ data: allOptions });
+              }
+            }
+
+            totalResults.totalRows += pf.uniqueRows.length;
+            totalResults.created += newQuestions.length;
+            totalResults.existed += linked;
+            totalResults.fileResults.push({
+              filename: pf.file.name,
+              parsed: pf.parsed,
+              rows: pf.uniqueRows.length,
+              created: newQuestions.length,
+              existed: linked,
+              replaced: 0,
+              byType: pf.byType,
+            });
           }
 
-          // Create questions from all parsed files
-          for (const pf of parsedFiles) {
-            const newQuestions = pf.uniqueRows.map((row) => {
-              const cat = (pf.hasPerRowCategory && row.category) ? row.category : pf.fileCategory;
-              return {
-                id: randomUUID(),
-                type: row.type,
-                content: row.content,
-                level: cat === 'BASIC' ? '' : (pf.parsed?.level || row.level),
-                department: pf.parsed?.department || row.department,
-                role: row.role,
-                correctAnswer: row.correctAnswer ?? null,
-                isMultiSelect: row.isMultiSelect ?? false,
-                referenceAnswer: row.referenceAnswer ?? null,
-                sourceFile: pf.file.name,
-                process: row.process || pf.parsed?.process || null,
-                category: cat,
-                examSourceId: examId,
-              };
-            });
-
-            await tx.question.createMany({ data: newQuestions });
-
-            const allOptions = newQuestions.flatMap((q, qi) =>
-              (pf.uniqueRows[qi].options || []).map((opt, idx) => ({
-                questionId: q.id,
-                label: opt.label,
-                content: opt.content,
-                imageUrl: opt.imageUrl ?? null,
-                sortOrder: idx,
-              }))
-            );
-            if (allOptions.length > 0) {
-              await tx.questionOption.createMany({ data: allOptions });
-            }
+          // 关联中央题（去重）
+          if (linkRows.length > 0) {
+            await tx.examSourceQuestion.createMany({ data: linkRows, skipDuplicates: true });
           }
         },
         { timeout: 60000 }
       );
-
-      totalResults.replaced = existingIds.length;
-
-      for (const pf of parsedFiles) {
-        totalResults.totalRows += pf.uniqueRows.length;
-        totalResults.created += pf.uniqueRows.length;
-        totalResults.fileResults.push({
-          filename: pf.file.name,
-          parsed: pf.parsed,
-          rows: pf.uniqueRows.length,
-          created: pf.uniqueRows.length,
-          replaced: 0,
-          byType: pf.byType,
-        });
-      }
     }
 
     // Audit log

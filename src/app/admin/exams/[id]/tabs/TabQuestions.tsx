@@ -25,6 +25,7 @@ interface ImportedFile {
 interface UploadStatus {
   status: 'uploading' | 'done' | 'error';
   created?: number;
+  existed?: number;
   replaced?: number;
   rows?: number;
   byType?: Record<string, number>;
@@ -56,6 +57,7 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
   interface PoolCombo { process: string | null; level: string | null; rules: PoolRule[] }
   const [poolCombos, setPoolCombos] = useState<PoolCombo[] | null>(null);
   const [poolHasParticipants, setPoolHasParticipants] = useState(true);
+  const [poolHasUpload, setPoolHasUpload] = useState(false);
   const [loadingPool, setLoadingPool] = useState(false);
 
   async function loadPoolPreview() {
@@ -66,6 +68,7 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
       if (json.success) {
         setPoolCombos(json.data.combos);
         setPoolHasParticipants(json.data.hasParticipants);
+        setPoolHasUpload(json.data.hasUpload);
       } else {
         toast(json.error || '加载失败', 'error');
       }
@@ -179,6 +182,7 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
             next.set(r.filename, {
               status: 'done',
               created: r.created,
+              existed: r.existed,
               replaced: r.replaced,
               rows: r.rows,
               byType: r.byType,
@@ -188,9 +192,7 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
         return next;
       });
 
-      const msg = json.data.replaced > 0
-        ? `成功覆盖导入 ${json.data.created} 题（替换 ${json.data.replaced} 题）`
-        : `成功导入 ${json.data.created} 题`;
+      const msg = `本场新增 ${json.data.created} 题（独有）${json.data.existed > 0 ? `，关联复用中央题库 ${json.data.existed} 题` : ''}`;
       toast(msg, 'success');
       // Refresh imported files list from server
       fetchImportedFiles();
@@ -320,8 +322,12 @@ export default function TabQuestions({ examId, hasResults = false }: Props) {
       <Card title="抽题池预览">
         <div className="space-y-3">
           <p className="text-sm leading-relaxed text-stone-600">
-            不上传专属题库时，系统按<strong>每位考生的工序 + 级别</strong>从<strong>系统题库</strong>自动抽题。
-            下方预览本场各工序/级别「需要 vs 可用」题数，确认够抽再开考。
+            按<strong>每位考生的工序 + 级别</strong>预览「需要 vs 可用」题数，确认够抽再开考。
+            {poolCombos != null && (
+              poolHasUpload
+                ? <span className="ml-1 text-teal-700">（本场已上传题库，抽题来源 = 本场独有题 + 关联的中央题）</span>
+                : <span className="ml-1 text-teal-700">（本场未上传，抽题来源 = 中央题库）</span>
+            )}
           </p>
           <Button variant="secondary" size="sm" onClick={loadPoolPreview} loading={loadingPool}>
             {poolCombos ? '重新预览' : '预览抽题池'}

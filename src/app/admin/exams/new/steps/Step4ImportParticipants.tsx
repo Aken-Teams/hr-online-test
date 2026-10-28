@@ -56,15 +56,34 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
   const selectedList = Object.values(selectedEmps);
 
   async function searchEmployees(q: string) {
-    if (!q.trim()) { setEmpResults([]); return; }
     setEmpSearching(true);
     try {
-      const res = await fetch(`/api/admin/employees?search=${encodeURIComponent(q)}&pageSize=20`);
+      const url = q.trim()
+        ? `/api/admin/employees?search=${encodeURIComponent(q)}&pageSize=30`
+        : `/api/admin/employees?pageSize=30`;
+      const res = await fetch(url);
       const json = await res.json();
       if (json.success) setEmpResults(json.data.items);
     } catch { /* ignore */ } finally {
       setEmpSearching(false);
     }
+  }
+
+  function openPicker() {
+    setPickerOpen(true);
+    searchEmployees('');
+  }
+
+  // 全选/取消全选当前列表（跳过无岗位的）
+  function toggleSelectAllShown() {
+    const selectable = empResults.filter((e) => e.role?.trim());
+    const allSelected = selectable.length > 0 && selectable.every((e) => selectedEmps[e.id]);
+    setSelectedEmps((prev) => {
+      const next = { ...prev };
+      if (allSelected) { selectable.forEach((e) => delete next[e.id]); }
+      else { selectable.forEach((e) => { next[e.id] = e; }); }
+      return next;
+    });
   }
 
   function toggleEmp(emp: EmpItem) {
@@ -191,7 +210,7 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => setPickerOpen(true)}
+                  onClick={openPicker}
                 >
                   <UserPlus className="h-4 w-4" />
                   从员工选择
@@ -335,15 +354,22 @@ export default function Step4ImportParticipants({ examId, participants, onPartic
               />
             </div>
           </div>
-          <p className="text-xs text-stone-500">工序取自员工的「岗位」；等级统一用上方填写值。岗位为空的员工无法加入。</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-stone-500">工序取自员工的「岗位」；等级统一用上方填写值。岗位为空的员工无法加入。</p>
+            {empResults.length > 0 && (
+              <button type="button" onClick={toggleSelectAllShown} className="shrink-0 text-xs font-medium text-teal-600 hover:text-teal-700">
+                全选/取消本页
+              </button>
+            )}
+          </div>
 
           <div className="max-h-72 overflow-y-auto rounded-lg border border-stone-100">
             {empSearching ? (
               <div className="flex items-center justify-center py-8 text-sm text-stone-400">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 搜索中...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 加载中...
               </div>
             ) : empResults.length === 0 ? (
-              <p className="py-8 text-center text-sm text-stone-400">{empSearch ? '无匹配员工' : '输入姓名或工号搜索'}</p>
+              <p className="py-8 text-center text-sm text-stone-400">{empSearch ? '无匹配员工' : '暂无员工'}</p>
             ) : (
               empResults.map((emp) => {
                 const checked = !!selectedEmps[emp.id];

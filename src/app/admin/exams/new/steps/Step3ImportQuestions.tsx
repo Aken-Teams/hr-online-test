@@ -16,6 +16,7 @@ interface FileResult {
   parsed: { department: string; process: string; level: string } | null;
   rows: number;
   created: number;
+  existed?: number;
   replaced: number;
   byType?: Record<string, number>;
   error?: string;
@@ -95,7 +96,7 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
       if (!res.ok) throw new Error(json.error || '导入失败');
 
       onResults([...results, ...(json.data.fileResults || [])]);
-      toast(`成功导入 ${json.data.created} 题`, 'success');
+      toast(`本场新增 ${json.data.created} 题（独有）${json.data.existed > 0 ? `，关联复用中央题库 ${json.data.existed} 题` : ''}`, 'success');
     } catch (err) {
       toast(err instanceof Error ? err.message : '导入失败', 'error');
     } finally {
@@ -111,8 +112,8 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
           {/* 重点说明：本步骤可跳过，系统会用现有题库自动抽题 */}
           <div className="rounded-lg border border-teal-200 bg-teal-50/60 px-4 py-3">
             <p className="text-sm leading-relaxed text-teal-800">
-              本步骤可选：<strong>不上传</strong>则由系统从现有题库按考生「工序 + 级别」自动抽题，直接「下一步」即可；
-              仅在需要<strong>专属题目</strong>时才上传 Excel（会覆盖同范围旧题）。
+              <strong>不上传</strong>：系统按考生「工序 + 级别」从<strong>中央题库</strong>自动抽题，直接「下一步」即可。<br />
+              <strong>上传 Excel</strong>：已在中央题库的题<strong>自动关联复用（不复制）</strong>，新题建为<strong>本场独有</strong>；本场考试 = 独有题 + 关联的中央题（不会产生重复副本）。
             </p>
           </div>
 
@@ -171,7 +172,7 @@ export default function Step3ImportQuestions({ examId, results, onResults }: Pro
                   ) : (
                     <div className="mt-0.5">
                       <p className="text-xs text-stone-500">
-                        {r.rows} 题解析，{r.created} 题导入{r.replaced > 0 ? `（覆盖）` : ''}
+                        {r.rows} 题解析，本场新增 {r.created} 题（独有）{r.existed ? `，关联复用中央题库 ${r.existed} 题` : ''}
                       </p>
                       {r.byType && Object.keys(r.byType).length > 0 && (
                         <p className="text-xs text-stone-400 mt-0.5">
