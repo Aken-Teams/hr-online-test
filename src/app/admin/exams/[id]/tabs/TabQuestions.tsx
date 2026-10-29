@@ -91,11 +91,11 @@ export default function TabQuestions({ examId, hasResults = false, isArchived = 
     fetchImportedFiles();
   }, [examId]);
 
-  // 归档考试：自动载入抽题范围（只读，无需点按钮）
+  // 已锁定（已归档，或已有考试记录）：自动载入抽题范围，让「下方可预览」立即有内容
   useEffect(() => {
-    if (isArchived && examId) loadPoolPreview();
+    if ((isArchived || hasResults) && examId) loadPoolPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isArchived, examId]);
+  }, [isArchived, hasResults, examId]);
 
   async function fetchImportedFiles() {
     try {

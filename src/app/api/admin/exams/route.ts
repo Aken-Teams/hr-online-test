@@ -44,6 +44,8 @@ export async function GET(request: Request) {
               importedQuestions: true,
             },
           },
+          // 用于「中央抽题」考试（无上传题）时，以出题规则的题数作为题目数
+          questionRules: { select: { count: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
@@ -65,6 +67,11 @@ export async function GET(request: Request) {
       }
       // PUBLISHED stays as PUBLISHED (待开放)
 
+      // 上传型考试：题目数 = 本场上传的独有题；中央抽题型：= 出题规则的题数（每位考生抽几题）
+      const ruleSum = exam.questionRules.reduce((s, r) => s + (r.count ?? 0), 0);
+      const drawsFromCentral = exam._count.importedQuestions === 0;
+      const questionCount = drawsFromCentral ? ruleSum : exam._count.importedQuestions;
+
       return {
         id: exam.id,
         title: exam.title,
@@ -77,7 +84,9 @@ export async function GET(request: Request) {
         openAt: exam.openAt,
         closeAt: exam.closeAt,
         maxAttempts: exam.maxAttempts,
-        questionCount: exam._count.importedQuestions,
+        questionCount,
+        /** 题库来源为中央题库（无上传独有题），列表可据此标注 */
+        drawsFromCentral,
         sessionCount: exam._count.sessions,
         createdAt: exam.createdAt,
       };

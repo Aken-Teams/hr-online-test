@@ -128,6 +128,8 @@ export interface ExamListItem {
   openAt?: Date | string | null;
   closeAt?: Date | string | null;
   questionCount: number;
+  /** 题库来源为中央题库（无上传独有题）；题目数为「每位考生抽几题」 */
+  drawsFromCentral?: boolean;
   sessionCount: number;
 }
 

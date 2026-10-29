@@ -299,7 +299,7 @@ export default function ExamListPage() {
                     </Badge>
                   </div>
                   <p className="mt-1 text-xs text-stone-500">
-                    {exam.questionCount ?? '--'} 题 · {exam.timeLimitMinutes} 分钟 · {exam.sessionCount ?? 0} 人参考
+                    {exam.questionCount ?? '--'} 题{exam.drawsFromCentral ? '（中央抽题）' : ''} · {exam.timeLimitMinutes} 分钟 · {exam.sessionCount ?? 0} 人参考
                   </p>
                   <p className="mt-0.5 text-xs text-stone-400">
                     {formatDateTime(exam.openAt)}
@@ -430,7 +430,12 @@ export default function ExamListPage() {
                           {DISPLAY_STATUS_LABELS[exam.displayStatus ?? exam.status] ?? exam.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{exam.questionCount ?? '--'}</TableCell>
+                      <TableCell>
+                        {exam.questionCount ?? '--'}
+                        {exam.drawsFromCentral && (
+                          <span className="ml-1 rounded bg-teal-50 px-1.5 py-0.5 text-[10px] font-medium text-teal-700">中央抽题</span>
+                        )}
+                      </TableCell>
                       <TableCell>{exam.timeLimitMinutes} 分钟</TableCell>
                       <TableCell>{exam.sessionCount ?? 0}</TableCell>
                       <TableCell className="text-sm text-stone-500">
