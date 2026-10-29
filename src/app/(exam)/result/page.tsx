@@ -68,6 +68,9 @@ const QUESTION_TYPE_LABELS: Record<string, string> = {
   PRACTICAL: '实操题',
 };
 
+// 需人工评分的题型（这些在评卷人评完前显示「评分中」）
+const MANUAL_GRADE_TYPES = ['SHORT_ANSWER', 'FILL_BLANK', 'CASE_ANALYSIS', 'PRACTICAL'];
+
 // ---------------------------------------------------------------------------
 // Circular progress ring
 // ---------------------------------------------------------------------------
@@ -148,12 +151,14 @@ function CategoryBar({
   max,
   correct,
   total,
+  pending,
 }: {
   label: string;
   earned: number;
   max: number;
   correct: number;
   total: number;
+  pending?: boolean;
 }) {
   const percentage = max > 0 ? Math.round((earned / max) * 100) : 0;
 
@@ -161,18 +166,24 @@ function CategoryBar({
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-stone-700">{label}</span>
-        <span className="text-stone-500">
-          {correct}/{total} 题 &middot; {earned}/{max} 分
-        </span>
+        {pending ? (
+          <span className="text-xs font-medium text-amber-600">评分中</span>
+        ) : (
+          <span className="text-stone-500">
+            {correct}/{total} 题 &middot; {earned}/{max} 分
+          </span>
+        )}
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-stone-100">
-        <div
-          className={cn(
-            'h-full rounded-full transition-all duration-500 ease-out',
-            percentage >= 60 ? 'bg-teal-500' : percentage > 0 ? 'bg-amber-400' : 'bg-stone-200',
-          )}
-          style={{ width: `${Math.max(percentage, 2)}%` }}
-        />
+        {!pending && (
+          <div
+            className={cn(
+              'h-full rounded-full transition-all duration-500 ease-out',
+              percentage >= 60 ? 'bg-teal-500' : percentage > 0 ? 'bg-amber-400' : 'bg-stone-200',
+            )}
+            style={{ width: `${Math.max(percentage, 2)}%` }}
+          />
+        )}
       </div>
     </div>
   );
@@ -545,6 +556,10 @@ function ResultPage() {
     return Math.round((result.correctCount / result.totalQuestions) * 100).toString();
   }, [result]);
 
+  // 全场待评分（如全简答题考试）：正确率 / 答对数 / 分类得分 应显示「评分中」而非 0
+  const allPending =
+    pendingGradingCount > 0 && ((result?.totalQuestions ?? 0) - pendingGradingCount) <= 0;
+
   // Group questions by type for tabs
   const questionsByType = useMemo(() => {
     const groups: Record<string, QuestionFromAPI[]> = {};
@@ -730,11 +745,19 @@ function ResultPage() {
             {/* ===== Section 2: Stats Grid ===== */}
             <div className="mb-3 grid grid-cols-4 gap-2 sm:mb-4 sm:gap-3">
               <div className="rounded-xl border border-stone-200 bg-white px-2 py-3 text-center shadow-sm sm:rounded-2xl sm:px-3 sm:py-4">
-                <p className="text-lg font-bold text-teal-600 sm:text-xl">{accuracyRate}%</p>
+                {allPending ? (
+                  <p className="text-sm font-semibold text-amber-600 sm:text-base">评分中</p>
+                ) : (
+                  <p className="text-lg font-bold text-teal-600 sm:text-xl">{accuracyRate}%</p>
+                )}
                 <p className="mt-0.5 text-[10px] text-stone-400 sm:text-[11px]">正确率</p>
               </div>
               <div className="rounded-xl border border-stone-200 bg-white px-2 py-3 text-center shadow-sm sm:rounded-2xl sm:px-3 sm:py-4">
-                <p className="text-lg font-bold text-stone-800 sm:text-xl">{result.correctCount}/{result.totalQuestions}</p>
+                {allPending ? (
+                  <p className="text-sm font-semibold text-amber-600 sm:text-base">评分中</p>
+                ) : (
+                  <p className="text-lg font-bold text-stone-800 sm:text-xl">{result.correctCount}/{result.totalQuestions}</p>
+                )}
                 <p className="mt-0.5 text-[10px] text-stone-400 sm:text-[11px]">答对/总题</p>
               </div>
               <div className="rounded-xl border border-stone-200 bg-white px-2 py-3 text-center shadow-sm sm:rounded-2xl sm:px-3 sm:py-4">
@@ -764,6 +787,8 @@ function ResultPage() {
                       max={cat.maxPoints}
                       correct={cat.correctCount}
                       total={cat.totalCount}
+                      // 人工评分题型（简答题等）在尚有待评时显示「评分中」；客观题照常显示分数
+                      pending={MANUAL_GRADE_TYPES.includes(cat.type) && pendingGradingCount > 0}
                     />
                   ))}
                 </div>
