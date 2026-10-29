@@ -12,6 +12,9 @@ import { FileClassificationDialog } from '@/components/shared/FileClassification
 import { partitionFilesByClassification } from '@/lib/excel-client';
 import { QUESTION_TYPE_LABELS } from '@/lib/constants';
 
+// 导入去向：直接进中央题库（不关联考试）
+const CENTRAL_VALUE = '__CENTRAL__';
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -88,7 +91,7 @@ export default function QuestionImportPage() {
 
   async function handleNewFiles(newFiles: FileList | File[]) {
     if (!selectedExamId) {
-      toast('请先选择关联考试', 'warning');
+      toast('请先选择导入去向', 'warning');
       return;
     }
     const validFiles: File[] = [];
@@ -187,7 +190,11 @@ export default function QuestionImportPage() {
       }
       formData.append('classifications', JSON.stringify(classifications));
 
-      const res = await fetch(`/api/admin/exams/${selectedExamId}/import-questions`, {
+      const endpoint =
+        selectedExamId === CENTRAL_VALUE
+          ? '/api/admin/questions/import'
+          : `/api/admin/exams/${selectedExamId}/import-questions`;
+      const res = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
@@ -255,7 +262,10 @@ export default function QuestionImportPage() {
 
   const doneCount = files.filter((f) => fileResults.get(f.name)?.status === 'done').length;
 
-  const selectedExamTitle = exams.find((e) => e.id === selectedExamId)?.title;
+  const selectedExamTitle =
+    selectedExamId === CENTRAL_VALUE
+      ? '中央题库（不关联考试）'
+      : exams.find((e) => e.id === selectedExamId)?.title;
 
   return (
     <div className="space-y-6">
@@ -265,21 +275,28 @@ export default function QuestionImportPage() {
         description="从 Excel 文件批量导入题目到指定考试"
       />
 
-      {/* Exam selection */}
-      <Card title="选择关联考试" className="overflow-visible" contentClassName="overflow-visible">
+      {/* Import target selection */}
+      <Card title="选择导入去向" className="overflow-visible" contentClassName="overflow-visible">
         <div className="max-w-md">
           <Select
-            label="关联考试"
+            label="导入去向"
             value={selectedExamId}
             onChange={(e) => {
               setSelectedExamId(e.target.value);
               setFileResults(new Map());
             }}
-            options={exams.map((exam) => ({ value: exam.id, label: exam.title }))}
-            placeholder="请选择考试"
+            options={[
+              { value: CENTRAL_VALUE, label: '直接汇入中央题库（不关联考试）' },
+              ...exams.map((exam) => ({ value: exam.id, label: `关联考试：${exam.title}` })),
+            ]}
+            placeholder="请选择导入去向"
           />
           <p className="mt-1.5 text-xs text-stone-400">
-            导入的题目将关联到所选考试，系统会自动根据文件名解析部门、工序、级别
+            {selectedExamId === CENTRAL_VALUE
+              ? '新题将进入中央题库（可被所有考试自动抽取），中央已有的题目会自动跳过'
+              : selectedExamId
+                ? '上传题目中「中央已有」的会关联复用（以中央为主），「中央没有」的会建为本场考试专用题'
+                : '中央题库：扩充共用题库；关联考试：为某场考试加题（重复关联中央、新题为该场专用）'}
           </p>
         </div>
       </Card>
@@ -292,7 +309,7 @@ export default function QuestionImportPage() {
           onDrop={handleDrop}
           onClick={() => {
             if (!selectedExamId) {
-              toast('请先选择关联考试', 'warning');
+              toast('请先选择导入去向', 'warning');
               return;
             }
             fileInputRef.current?.click();
@@ -309,7 +326,7 @@ export default function QuestionImportPage() {
           <p className="text-sm font-medium text-stone-700">
             {selectedExamId
               ? '拖拽文件到此处，或点击选择文件'
-              : '请先选择关联考试'}
+              : '请先选择导入去向'}
           </p>
           <p className="mt-1 text-xs text-stone-500">
             支持 .xls 和 .xlsx 格式，可同时选择多个文件
