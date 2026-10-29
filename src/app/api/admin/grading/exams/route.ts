@@ -75,6 +75,7 @@ export async function GET() {
       success: true,
       data: {
         scopedProcesses: scope?.processes ?? null,
+        role: admin.role,
         exams,
       },
     });

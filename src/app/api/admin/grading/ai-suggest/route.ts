@@ -23,6 +23,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: '未登录或无权限' }, { status: 401 });
     }
 
+    // 仅评卷人可触发评卷相关动作；管理员为只读监看
+    if (admin.role !== 'GRADER') {
+      return NextResponse.json(
+        { success: false, error: '评卷由评卷人操作，管理员仅能查看评卷进度' },
+        { status: 403 }
+      );
+    }
+
     if (!isAiGradingEnabled()) {
       return NextResponse.json(
         { success: false, error: 'AI 辅助评分未启用，请改用人工评分' },

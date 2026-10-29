@@ -194,6 +194,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // 仅评卷人可评分；管理员 / 人资为只读监看，不得评卷
+    if (admin.role !== 'GRADER') {
+      return NextResponse.json(
+        { success: false, error: '评卷由评卷人操作，管理员仅能查看评卷进度' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
 
     // Support both single grade and batch format

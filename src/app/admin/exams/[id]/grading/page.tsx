@@ -326,6 +326,8 @@ export default function ExamGradingPage() {
   const graded = data?.gradedCount ?? 0;
   const pending = data?.totalPending ?? 0;
   const progressPct = total > 0 ? Math.round((graded / total) * 100) : 0;
+  // 仅评卷人可评分；管理员 / 人资为只读监看
+  const canGrade = data?.role === 'GRADER';
 
   const tabs = [
     { key: 'pending', label: `待评分 (${pending})` },
@@ -339,25 +341,33 @@ export default function ExamGradingPage() {
         title={data?.examTitle ? `阅卷 - ${data.examTitle}` : '阅卷'}
         backHref="/admin/exams"
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              loading={aiRunning}
-              disabled={pending === 0}
-              onClick={() => handleAiSuggest()}
-            >
-              AI 初评待评分题目
-            </Button>
-            <Button
-              loading={adoptingAll}
-              disabled={pending === 0}
-              onClick={handleAdoptAll}
-            >
-              采用全部 AI 建议
-            </Button>
-          </div>
+          canGrade ? (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                loading={aiRunning}
+                disabled={pending === 0}
+                onClick={() => handleAiSuggest()}
+              >
+                AI 初评待评分题目
+              </Button>
+              <Button
+                loading={adoptingAll}
+                disabled={pending === 0}
+                onClick={handleAdoptAll}
+              >
+                采用全部 AI 建议
+              </Button>
+            </div>
+          ) : undefined
         }
       />
+
+      {!canGrade && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-800">
+          您以管理员身份查看评卷进度（只读），评卷由评卷人操作。
+        </div>
+      )}
 
       {/* Stats + Progress */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
@@ -526,7 +536,7 @@ export default function ExamGradingPage() {
                     </p>
                   )}
                   <div className="mt-2 flex justify-end gap-2">
-                    {!answer.isGraded && answer.aiScore != null && (
+                    {canGrade && !answer.isGraded && answer.aiScore != null && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -536,7 +546,7 @@ export default function ExamGradingPage() {
                         采用 AI
                       </Button>
                     )}
-                    {answer.isGraded ? (
+                    {answer.isGraded || !canGrade ? (
                       <Button
                         size="sm"
                         variant="outline"
@@ -633,7 +643,7 @@ export default function ExamGradingPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          {!answer.isGraded && answer.aiScore != null && (
+                          {canGrade && !answer.isGraded && answer.aiScore != null && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -643,7 +653,7 @@ export default function ExamGradingPage() {
                               采用 AI
                             </Button>
                           )}
-                          {answer.isGraded ? (
+                          {answer.isGraded || !canGrade ? (
                             <Button
                               size="sm"
                               variant="outline"
@@ -707,7 +717,11 @@ export default function ExamGradingPage() {
           title={editingGraded ? '修改评分' : gradingAnswer.isGraded ? '评分详情' : '评分'}
           className="sm:max-w-2xl"
           footer={
-            gradingAnswer.isGraded && !editingGraded ? (
+            !canGrade ? (
+              <Button variant="ghost" onClick={closeGradingDialog}>
+                关闭
+              </Button>
+            ) : gradingAnswer.isGraded && !editingGraded ? (
               <div className="flex w-full items-center justify-between">
                 <Button variant="ghost" onClick={closeGradingDialog}>
                   关闭
@@ -827,7 +841,7 @@ export default function ExamGradingPage() {
                   <p className="text-xl font-bold text-violet-800">
                     {gradingAnswer.aiScore} / {gradingAnswer.maxPoints}
                   </p>
-                  {!gradingAnswer.isGraded && (
+                  {canGrade && !gradingAnswer.isGraded && (
                     <Button
                       size="sm"
                       variant="secondary"
@@ -856,7 +870,7 @@ export default function ExamGradingPage() {
                   AI 建议不计入成绩，最终分数以评卷人送出者为准。
                 </p>
               </div>
-            ) : !gradingAnswer.isGraded ? (
+            ) : canGrade && !gradingAnswer.isGraded ? (
               <div className="flex items-center justify-between rounded-lg border border-dashed border-stone-300 bg-stone-50 px-4 py-3">
                 <p className="text-sm text-stone-500">尚未产生 AI 初评建议</p>
                 <Button
@@ -887,6 +901,10 @@ export default function ExamGradingPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            ) : !canGrade ? (
+              <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-4 py-3 text-sm text-stone-500">
+                该题尚未评分，等待评卷人评分。（管理员为只读查看）
               </div>
             ) : (
               <div className="rounded-lg border border-stone-200 bg-white p-3 sm:p-4 space-y-3">
