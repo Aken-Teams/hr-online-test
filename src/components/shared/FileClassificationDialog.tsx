@@ -20,19 +20,23 @@ const TABS = [
   { key: 'PROFESSIONAL', label: '专业知识' },
 ];
 
+/** 档名含工序级别（如「工务部PlatingⅠ级」）视为专业题库 */
+const LEVEL_IN_NAME = /([ⅠⅡⅢ]|[一二三]|I{1,3})\s*[级級]/i;
+
 /**
  * Auto-classify files based on filename keywords.
+ * - 含「基本 / 基础 / basic」→ 基本题
+ * - 含工序级别（Ⅰ级/一级/I级…，如「工务部PlatingⅠ级」）→ 专业题
+ * - 其余保持未分类，交由使用者判断
  */
 function autoClassify(files: File[]): Map<string, Category> {
   const map = new Map<string, Category>();
   for (const f of files) {
-    const name = f.name.toLowerCase();
-    if (
-      name.includes('基本') ||
-      name.includes('基础') ||
-      name.includes('basic')
-    ) {
+    const lower = f.name.toLowerCase();
+    if (lower.includes('基本') || lower.includes('基础') || lower.includes('basic')) {
       map.set(f.name, 'BASIC');
+    } else if (LEVEL_IN_NAME.test(f.name)) {
+      map.set(f.name, 'PROFESSIONAL');
     }
   }
   return map;
