@@ -197,6 +197,9 @@ function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
   const isTrueFalse = q.questionType === 'TRUE_FALSE';
   const isChoice = ['SINGLE_CHOICE', 'MULTI_CHOICE'].includes(q.questionType);
   const answered = q.yourAnswer != null && q.yourAnswer.trim() !== '';
+  // 简答题等尚未评分（isCorrect 为 null）：即使解析已开放，也只标「评分中」，
+  // 暂不揭露参考答案与得分，避免误显示 0 分 / 解析答案。
+  const pendingGrade = q.isCorrect == null;
 
   // 依得分状态给卡片左侧色条，便于快速扫视（绿=满分 / 琥珀=部分·待评 / 红=0分）
   const accent =
@@ -221,8 +224,8 @@ function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
           <span className="text-[13px] font-medium text-stone-800 sm:text-sm">第 {index} 题</span>
           <Badge variant="default">{QUESTION_TYPE_LABELS[q.questionType] ?? q.questionType}</Badge>
-          {q.isCorrect == null ? (
-            <Badge variant="warning">待评分</Badge>
+          {pendingGrade ? (
+            <Badge variant="warning">评分中</Badge>
           ) : q.earnedPoints >= q.maxPoints && q.maxPoints > 0 ? (
             <Badge variant="success">正确</Badge>
           ) : q.earnedPoints > 0 ? (
@@ -231,8 +234,12 @@ function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
             <Badge variant="danger">{answered ? '错误' : '未作答'}</Badge>
           )}
         </div>
-        <span className="text-[13px] font-semibold text-stone-600 shrink-0 ml-2 sm:text-sm">
-          {q.earnedPoints}/{q.maxPoints} 分
+        <span className="text-[13px] font-semibold shrink-0 ml-2 sm:text-sm">
+          {pendingGrade ? (
+            <span className="text-amber-600">评分中</span>
+          ) : (
+            <span className="text-stone-600">{q.earnedPoints}/{q.maxPoints} 分</span>
+          )}
         </span>
       </div>
 
@@ -397,8 +404,8 @@ function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
                     {q.yourAnswer || '（未作答）'}
                   </div>
                 </div>
-                {/* 参考答案 */}
-                {q.correctAnswer && (
+                {/* 参考答案（评分完成后才揭露；评分中不显示，避免误导） */}
+                {q.correctAnswer && !pendingGrade && (
                   <div className="flex flex-col">
                     <div className="mb-1.5 flex items-center gap-1.5">
                       <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
@@ -410,6 +417,12 @@ function QuestionCard({ q, index }: { q: QuestionFromAPI; index: number }) {
                   </div>
                 )}
               </div>
+              {/* 评分中：暂不显示参考答案与得分 */}
+              {pendingGrade && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[13px] text-amber-700 sm:text-sm">
+                  本题由评卷人评分中，参考答案与得分将于评分完成后公布。
+                </div>
+              )}
               {/* 评卷人评语 / 解析 */}
               {q.graderComment && (
                 <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 sm:px-4 sm:py-3">

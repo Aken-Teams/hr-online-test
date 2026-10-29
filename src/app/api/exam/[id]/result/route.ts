@@ -155,7 +155,8 @@ export async function GET(
         questionType: a.question.type,
         questionContent: a.question.content,
         yourAnswer: a.answerContent,
-        correctAnswer: effectiveShowCorrectAnswers
+        // 尚未评分（isCorrect=null，如简答题评分中）即使解析已开放，也不揭露参考答案
+        correctAnswer: effectiveShowCorrectAnswers && a.isCorrect !== null
           ? a.question.correctAnswer
           : null,
         earnedPoints: a.earnedPoints ?? 0,
